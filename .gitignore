@@ -1,0 +1,39 @@
+
+# default build destination
+/build/
+CMakeCache.txt
+CMakeFiles/
+
+# build objects
+*.[aod]
+*.pcm
+*.so
+*.dylib
+*.dll
+*.exe
+
+# temporary python files
+__pycache__/
+.ipynb_checkpoints
+*.egg*
+*.py[cod]
+*.manifest
+*.spec
+dist
+pyvenv.cfg
+pip-log.txt
+pip-delete-this-directory.txt
+
+# testing output
+.pytest_cache
+.cache
+.coverage*
+coverage.xml
+
+# editor configuration
+.vscode/
+.idea/
+nbproject/
+
+# misc
+*.bak
