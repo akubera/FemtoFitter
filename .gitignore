@@ -37,3 +37,7 @@ nbproject/
 
 # misc
 *.bak
+*.png
+*.svg
+*.pdf
+*.root
