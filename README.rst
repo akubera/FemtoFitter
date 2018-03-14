@@ -8,15 +8,17 @@ Tools for fitting femtoscopic correlation functions
 About
 -----
 
-The art and science of femtoscopy relies on the accurate fitting of correlation functions to data
-gathered by various collider experiments.
-This package hopes to provide both a standard and easy-to-use base on which fits may be performed.
+The art and science of femtoscopy relies on the accurate fitting of correlation
+functions to data gathered by various collider experiments.
+This package hopes to provide both a standard and easy-to-use base on which fits
+may be performed.
 
 There are two components of this library:
 
 libFemtoFitter.so
-  A C++ library which interfaces with ROOT for reading and writing .root files and performing
-  fits with TMinuit objects, the standard for fitting femtoscopic analysis data.
+  A C++ library which interfaces with ROOT for reading and writing .root files
+  and performing fits with TMinuit objects, the standard for fitting femtoscopic
+  analysis data.
 
 femtofitter
     A python package which wraps libFemtoFitter with an easy to use interface
@@ -25,16 +27,25 @@ femtofitter
 Installation
 ------------
 
-This library can be built from source or installed via the python package manager ``pip`` which bundles
-both the libFemtoFitter.so library and femtofitter python package.
+This library can be built from source or installed via the python package manager
+``pip`` which bundles both the libFemtoFitter.so library and femtofitter python
+package.
 
 Requirements
 ~~~~~~~~~~~~
 
-Building requires ROOT6 with the following features: python cpp11/cpp14 threads minuit2.
+This library does not have the goal of backwards compatibility with older systems,
+as fitting is often done on users' computers where installation of up-to-date
+packages is expected.
 
-You can check your root installation by running the following command; if it returns all 'yes'
-it is correctly configured.
+Building requires ROOT6 with the following features:
+* ``python``
+* ``cpp11`` or ``cpp14``
+* ``threads``
+* ``minuit2``
+
+You can check your root installation by running the following command; if it
+returns 'yes' for each parameter it is correctly configured (or switch cpp11)
 
 .. code:: bash
 
@@ -50,7 +61,11 @@ python
   This should be installed by your operating system; python3.5+ is recommended
 
 pip
-  apt install `python3-pip`
+  Probably already installed, but use ``sudo apt install python3-pip`` (or
+  equivalent for your package manager) if ``python3 -m pip`` returns a "module
+  not found" error
+
+misc
   There are python <-> ROOT support libraries that will be installed automatically.
 
 From Source
@@ -58,22 +73,28 @@ From Source
 
 .. code:: bash
 
-    # standard build
+    # pull from repository
+    $ git clone https://gitlab.cern.ch/akubera/FemtoFitter
+    $ cd FemtoFitter
+
+    # standard build - installs to $HOME/.local
     $ make
 
     # explicit in-source cmake build
-    $ cmake . && make
+    $ cmake -DCMAKE_INSTALL_PREFIX=/custom/install/path . && make
 
 
 Using pip
 ~~~~~~~~~
 
 Rather than installing from source, pre-built binaries are provided using the
-python-package-index (https://pypi.python.org/pypi/femtofitter) and easily downloadable using the
-pip installer (installed via your operating system's installer such as ``sudo apt install python3-pip``
+python-package-index (https://pypi.python.org/pypi/femtofitter) and easily
+downloadable using the pip installer (installed via your operating system's
+installer such as ``sudo apt install python3-pip``
 
-Note: If you are using alternative python installers, such as conda_, please use the standard
-instructions rather than installing potentially conflicting files with ``pip``.
+Note: If you are using alternative python installers, such as conda_, please
+use the standard instructions rather than installing potentially conflicting
+files with ``pip``.
 
 .. code:: bash
 
@@ -87,19 +108,21 @@ instructions rather than installing potentially conflicting files with ``pip``.
 Usage
 -----
 
-While libFemtoFitter.so *can* be used directly by users' macros and other libraries/executables,
-the expected usage is via the ``femtofitter`` executable provided with this package.
-This program is designed to simply be handed the names of input files, the classes which shall be used to fit,
-and output destinations and it performs all indicated operations.
+While libFemtoFitter.so *can* be used directly by users' macros and other
+libraries/executables, the expected usage is via the ``femtofitter`` executable
+provided with this package.
+This program is designed to simply be handed the names of input files, the
+classes which shall be used to fit, and output destinations and it performs all
+indicated operations.
 
-While flexibility is built into the design, there are limits to the structure of datafiles;
-this will be elaborated on more in the documentation.
+While flexibility is built into the design, there are limits to the structure
+of datafiles; this will be elaborated on more in the documentation.
 
 The standard usage is to create a configuration file which has three responsibilities:
 
-  * lists the input files and how to group histogram objects in 'analysis-units'
-  * indicates which fitters to be used and set all options for this fitter
-  * specify the output root-file and how to organize 'output-units'
+* lists the input files and how to group histogram objects in 'analysis-units'
+* indicates which fitters to be used and set all options for this fitter
+* specify the output root-file and how to organize 'output-units'
 
 
 .. code:: yaml
@@ -139,8 +162,10 @@ pass when merging into the master branch.
 License
 -------
 
-This code is released under the conditions of the LGPL-2.1_ free-software license, the
-contents of which are provided in the LICENSE file of this repository.
+This code is released under the conditions of the LGPL-2.1_ free-software
+license, the contents of which are provided in the LICENSE file of this
+repository.
+
 Copyright is held by Andrew Kubera (mailto:andrew.michael.kubera@cern.ch).
 
 
