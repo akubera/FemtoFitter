@@ -9,16 +9,16 @@ About
 -----
 
 The art and science of femtoscopy relies on the accurate fitting of correlation functions to data
-gathered by various collider experiments. 
+gathered by various collider experiments.
 This package hopes to provide both a standard and easy-to-use base on which fits may be performed.
 
 There are two components of this library:
 
-  libFemtoFitter.so
-    A C++ library which interfaces with ROOT for reading and writing .root files and performing
-    fits with TMinuit objects, the standard for fitting femtoscopic analysis data.
+libFemtoFitter.so
+  A C++ library which interfaces with ROOT for reading and writing .root files and performing
+  fits with TMinuit objects, the standard for fitting femtoscopic analysis data.
 
-  femtofitter
+femtofitter
     A python package which wraps libFemtoFitter with an easy to use interface
 
 
@@ -42,16 +42,16 @@ it is correctly configured.
 
 Other Requirements:
 
-  cmake
-    Like ROOT itself, femtofitter is configured and built with the program cmake_.
-    Minimum version is 3.6
+cmake
+  Like ROOT itself, femtofitter is configured and built with the program cmake_.
+  Minimum version is 3.6
 
-  python
-    This should be installed by your operating system; python3.5+ is recommended
+python
+  This should be installed by your operating system; python3.5+ is recommended
 
-  pip
-    apt install `python3-pip` 
-    There are python <-> ROOT support libraries that will be installed automatically.
+pip
+  apt install `python3-pip`
+  There are python <-> ROOT support libraries that will be installed automatically.
 
 From Source
 ~~~~~~~~~~~
@@ -72,7 +72,7 @@ Rather than installing from source, pre-built binaries are provided using the
 python-package-index (https://pypi.python.org/pypi/femtofitter) and easily downloadable using the
 pip installer (installed via your operating system's installer such as ``sudo apt install python3-pip``
 
-Note: If you are using alternative python installers, such as conda_, please use the standard 
+Note: If you are using alternative python installers, such as conda_, please use the standard
 instructions rather than installing potentially conflicting files with ``pip``.
 
 .. code:: bash
@@ -93,7 +93,7 @@ This program is designed to simply be handed the names of input files, the class
 and output destinations and it performs all indicated operations.
 
 While flexibility is built into the design, there are limits to the structure of datafiles;
-this will be elaborated on more in the documentation. 
+this will be elaborated on more in the documentation.
 
 The standard usage is to create a configuration file which has three responsibilities:
 
@@ -101,7 +101,7 @@ The standard usage is to create a configuration file which has three responsibil
   * indicates which fitters to be used and set all options for this fitter
   * specify the output root-file and how to organize 'output-units'
 
-  
+
 .. code:: yaml
 
    ---
@@ -111,7 +111,7 @@ The standard usage is to create a configuration file which has three responsibil
          num: foo/bar
      output:
        file: fit-results-%(timestamp).root
-         
+
      fits:
      # Standard gaussian-fit, no coulomb
      - name: Gauss3D_NoCoulomb
