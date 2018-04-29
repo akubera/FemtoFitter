@@ -117,11 +117,11 @@ struct Gauss1DT {
 
 
     /// Build with pairs of numerators and denominators
-    FitData(std::array<TH1*, N> nums, std::array<TH3*, N> dens)
+    FitData(std::array<HistPtr_t, N> nums, std::array<HistPtr_t, N> dens)
      : FitData(nums, dens, {nullptr})
     { }
 
-    FitData(std::array<TH1*, N> nums, std::array<TH3*, N> dens, std::array<TH3&, N> qinvs)
+    FitData(std::array<HistPtr_t, N> nums, std::array<HistPtr_t, N> dens, std::array<HistPtr_t, N> qinvs)
      : num(nums)
      , den(dens)
      , qinv(qinvs)
