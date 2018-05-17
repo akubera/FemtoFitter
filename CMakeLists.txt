@@ -32,18 +32,24 @@ endif(TARGET_DOCUMENTATION)
 #
 # Dependencies
 #
-find_package(ROOT REQUIRED COMPONENTS python mathmore minuit)
+find_package(ROOT REQUIRED COMPONENTS PyROOT MathMore Minuit)
+include(${ROOT_USE_FILE})
 message(STATUS "Found ROOT v${ROOT_VERSION} at ${ROOT_DIR}")
 set(ROOTCLING "${ROOT_rootcling_CMD}")
 
 # Build Headers
 include_directories(${FEMTOFITTER_INCLUDE_DIR})
-configure_file(
-  "src/femtofitter.hpp.in"
-  "${FEMTOFITTER_HEADER_DEST}/femtofitter.hpp")
 
-set(SRCS
-  "src/r")
+set(INCS
+  ${CMAKE_CURRENT_SOURCE_DIR}/femtofitter/inc/fitter.h
+)
 
-add_library(FemtoFitter	SHARED "src/rect.cpp")
+ROOT_GENERATE_DICTIONARY(femfit_dict ${INCS})
+
+set(ROOT_LIBS
+  libCore.so
+)
+
+add_library(FemtoFitter	SHARED femfit_dict)
+target_link_libraries(FemtoFitter ${ROOT_LIBS})
 
