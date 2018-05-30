@@ -12,6 +12,7 @@ project(FEMTOFITTER
 # Project Settings
 #
 set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(FEMTOFITTER_INCLUDE_DIR "${CMAKE_BINARY_DIR}/include")
 set(FEMTOFITTER_HEADER_DEST "${FEMTOFITTER_INCLUDE_DIR}/femtofitter")
 set(BUILD_DATE "March 11, 2017")
@@ -28,6 +29,8 @@ if (TARGET_DOCUMENTATION)
       COMMENT "Build documentation XML with Doxygen"
       VERBATIM)
 endif(TARGET_DOCUMENTATION)
+
+list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS})
 
 #
 # Dependencies
@@ -47,9 +50,9 @@ set(INCS
 ROOT_GENERATE_DICTIONARY(femfit_dict ${INCS})
 
 set(ROOT_LIBS
-  libCore.so
+  ROOT::Hist
+  ROOT::Minuit
 )
 
 add_library(FemtoFitter	SHARED femfit_dict)
 target_link_libraries(FemtoFitter ${ROOT_LIBS})
-
