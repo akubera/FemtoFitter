@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+#
+# build-coulomb-kfile
+#
+"""
+Build a histogram and store in output file.
+
+Implementation of equation (36) in the paper
+"Coulomb Effects in Femtoscopy"
+(http://www.ujk.edu.pl/strony/mrow/papers/PRC-femto.pdf)
+
+"""
+import sys
+from mpmath import hyp2f2
+from numpy import exp, sqrt, pi
+
+
+HBAR_C_SQR = 0.197 ** 2
+ETA = 1.0 / 388
+
+
+def arg_parser():
+    from argparse import ArgumentParser
+    parser = ArgumentParser()
+    parser.add_argument("-o", "--output",
+                        default='KFile.root',
+                        help='Argument')
+    parser.add_argument("-Q", "--qinv-max",
+                        type=float,
+                        default=0.5,
+                        help='Maximum q-inv')
+    parser.add_argument("-R", "--radius-max",
+                        type=float,
+                        default=20.5,
+                        help='Maximum radius')
+    parser.add_argument("--hist-name",
+                        default='k2ss',
+                        help='histogram of ')
+    return parser
+
+
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
+    args = arg_parser().parse_args()
+
+    from ROOT import TFile, TH2D
+
+    nbins_qinv = 140
+    nbins_R = 60
+    
+    max_qinv = args.qinv_max
+    max_R = args.radius_max
+ 
+    k2ss = TH2D("k2ss", "K_{coul}(q_{inv}, R)",
+                nbins_qinv, 0, max_qinv,
+                nbins_R, 0, max_R)
+    k2ss.SetStats(False)
+
+    for y_bin in range(1, k2ss.GetNbinsY()+1):
+        R = k2ss.GetYaxis().GetBinCenter(y_bin)
+        for x_bin in range(1, k2ss.GetNbinsX()+1):
+            qinv = k2ss.GetXaxis().GetBinCenter(x_bin)
+            k = calculate(qinv, R)
+            k2ss.SetBinContent(x_bin, y_bin, k)
+
+    outfile = TFile.Open(args.output, "RECREATE") 
+    k2ss.Write()
+    outfile.Close()
+
+
+def gamov(qinv):
+    x = 2 * pi * ETA / qinv
+    return x / (exp(x) - 1)
+
+
+def calculate(qinv, R):
+    z = -4 * qinv**2 * R ** 2 / HBAR_C_SQR
+    h = hyp2f2(.5,1, 1.5,1.5, z)
+    h = float(h)
+    k = gamov(qinv) * (1 + 8 * ETA * R / sqrt(pi) * h)
+    if abs(k) > 2:
+        print(qinv, R, z, h)
+    return k
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+
