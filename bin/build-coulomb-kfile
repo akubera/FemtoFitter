@@ -15,7 +15,8 @@ from mpmath import hyp2f2
 from numpy import exp, sqrt, pi
 
 
-HBAR_C_SQR = 0.197 ** 2
+HBAR_C = 0.197327
+HBAR_C_SQR = HBAR_C * HBAR_C
 ETA = 1.0 / 388
 
 
@@ -70,7 +71,7 @@ def main(argv=None):
 
 
 def gamov(qinv):
-    x = 2 * pi * ETA / qinv
+    x = 2.0 * pi * HBAR_C * ETA / qinv
     return x / (exp(x) - 1)
 
 
