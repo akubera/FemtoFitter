@@ -35,3 +35,6 @@ $(BUILD_DIR)/Makefile: CMakeLists.txt
 	@mkdir -p $(BUILD_DIR)
 	cd $(BUILD_DIR) && cmake ..
 
+docs-html:
+	+make -C docs html
+
