@@ -9,6 +9,7 @@
 
 #include <cmath>
 
+#include <../math/interpolator.h>
 
 const double HBAR_C = 0.19732697, // GeV * fm
              HBAR_C_SQ = HBAR_C * HBAR_C;
