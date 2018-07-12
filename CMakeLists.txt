@@ -46,6 +46,13 @@ include_directories(${FEMTOFITTER_INCLUDE_DIR})
 
 set(INCS
   ${CMAKE_CURRENT_SOURCE_DIR}/femtofitter/inc/fitter.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/femtofitter/MomentumResolutionCorrector.hpp
+)
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -pedantic")
+
+set(SRCS
+  ${CMAKE_CURRENT_SOURCE_DIR}/femtofitter/MomentumResolutionCorrector.cxx
 )
 
 ROOT_GENERATE_DICTIONARY(femfit_dict ${INCS})
@@ -55,5 +62,5 @@ set(ROOT_LIBS
   ROOT::Minuit
 )
 
-add_library(FemtoFitter	SHARED femfit_dict)
+add_library(FemtoFitter	SHARED femfit_dict ${SRCS})
 target_link_libraries(FemtoFitter ${ROOT_LIBS})
