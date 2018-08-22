@@ -4,6 +4,7 @@
 
 
 #include <cassert>
+#include <cstdint>
 
 
 template <uint8_t NDIM, typename T>
