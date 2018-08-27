@@ -1,0 +1,100 @@
+#!/usr/bin/env python3
+#
+# build-coulomb-scipy-interp
+#
+"""
+Build a histogram and store in output file.
+
+Implementation of equation (36) in the paper
+"Coulomb Effects in Femtoscopy"
+(http://www.ujk.edu.pl/strony/mrow/papers/PRC-femto.pdf)
+
+"""
+import sys
+from mpmath import hyp2f2
+from scipy.interpolate import interp2d
+import numpy as np
+from numpy import exp, sqrt, pi
+
+
+HBAR_C = 0.197327
+HBAR_C_SQR = HBAR_C * HBAR_C
+ETA = 1.0 / 388
+
+
+def arg_parser():
+    from argparse import ArgumentParser
+    parser = ArgumentParser()
+    parser.add_argument("-o", "--output",
+                        default='coulomb.data',
+                        help='Argument')
+    parser.add_argument("-Q", "--qinv-max",
+                        type=float,
+                        default=0.5,
+                        help='Maximum q-inv')
+    parser.add_argument("-R", "--radius-max",
+                        type=float,
+                        default=20.5,
+                        help='Maximum radius')
+    return parser
+
+
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
+    args = arg_parser().parse_args()
+
+    # from ROOT import TFile, TH2D
+
+    nbins_qinv = 140
+    nbins_R = 60
+    
+    max_qinv = args.qinv_max
+    max_R = args.radius_max
+ 
+    #k2ss = TH2D("k2ss", "K_{coul}(q_{inv}, R)",
+    #            nbins_qinv, 0, max_qinv,
+    #            nbins_R, 0, max_R)
+    #k2ss.SetStats(False)
+
+    #X = np.linspace(1e-5, max_qinv, nbins_qinv)
+    X = np.concatenate((np.linspace(7e-6, 2e-2, 70, endpoint=False), np.linspace(2e-2, max_qinv, 70)))
+    Y = np.linspace(0, max_R, nbins_R)
+
+    Z = np.fromiter((calculate(qinv, R) for R in Y for qinv in X), dtype=float)
+    Z = Z.reshape(Y.size, X.size)
+
+    interpolator = interp2d(X, Y, Z)
+    test = interpolator(0.08, 4.3)
+    #print(test)
+    #assert abs(test - .997687) < 1e-8
+    
+    with open("coulomb-interpolation.dat", 'wb') as f:
+        X.dump(f)
+        Y.dump(f)
+        Z.dump(f)
+
+    return 0
+
+
+def gamov(qinv):
+    if qinv < 6.7835707190043215e-06:
+       return 0.0
+    x = 2.0 * pi * HBAR_C * ETA / qinv
+    r = x / (exp(x) - 1)
+    return r
+
+
+def calculate(qinv, R):
+    z = -4 * qinv**2 * R ** 2 / HBAR_C_SQR
+    h = hyp2f2(.5,1, 1.5,1.5, z)
+    h = float(h)
+    k = gamov(qinv) * (1 + 8 * ETA * R / sqrt(pi) * h)
+    if abs(k) > 2:
+        print(qinv, R, z, h)
+    return k
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+
