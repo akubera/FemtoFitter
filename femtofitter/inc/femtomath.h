@@ -27,23 +27,25 @@ loglikelihood_calc(double A, double B, double C)
 }
 
 struct LoglikelihoodCalculator {
-  static double Calculate(double a, double b, double c) { return loglikelihood_calc(a, b, c); }
+  static double Calculate(double a, double b, double c)
+    { return loglikelihood_calc(a, b, c); }
 };
 
 /// Calculate the $\chi^2$ of a ratio of numbers, assuming errors based on
 /// Poissonian statistics ($\sqrt{N}$)
 inline
 double chi2_ratio_calc(double n, double d, double ratio)
-{
-  const double observed = n / d,
-               variance = (n*n + n*d)/(d*d*d),
-               diff = observed - ratio,
-               chi2 = diff*diff/variance;
-  return chi2;
-}
+  {
+    const double observed = n / d,
+                 variance = (n*n + n*d)/(d*d*d),
+                 diff = observed - ratio,
+                 chi2 = diff*diff/variance;
+    return chi2;
+  }
 
 struct Chi2Calculator {
-  static double Calculate(double a, double b, double c) { return chi2_ratio_calc(a, b, c); }
+  static double Calculate(double a, double b, double c)
+    { return chi2_ratio_calc(a, b, c); }
 };
 
 

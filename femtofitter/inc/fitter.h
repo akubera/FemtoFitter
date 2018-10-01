@@ -44,4 +44,22 @@ public:
 };
 
 
+template <typename CRTP>
+struct GenericInputData {
+  using Super = GenericInputData<CRTP>;
+
+  int SetupMinuit(TMinuit &minuit)
+  {
+    for (int i = 0; i < minuit.GetNumPars(); ++i) {
+      minuit.Release(i);
+    }
+    int errflag = 0;
+    const double this_dbl = static_cast<double>((intptr_t)this);
+    minuit.mnparm(CRTP::DATAPTR_PARAM_IDX, "DATA_PTR", this_dbl, 0, 0, INTPTR_MAX, errflag);
+    minuit.FixParameter(DATAPTR_PARAM_IDX);
+    CRTP::SetupMinuitParameters(minuit);
+    return errflag;
+  }
+};
+
 #endif

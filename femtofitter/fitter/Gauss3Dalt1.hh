@@ -38,23 +38,6 @@ double calculate_gauss3d(std::array<double, 3> q, std::array<double, 4> RSq, dou
 }
 
 
-template <typename T>
-struct GenericInputData {
-  int SetupMinuit(TMinuit &minuit)
-  {
-    for (int i = 0; i < minuit.GetNumPars(); ++i) {
-      minuit.Release(i);
-    }
-    int errflag = 0;
-    const double this_dbl = static_cast<double>((intptr_t)this);
-    minuit.mnparm(T::DATAPTR_PARAM_IDX, "DATA_PTR", this_dbl, 0, 0, INTPTR_MAX, errflag);
-    minuit.FixParameter(DATAPTR_PARAM_IDX);
-    return errflag;
-  }
-
-};
-
-
 /// \class Gauss1D
 /// \brief Gaussian 1D fit
 ///
@@ -66,8 +49,11 @@ struct Gauss1DT {
   struct FitInput;
   struct FitResult;
 
-  static std::string GetName() { return "Gauss1D"; }
-  static size_t GetNparams() { return N + 3; }
+  static std::string GetName()
+    { return "Gauss1D"; }
+
+  static size_t GetNparams()
+    { return N + 3; }
 
   enum {
     DATAPTR_PARAM_IDX = 0,
@@ -78,43 +64,6 @@ struct Gauss1DT {
     RLONG_PARAM_IDX = 4,
     ROUTSIDE_PARAM_IDX = 5,
     NORM_PARAMS_IDX = 6,
-  };
-
-  struct FitParams {
-    double lam,
-           Ro,
-           Rs,
-           Rl,
-           Ros;
-
-    std::array<double N> norm;
-
-    FitParams(double *par)
-      : norm(par+NORM_PARAMS_IDX, par+NORM_PARAMS_IDX+N)
-      , lam(par[LAM_PARAM_IDX])
-      , Ro(par[ROUT_PARAM_IDX])
-      , Rs(par[RSIDE_PARAM_IDX])
-      , Rl(par[RLONG_PARAM_IDX])
-      , Ros(par[ROUTSIDE_PARAM_IDX])
-    {
-    }
-
-    bool is_invalid() const
-    {
-      return Ro < 0
-          || Rs < 0
-          || Rl < 0
-          || Ros < 0
-          || std::isnan(Ro)
-          || std::isnan(Rs)
-          || std::isnan(Rl)
-          || std::isnan(Ros);
-    }
-  };
-
-  struct Value {
-    double value;
-    double error;
   };
 
   /// \class FitData
@@ -133,7 +82,7 @@ struct Gauss1DT {
 
     /// Build with pairs of numerators and denominators
     FitData(std::array<HistPtr_t, N> nums, std::array<HistPtr_t, N> dens)
-     : FitData(nums, dens, {nullptr})
+      : FitData(nums, dens, {nullptr})
     { }
 
     FitData(std::array<HistPtr_t, N> nums, std::array<HistPtr_t, N> dens, std::array<HistPtr_t, N> qinvs)
@@ -227,12 +176,45 @@ struct Gauss1DT {
 
     FitResult(TMinuit &minuit)
     {
-
     }
 
   };
 
 };
+
+template <size_t T>
+struct FitParams {
+    double lam,
+           Ro,
+           Rs,
+           Rl,
+           Ros;
+
+    std::array<double N> norm;
+
+    FitParams(double *par)
+      : norm(par+NORM_PARAMS_IDX, par+NORM_PARAMS_IDX+N)
+      , lam(par[LAM_PARAM_IDX])
+      , Ro(par[ROUT_PARAM_IDX])
+      , Rs(par[RSIDE_PARAM_IDX])
+      , Rl(par[RLONG_PARAM_IDX])
+      , Ros(par[ROUTSIDE_PARAM_IDX])
+    {
+    }
+
+    bool is_invalid() const
+    {
+      return Ro < 0
+          || Rs < 0
+          || Rl < 0
+          || Ros < 0
+          || std::isnan(Ro)
+          || std::isnan(Rs)
+          || std::isnan(Rl)
+          || std::isnan(Ros);
+    }
+  };
+
 
 
 #endif

@@ -111,11 +111,6 @@ struct Gauss1DT {
     }
   };
 
-  struct Value {
-    double value;
-    double error;
-  };
-
   /// \class FitData
   /// \brief Histograms to pass to the fitter object
   struct FitData : GenericInputData<FitData> {

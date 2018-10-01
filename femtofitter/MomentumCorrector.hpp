@@ -29,6 +29,29 @@ struct BinInfo {
 };
 
 
+/// \class MomentumResolutionCorrector
+/// \brief Interface for "unsmearing" correlation functions
+///
+///
+template <unsigned DIM>
+class MomentumResolutionCorrector {
+
+};
+
+template <typename T>
+struct mrc_traits;
+
+template <unsigned DIM>
+
+class CorrFctnRatio : public MomentumCorrector<DIM> {
+
+};
+
+
+
+template<>
+struct mrc_traits<mrc::MomentumMap> {};
+
 /// \class femto::MomentumResolutionCorrector3D
 /// \brief Interface for "un-smearing" momentum resolution effects
 ///        in correlation functions.
