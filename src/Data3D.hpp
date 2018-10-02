@@ -9,6 +9,8 @@
 #include <vector>
 #include <valarray>
 
+#include <TH3.h>
+
 class TH3;
 class TDirectory;
 
@@ -56,3 +58,106 @@ template <>
 struct std::rank<Data3D> {
   static const size_t value = data_traits<Data3D>::ndim;
 };
+
+
+/// Alternative data-struct
+struct DataPoint {
+  double qo,
+         qs,
+         ql,
+         n,
+         d,
+         q;
+
+  DataPoint(const std::initializer_list<double> &data)
+  {
+  }
+
+  DataPoint(const Data3D &src, size_t idx)
+    : qo(src.qspace[0][idx])
+    , qs(src.qspace[1][idx])
+    , ql(src.qspace[2][idx])
+    , n(src.num[idx])
+    , d(src.den[idx])
+    , q(src.qinv[idx])
+  {}
+
+  template <typename OutputIt, typename PredicateFunc_t>
+  // template <typename DestContainer_t, typename PredicateFunc_t>
+  static
+  void
+  // FromHists(const TH3 &n, const TH3 &d, const TH3 &q, InsertIter_t &dest, PredicateFunc_t pass)
+  FromHists(const TH3 &n, const TH3 &d, const TH3 &q, OutputIt dest, PredicateFunc_t pass)
+  // FromHists(const TH3 &n, const TH3 &d, const TH3 &q, typename DestContainer_t::back_insert_iterator &dest, PredicateFunc_t pass)
+  {
+    const TAxis *xaxis = n.GetXaxis(),
+                *yaxis = n.GetYaxis(),
+                *zaxis = n.GetZaxis();
+
+    for (size_t i=1; xaxis->GetNbins(); ++i) {
+      DataPoint dp {{
+        xaxis->GetBinCenter(i),
+        yaxis->GetBinCenter(i),
+        zaxis->GetBinCenter(i),
+        n.GetBinContent(i),
+        d.GetBinContent(i),
+        q.GetBinContent(i)
+      }};
+      if (pass(dp)) {
+        dest = dp;
+      }
+    }
+  }
+
+  /* template <typename InsertIter_t, typename PredicateFunc_t>
+  template <typename DestContainer_t>
+  static
+  void
+  // FromHists(const TH3 &n, const TH3 &d, const TH3 &q, InsertIter_t &dest, PredicateFunc_t pass)
+  FromHists(const TH3 &n, const TH3 &d, const TH3 &q, typename DestContainer_t::back_insert_iterator &dest)
+  {
+  }
+  */
+
+  template <typename InsertIter_t>
+  static
+  void
+  FromHists(const TH3 &n, const TH3 &d, const TH3 &q, InsertIter_t dest)
+  {
+    FromHists(n, d, q, dest, [](const DataPoint &) { return true; });
+  }
+
+  /// Build collection of datapoints from histograms
+  static
+  std::vector<DataPoint>
+  FromHists(const TH3 &n, const TH3 &d, const TH3 &q)
+  {
+    std::vector<DataPoint> result;
+    FromHists(n, d, q, std::back_inserter(result));
+    return result;
+  }
+
+  static
+  std::vector<DataPoint>
+  FromHists(const TH3 &n, const TH3 &d, const TH3 &q, double limit)
+  {
+    std::vector<DataPoint> result;
+    FromHists(n, d, q, std::back_inserter(result), [=](const DataPoint &dp) {
+      if (dp.qo < -limit || limit < dp.qo ||
+          dp.qs < -limit || limit < dp.qs ||
+          dp.ql < -limit || limit < dp.ql ||
+          dp.d == 0.0) {
+        return false;
+      }
+      return true;
+    });
+    return result;
+  }
+
+};
+
+/*
+DataPoint::From(n, d, q,  [](DataPoint dp) {
+
+});
+*/
