@@ -218,9 +218,7 @@ struct FitterGaussOSL {
 
   static double
   gauss(std::array<double, 3> q, const FitParams &p, double K)
-  {
-    return p.gauss(q, K);
-  }
+    { return p.gauss(q, K); }
 
   template <typename ResidFunc>
   double resid_calc(const FitParams &p, ResidFunc resid_calc) const

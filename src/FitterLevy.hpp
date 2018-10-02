@@ -19,6 +19,7 @@
 
 #include "CoulombHist.hpp"
 #include "Fitter.hpp"
+#include "Data3D.hpp"
 
 
 
@@ -41,6 +42,9 @@ struct FitterLevy {
     ALPHA_PARAM_IDX = 6,
   };
 
+  /// The associated fit data
+  Data3D data;
+
   static double
   gauss(std::array<double, 3> q,
         std::array<double, 3> RSq,
@@ -59,17 +63,6 @@ struct FitterLevy {
 
     return norm * result;
   }
-
-  struct Data {
-    std::array<std::valarray<double>, 3> qspace;
-
-    std::valarray<double> num,
-                          den,
-                          qinv;
-
-    size_t size() const
-      { return num.size(); }
-  };
 
   /// \brief 3D Levy fit parameters
   ///
@@ -129,7 +122,8 @@ struct FitterLevy {
 
     FitResult(TMinuit &minuit)
     {
-      auto get_param = [&minuit=minuit](int idx, Value &v) {
+
+      auto get_param = [&minuit](int idx, Value &v) {
         minuit.GetParameter(idx, v.first, v.second);
       };
 
@@ -171,9 +165,6 @@ struct FitterLevy {
     }
   };
 
-  /// The associated fit data
-  Data data;
-
   /// Utility function for building fitter with tdirectory in file
   /// at specified path
   static std::unique_ptr<FitterLevy>
@@ -200,74 +191,19 @@ struct FitterLevy {
       return nullptr;
       // throw std::runtime_error("Error loading FitterLevy histograms from path '" + path + "'");
     }
-
+#if __cplusplus > 201103L
     return make_unique<FitterLevy>(*num, *den, *qinv, limit);
+#else
+    return std::unique_ptr<FitterLevy>(new FitterLevy(*num, *den, *qinv, limit));
+#endif
   }
 
   /// Construct fitter from numerator denominator qinv histograms
   /// and a fit-range limit
   ///
   FitterLevy(TH3 &n, TH3 &d, TH3 &q, double limit=0.0)
+    : data(n, d, q, limit)
   {
-    size_t nbinsx = n.GetNbinsX(),
-           nbinsy = n.GetNbinsY(),
-           nbinsz = n.GetNbinsZ(),
-           nbins = nbinsx * nbinsy * nbinsz;
-
-    TAxis *xaxis = n.GetXaxis(),
-          *yaxis = n.GetYaxis(),
-          *zaxis = n.GetZaxis();
-
-    double low_lim = xaxis->GetBinLowEdge(limit <= 0.0 ? 1 : xaxis->FindBin(-limit)),
-          high_lim = xaxis->GetBinUpEdge(limit <= 0.0 ? xaxis->GetNbins() : xaxis->FindBin(limit));
-
-    std::vector<double> qout, qside, qlong, nv, dv, qv;
-    qout.reserve(nbins);
-    qside.reserve(nbins);
-    qlong.reserve(nbins);
-
-    qv.reserve(nbins);
-    nv.reserve(nbins);
-    dv.reserve(nbins);
-
-    for (size_t k=1; k<=nbinsz; ++k) {
-      for (size_t j=1; j<=nbinsy; ++j) {
-        for (size_t i=1; i<=nbinsx; ++i) {
-          double d_value = d.GetBinContent(i, j, k);
-          if (d_value == 0.0) {
-            continue;
-          }
-
-          const double
-            qo = xaxis->GetBinCenter(i),
-            qs = yaxis->GetBinCenter(j),
-            ql = zaxis->GetBinCenter(k);
-
-          if ((qo < low_lim) || (high_lim < qo) ||
-              (qs < low_lim) || (high_lim < qs) ||
-              (ql < low_lim) || (high_lim < ql)) {
-            continue;
-          }
-
-          qout.push_back(qo);
-          qside.push_back(qs);
-          qlong.push_back(ql);
-
-          qv.push_back(q.GetBinContent(i, j, k));
-          nv.push_back(n.GetBinContent(i, j, k));
-          dv.push_back(d_value);
-        }
-      }
-    }
-
-    auto count = qout.size();
-    data.qspace[0] = std::valarray<double>(qout.data(), count);
-    data.qspace[1] = std::valarray<double>(qside.data(), count);
-    data.qspace[2] = std::valarray<double>(qlong.data(), count);
-
-    data.num = std::valarray<double>(nv.data(), count);
-    data.den = std::valarray<double>(dv.data(), count);
-    data.qinv = std::valarray<double>(qv.data(), count);
   }
 
   /// Number of entries in fitter
@@ -290,7 +226,12 @@ struct FitterLevy {
          &qside = data.qspace[1],
          &qlong = data.qspace[2];
 
+#if __cplusplus > 201103L
     auto Kfsi = [&c=coulomb_factor] (double q) {
+#else
+    auto &c = coulomb_factor;
+    auto Kfsi = [&c] (double q) {
+#endif
       double coulomb = c.Interpolate(q);
       // if ((rand() * 1.0 / RAND_MAX) < 1e-5) {
       //   printf("K(%g) = %g\n", q, coulomb);
@@ -406,38 +347,55 @@ struct FitterLevy {
     return FitResult(minuit);
   }
 
-  template <typename F>
-  auto get_fit_func()
+  template <typename ResidCalculator_t>
+  FitResult
+  fit(double fit_method)
   {
-    return [] (Int_t &,
-           Double_t *,
-           Double_t &retval,
-           Double_t *par,
-           Int_t)
-      {
-        // returned when invalid input or output occurs
-        static const double BAD_VALUE = 3e99;
-        const auto &data = *(const FitterLevy*)(intptr_t)(par[DATA_PARAM_IDX]);
+    TMinuit minuit;
 
-        FitParams params(par);
-        if (params.is_invalid()) {
-          retval = BAD_VALUE;
-          return;
-        }
+    minuit.SetPrintLevel(-1);
 
-        // retval = data.resid_pml(params);
-        // retval = resid_calc(data, params);
-        retval = F::resid(data, params);
-      };
+    int errflag = 0;
+    minuit.mnparm(NORM_PARAM_IDX, "Norm", 0.25, 0.02, 0.0, 0.0, errflag);
+    minuit.mnparm(LAM_PARAM_IDX, "Lam", 0.2, 0.1, 0.0, 1.0, errflag);
+    minuit.mnparm(ROUT_PARAM_IDX, "Ro", 2.0, 1.0, 0.0, 0.0, errflag);
+    minuit.mnparm(RSIDE_PARAM_IDX, "Rs", 2.0, 1.0, 0.0, 0.0, errflag);
+    minuit.mnparm(RLONG_PARAM_IDX, "Rl", 2.0, 1.0, 0.0, 0.0, errflag);
+
+    const double this_dbl = static_cast<double>((intptr_t)this);
+    minuit.mnparm(DATA_PARAM_IDX, "DATA_PTR", this_dbl, 0, 0, INTPTR_MAX, errflag);
+
+    minuit.FixParameter(DATA_PARAM_IDX);
+    if (errflag != 0) {
+      std::cerr << "Error setting paramters: " << errflag << "\n";
+      throw std::runtime_error("Could not set Minuit parameters.");
+    }
+
+    minuit.SetFCN(minuit_f<ResidCalculator_t>);
+
+    double strat_args[] = {1.0};
+    double migrad_args[] = {2000.0, fit_method};
+    double hesse_args[] = {2000.0, 1.0};
+
+    minuit.mnexcm("SET STRategy", strat_args, 1, errflag);
+    minuit.mnexcm("MIGRAD", migrad_args, 2, errflag);
+
+    strat_args[0] = 2.0;
+    minuit.mnexcm("SET STRategy", strat_args, 1, errflag);
+    minuit.mnexcm("MIGRAD", migrad_args, 2, errflag);
+
+    minuit.mnexcm("HESSE", hesse_args, 1, errflag);
+
+    return FitResult(minuit);
   }
 
   FitResult
   fit_pml()
-    { return fit(get_fit_func<PMLCALC>(), 0.5); }
+    { return fit<PMLCALC>(0.5); }
 
   FitResult
   fit_chi2()
-    { return fit(get_fit_func<CalcChi2>(), 1.0); }
+    { return fit<CalcChi2>(1.0); }
 
   FitResult
   fit()
