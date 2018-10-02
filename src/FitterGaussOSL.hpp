@@ -19,7 +19,7 @@
 
 #include "CoulombHist.hpp"
 #include "Fitter.hpp"
-
+#include "Data3D.hpp"
 
 
 /// \class FitterGaussOSL
@@ -56,17 +56,6 @@ struct FitterGaussOSL {
 
     return norm * result;
   }
-
-  struct Data {
-    std::array<std::valarray<double>, 3> qspace;
-
-    std::valarray<double> num,
-                          den,
-                          qinv;
-
-    size_t size() const
-      { return num.size(); }
-  };
 
   struct FitResult;
 
@@ -179,7 +168,7 @@ struct FitterGaussOSL {
   };
 
   /// The associated fit data
-  Data data;
+  Data3D data;
 
   /// Utility function for building fitter with tdirectory in file
   /// at specified path
@@ -286,7 +275,7 @@ struct FitterGaussOSL {
   struct RangedFitter {
     double fLimit;
 
-    Data data;
+    Data3D data;
 
     RangedFitter(FitterGaussOSL &fitter, double limit)
       : fLimit(limit)
