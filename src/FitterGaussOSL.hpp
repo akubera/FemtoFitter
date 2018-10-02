@@ -204,58 +204,9 @@ struct FitterGaussOSL {
   /// and a fit-range limit
   ///
   FitterGaussOSL(TH3 &n, TH3 &d, TH3 &q, double limit=0.0)
+    : data(n, d, q, limit)
   {
-    size_t nbinsx = n.GetNbinsX(),
-           nbinsy = n.GetNbinsY(),
-           nbinsz = n.GetNbinsZ(),
-           nbins = nbinsx * nbinsy * nbinsz;
-
-    TAxis *xaxis = n.GetXaxis(),
-          *yaxis = n.GetYaxis(),
-          *zaxis = n.GetZaxis();
-
-    double low_lim = xaxis->GetBinLowEdge(limit <= 0.0 ? 1 : xaxis->FindBin(-limit)),
-          high_lim = xaxis->GetBinUpEdge(limit <= 0.0 ? xaxis->GetNbins() : xaxis->FindBin(limit));
-
-
-    std::vector<double> qout, qside, qlong, nv, dv, qv;
-    qout.reserve(nbins);
-    qside.reserve(nbins);
-    qlong.reserve(nbins);
-
-    qv.reserve(nbins);
-    nv.reserve(nbins);
-    dv.reserve(nbins);
-
-    for (size_t k=1; k<=nbinsz; ++k) {
-      for (size_t j=1; j<=nbinsy; ++j) {
-        for (size_t i=1; i<=nbinsx; ++i) {
-          double d_value = d.GetBinContent(i, j, k);
-          if (d_value == 0.0) {
-            continue;
-          }
-
-          const double
-            qo = xaxis->GetBinCenter(i),
-            qs = yaxis->GetBinCenter(j),
-            ql = zaxis->GetBinCenter(k);
-
-          if ((qo < low_lim) || (high_lim < qo) ||
-              (qs < low_lim) || (high_lim < qs) ||
-              (ql < low_lim) || (high_lim < ql)) {
-            continue;
-          }
-
-          qout.push_back(qo);
-          qside.push_back(qs);
-          qlong.push_back(ql);
-
-          qv.push_back(q.GetBinContent(i, j, k));
-          nv.push_back(n.GetBinContent(i, j, k));
-          dv.push_back(d_value);
-        }
-      }
-    }
+  }
 
   /// Number of entries in fitter
   std::size_t size() const

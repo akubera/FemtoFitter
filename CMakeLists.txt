@@ -56,9 +56,10 @@ set(INCS
 list(TRANSFORM INCS PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -pedantic -Ofast -march=native")
 
-# set(SRCS
+set(SRCS
+  src/Data3D.cpp
 #   ${CMAKE_CURRENT_SOURCE_DIR}/femtofitter/MomentumResolutionCorrector.cxx
-# )
+)
 
 ROOT_GENERATE_DICTIONARY(femfit_dict ${INCS} LINKDEF Linkdef.h)
 # set_target_properties(femfit_dict PROPERTIES)
