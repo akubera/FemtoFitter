@@ -8,28 +8,6 @@
 #include <valarray>
 
 
-/// struct
-struct Value {
-  double first, second;
-  operator double() const
-    { return first; }
-};
-
-
-template <typename Fitter>
-struct ResidCalculatorPML {
-  using FitParams = typename Fitter::FitParams;
-  static double resid(const Fitter &f, const FitParams &p)
-    { return f.resid_pml(p); }
-};
-
-template <typename Fitter>
-struct ResidCalculatorChi2 {
-  using FitParams = typename Fitter::FitParams;
-  static double resid(const Fitter &f, const FitParams &p)
-    { return f.resid_chi2(p); }
-};
-
 
 const double
   HBAR_C = .297,
@@ -56,8 +34,57 @@ double loglikelihood_calc(double A, double B, double C)
     ta = (A == 0.0) ? 0.0 : A * std::log((C/A * (A+B) / (C+1.0))),
     tb = B * std::log((A+B) / B / (C+1.0));
 
-  return -2 * (ta + tb);
+  return -(ta + tb);
 }
+
+/// \class Value
+/// \brief Fit-Result value, number paired with error
+struct Value {
+  double first, second;
+
+  operator double() const
+    { return first; }
+};
+
+template <typename ResidCalc_t>
+static void minuit_f(Int_t&, Double_t*, Double_t &retval, Double_t *par, Int_t)
+{
+  using Fitter_t = typename ResidCalc_t::Fitter;
+
+  static const double BAD_VALUE = 3e99;
+  const auto &data = *(const Fitter_t*)(intptr_t)(par[Fitter_t::DATA_PARAM_IDX]);
+
+  typename Fitter_t::FitParams params(par);
+  if (params.is_invalid()) {
+    retval = BAD_VALUE;
+    return;
+  }
+
+  retval = ResidCalc_t::resid(data, params);
+}
+
+// };
+
+template <typename Fitter_t>
+struct ResidCalculatorPML {
+  using Fitter = Fitter_t;
+  using FitParams = typename Fitter::FitParams;
+
+  static double resid(const Fitter &f, const FitParams &p)
+    { return f.resid_calc(p, loglikelihood_calc); }
+
+  static double resid(const Fitter &f, const typename Fitter_t::FitResult &p)
+    { return f.resid_calc(p, loglikelihood_calc); }
+};
+
+template <typename Fitter_t>
+struct ResidCalculatorChi2 {
+  using Fitter = Fitter_t;
+  using FitParams = typename Fitter::FitParams;
+
+  static double resid(const Fitter &f, const FitParams &p)
+    { return f.resid_chi2(p); }
+};
 
 /// \class Fitter
 /// \brief Abstract base class for fitting
@@ -81,6 +108,7 @@ public:
     auto diff = ratio() - evaluate(p);
     auto e = fRatio * (1.0 + fRatio) / den / den;
     return (diff * diff / e).sum();
+    // chi2_calc()
   }
 
   const std::valarray<double>&
@@ -91,14 +119,4 @@ public:
     }
     return fRatio;
   }
-
-  // template <typename Params>
-  // std::valarray<double> evaluate(Params &const) const;
 };
-
-
-// template <typename T>
-// std::valarray<double>
-// Fitter::evaluate(Params &const) const
-// {
-// }

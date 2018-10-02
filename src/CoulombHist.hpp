@@ -168,7 +168,9 @@ public:
     /// Build (or fetch from cache) an interpolator object associated
     /// with the radius parameter.
     ///
-    Interpolator load_interpolator(double R) {
+    Interpolator load_interpolator(double R)
+	    ; /*
+    {
 
       // get radius for lookup
       auto key = KeyFromRadius(R);
@@ -228,6 +230,8 @@ public:
 
       return result;
     }
+
+    */
 
     Interpolator load_interpolator(double Ro, double Rs, double Rl)
     {

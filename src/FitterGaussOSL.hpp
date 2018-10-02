@@ -26,7 +26,7 @@
 /// \brief Fit out-side-long with gaussian parameters
 ///
 struct FitterGaussOSL {
-  using PMLCALC = ResidCalculatorPML<FitterGaussOSL>;
+  using CalcLoglike = ResidCalculatorPML<FitterGaussOSL>;
   using CalcChi2 = ResidCalculatorChi2<FitterGaussOSL>;
 
   /// constants used to lookup data from pointer
@@ -115,7 +115,7 @@ struct FitterGaussOSL {
 
     FitResult(TMinuit &minuit)
     {
-      auto get_param = [&minuit=minuit](int idx, Value &v) {
+      auto get_param = [&minuit](int idx, Value &v) {
         minuit.GetParameter(idx, v.first, v.second);
       };
 
@@ -197,7 +197,11 @@ struct FitterGaussOSL {
       // throw std::runtime_error("Error loading FitterGaussOSL histograms from path '" + path + "'");
     }
 
-    return make_unique<FitterGaussOSL>(*num, *den, *qinv, limit);
+#if __cplusplus <= 201103L
+  return std::unique_ptr<FitterGaussOSL>(new FitterGaussOSL(*num, *den, *qinv, limit));
+#else
+  return make_unique<FitterGaussOSL>(*num, *den, *qinv, limit);
+#endif
   }
 
   /// Construct fitter from numerator denominator qinv histograms
@@ -229,8 +233,12 @@ struct FitterGaussOSL {
     auto &qout = data.qspace[0],
          &qside = data.qspace[1],
          &qlong = data.qspace[2];
-
+#if __cplusplus > 201103L
     auto Kfsi = [&c=coulomb_factor] (double q) {
+#else
+    auto &c = coulomb_factor;
+    auto Kfsi = [&c] (double q) {
+#endif
       double coulomb =  c.Interpolate(q);
       // if ((rand() * 1.0 / RAND_MAX) < 1e-5) {
       //   printf("K(%g) = %g\n", q, coulomb);
@@ -351,6 +359,7 @@ struct FitterGaussOSL {
     return FitResult(minuit);
   }
 
+/*
   template <typename F>
   auto get_fit_func()
   {
@@ -381,14 +390,68 @@ struct FitterGaussOSL {
         //           << params.norm << "\n";
       };
   }
+*/
+
+  template <typename ResidCalc_t>
+  FitResult
+  fit(double fit_factor)
+  {
+    TMinuit minuit;
+
+    // minuit.SetPrintLevel(-1);
+
+    int errflag = 0;
+    minuit.mnparm(NORM_PARAM_IDX, "Norm", 0.25, 0.02, 0.0, 0.0, errflag);
+    minuit.mnparm(LAM_PARAM_IDX, "Lam", 0.2, 0.1, 0.0, 1.0, errflag);
+    minuit.mnparm(ROUT_PARAM_IDX, "Ro", 2.0, 1.0, 0.0, 0.0, errflag);
+    minuit.mnparm(RSIDE_PARAM_IDX, "Rs", 2.0, 1.0, 0.0, 0.0, errflag);
+    minuit.mnparm(RLONG_PARAM_IDX, "Rl", 2.0, 1.0, 0.0, 0.0, errflag);
+
+    const double this_dbl = static_cast<double>((intptr_t)this);
+    minuit.mnparm(DATA_PARAM_IDX, "DATA_PTR", this_dbl, 0, 0, INTPTR_MAX, errflag);
+
+    minuit.FixParameter(DATA_PARAM_IDX);
+    if (errflag != 0) {
+      std::cerr << "Error setting paramters: " << errflag << "\n";
+      throw std::runtime_error("Could not set Minuit parameters.");
+    }
+
+    minuit.SetFCN(minuit_f<ResidCalc_t>);
+    // minuit.SetFCN(mminuit_f<FitterGaussOSL>);
+
+    double strat_args[] = {1.0};
+    double migrad_args[] = {2000.0, fit_factor};
+    double hesse_args[] = {2000.0, 1.0};
+
+    minuit.mnexcm("SET STRategy", strat_args, 1, errflag);
+    minuit.mnexcm("MIGRAD", migrad_args, 2, errflag);
+
+    strat_args[0] = 2.0;
+    minuit.mnexcm("SET STRategy", strat_args, 1, errflag);
+    minuit.mnexcm("MIGRAD", migrad_args, 2, errflag);
+
+    minuit.mnexcm("HESSE", hesse_args, 1, errflag);
+
+    /*
+    TGraph *g = nullptr;
+
+    for (int i=3; i>0; --i) {
+      minuit.SetErrorDef(i);
+      TGraph *g = (TGraph*) minuit.Contour(10, 3, 4);
+      g->Draw(i != 3 ? "SAME" : "");
+    }
+    */
+
+    return FitResult(minuit);
+  }
 
   FitResult
   fit_pml()
-    { return fit(get_fit_func<PMLCALC>(), -0.5); }
+    { return fit<CalcLoglike>(0.5); }
 
   FitResult
   fit_chi2()
-    {  return fit(get_fit_func<CalcChi2>(), 1.0); }
+    { return fit<CalcChi2>(1.0); }
 
   FitResult
   fit()
