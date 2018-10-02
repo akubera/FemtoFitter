@@ -25,6 +25,7 @@
 /// \brief Use to interpolate the coulomb-factor for a given R
 ///
 class CoulombHist {
+public:
 
   /// \class CoulombHist::Interpolator
   /// \brief Shared reference around a Coulomb-interaction factor
