@@ -68,6 +68,8 @@ struct FitterGaussOSL {
       { return num.size(); }
   };
 
+  struct FitResult;
+
   /// \brief 3D Gaussian fit parameters
   ///
   ///
@@ -84,6 +86,8 @@ struct FitterGaussOSL {
       , Rl(par[RLONG_PARAM_IDX])
     {
     }
+
+    FitParams(const FitResult &res);
 
     bool is_invalid() const
     {
@@ -126,14 +130,6 @@ struct FitterGaussOSL {
         minuit.GetParameter(idx, v.first, v.second);
       };
 
-      /*
-      auto get_sqrt_param = [&minuit=minuit](int idx, Value &v) {
-        minuit.GetParameter(idx, v.first, v.second);
-        v.first = std::sqrt(v.first);
-        v.second = std::sqrt(v.second) / (2 * v.first);
-      };
-      */
-
       get_param(NORM_PARAM_IDX, norm);
       get_param(LAM_PARAM_IDX, lam);
       get_param(ROUT_PARAM_IDX, Ro);
@@ -164,11 +160,11 @@ struct FitterGaussOSL {
       return {
         OUT(Ro), OUT(Rs), OUT(Rl), OUT(lam), OUT(norm)
       };
-        // {"Ro", Ro.first}, {"Ro_err", Ro.second}};
 
       #undef OUT
     }
 
+    /*
     operator FitParams() const
     {
       double d[6];
@@ -179,6 +175,7 @@ struct FitterGaussOSL {
       d[RLONG_PARAM_IDX] = Rl.first;
       return FitParams(d);
     }
+    */
   };
 
   /// The associated fit data
@@ -499,54 +496,15 @@ struct FitterGaussOSL {
 
   FitResult
   fit_pml()
-  {
-    return fit(get_fit_func<PMLCALC>(), 0.5);
-  }
+    { return fit(get_fit_func<PMLCALC>(), -0.5); }
 
   FitResult
   fit_chi2()
-  {
-    return fit(get_fit_func<CalcChi2>(), 1.0);
-  }
+    {  return fit(get_fit_func<CalcChi2>(), 1.0); }
 
   FitResult
   fit()
-  {
-    return fit(fit_func, 1.0);
-    /*
-    TMinuit minuit;
-
-    int errflag = 0;
-    minuit.mnparm(NORM_PARAM_IDX, "Norm", 0.25, 0.02, 0.0, 0.0, errflag);
-    minuit.mnparm(LAM_PARAM_IDX, "Lam", 0.2, 0.1, 0.0, 1.0, errflag);
-    minuit.mnparm(ROUT_PARAM_IDX, "Ro", 2.0, 1.0, 0.0, 0.0, errflag);
-    minuit.mnparm(RSIDE_PARAM_IDX, "Rs", 2.0, 1.0, 0.0, 0.0, errflag);
-    minuit.mnparm(RLONG_PARAM_IDX, "Rl", 2.0, 1.0, 0.0, 0.0, errflag);
-
-    const double this_dbl = static_cast<double>((intptr_t)this);
-    minuit.mnparm(DATA_PARAM_IDX, "DATA_PTR", this_dbl, 0, 0, INTPTR_MAX, errflag);
-
-    minuit.FixParameter(DATA_PARAM_IDX);
-    if (errflag != 0) {
-      std::cerr << "Error setting paramters: " << errflag << "\n";
-      throw std::runtime_error("Could not set Minuit parameters.");
-    }
-
-    minuit.SetFCN(fit_func);
-
-    double args[] = {.50};
-    minuit.mnexcm("SET STRategy", args, 1, errflag);
-
-    double margs[] = {2000.0, 1.0};
-    minuit.mnexcm("MIGRAD", margs, 2, errflag);
-
-    // double hargs[] = {2000.0, 1.0};
-    // minuit.mnexcm("HESSE", hargs, 1, errflag);
-
-
-    return FitResult(minuit);
-    */
-  }
+    { return fit(fit_func, 1.0); }
 
   static
   std::pair<const double*, size_t>
@@ -557,3 +515,13 @@ struct FitterGaussOSL {
     { return std::vector<double>(std::begin(data.num), std::end(data.num)); }
 
 };
+
+inline
+FitterGaussOSL::FitParams::FitParams(const FitResult &res)
+  : norm(res.norm.first)
+  , lam(res.lam.first)
+  , Ro(res.Ro.first)
+  , Rs(res.Rs.first)
+  , Rl(res.Rl.first)
+{
+}
