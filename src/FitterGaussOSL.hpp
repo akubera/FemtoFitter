@@ -257,58 +257,6 @@ struct FitterGaussOSL {
       }
     }
 
-    auto count = qout.size();
-    data.qspace[0] = std::valarray<double>(qout.data(), count);
-    data.qspace[1] = std::valarray<double>(qside.data(), count);
-    data.qspace[2] = std::valarray<double>(qlong.data(), count);
-
-    data.num = std::valarray<double>(nv.data(), count);
-    data.den = std::valarray<double>(dv.data(), count);
-    data.qinv = std::valarray<double>(qv.data(), count);
-  }
-
-  /// \class RangedFitter
-  /// \brief A fitter with limited fit-range
-  ///
-  /// redundant...
-  ///
-  struct RangedFitter {
-    double fLimit;
-
-    Data3D data;
-
-    RangedFitter(FitterGaussOSL &fitter, double limit)
-      : fLimit(limit)
-    {
-      // auto mask = (-limit <= fitter.qspace[0] && fitter.qspace[0] <= limit)
-      //          && (-limit <= fitter.qspace[1] && fitter.qspace[1] <= limit)
-      //          && (-limit <= fitter.qspace[2] && fitter.qspace[2] <= limit);
-
-      std::valarray<bool> mask(fitter.size());
-
-      // build mask elements outside the limit
-      auto &qspace = fitter.data.qspace;
-      for (size_t i=0; i < fitter.size(); ++i) {
-        mask[i] = (-limit <= qspace[0][i] && qspace[0][i] <= limit)
-               && (-limit <= qspace[1][i] && qspace[1][i] <= limit)
-               && (-limit <= qspace[2][i] && qspace[2][i] <= limit);
-      }
-
-      data.qspace[0] = qspace[0][mask];
-      data.qspace[1] = qspace[1][mask];
-      data.qspace[2] = qspace[2][mask];
-
-      data.num = fitter.data.num[mask];
-      data.den = fitter.data.den[mask];
-      data.qinv = fitter.data.qinv[mask];
-    }
-
-    /// Number of entries in fitter
-    std::size_t size() const
-      { return data.size(); }
-
-  };
-
   /// Number of entries in fitter
   std::size_t size() const
     { return data.size(); }
