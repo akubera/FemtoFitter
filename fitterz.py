@@ -29,6 +29,10 @@ class Fitter:
     """
 
     @classmethod
+    def name(cls):
+        return cls.__name__
+
+    @classmethod
     def FromDirectory(cls, tdir, fit_range=None):
         from ROOT import TFile
         from stumpy import Histogram
@@ -287,5 +291,62 @@ class FitterLevy(Fitter):
         e = (np.power((qo * Ro) ** 2, alpha/2)
            + np.power((qs * Rs) ** 2, alpha/2)
            + np.power((ql * Rl) ** 2, alpha/2))
+
+        return norm * ((1.0 - lam) + lam * k * (1.0 + np.exp(-e)))
+
+class FitterLevy2(Fitter):
+
+    @classmethod
+    def default_parameters(cls):
+        q3d_params = FitterGauss.default_parameters()
+        q3d_params.add('alpha_ol', value=1.90, min=1.0, max=2.0)
+        q3d_params.add('alpha_s', value=1.90, min=1.0, max=2.0)
+        return q3d_params
+
+    @staticmethod
+    def func(params, qo, qs, ql, fsi, norm=1.0, gamma=1.0):
+        value = params.valuesdict()
+        pseudo_Rinv = np.sqrt((gamma * (value['Ro'] ** 2) + value['Rs'] ** 2 + value['Rl'] ** 2) / 3.0)
+
+        Ro, Rs, Rl = map(lambda k: value[k] / HBAR_C, ('Ro', 'Rs', 'Rl'))
+        lam = value['lam']
+        alpha_ol = value['alpha_ol']
+        alpha_s = value['alpha_s']
+
+        k = fsi(pseudo_Rinv) if callable(fsi) else fsi
+
+        e = (np.power((qo * Ro) ** 2, alpha_ol/2)
+           + np.power((qs * Rs) ** 2, alpha_s/2)
+           + np.power((ql * Rl) ** 2, alpha_ol/2))
+
+        return norm * ((1.0 - lam) + lam * k * (1.0 + np.exp(-e)))
+
+
+class FitterLevy3(Fitter):
+
+    @classmethod
+    def default_parameters(cls):
+        q3d_params = FitterGauss.default_parameters()
+        q3d_params.add('alpha_o', value=1.90, min=1.0, max=2.0)
+        q3d_params.add('alpha_s', value=1.90, min=1.0, max=2.0)
+        q3d_params.add('alpha_l', value=1.90, min=1.0, max=2.0)
+        return q3d_params
+
+    @staticmethod
+    def func(params, qo, qs, ql, fsi, norm=1.0, gamma=1.0):
+        value = params.valuesdict()
+        pseudo_Rinv = np.sqrt((gamma * (value['Ro'] ** 2) + value['Rs'] ** 2 + value['Rl'] ** 2) / 3.0)
+
+        Ro, Rs, Rl = map(lambda k: value[k] / HBAR_C, ('Ro', 'Rs', 'Rl'))
+        lam = value['lam']
+        alpha_o = value['alpha_o']
+        alpha_s = value['alpha_s']
+        alpha_l = value['alpha_l']
+
+        k = fsi(pseudo_Rinv) if callable(fsi) else fsi
+
+        e = (np.power((qo * Ro) ** 2, alpha_o/2)
+           + np.power((qs * Rs) ** 2, alpha_s/2)
+           + np.power((ql * Rl) ** 2, alpha_l/2))
 
         return norm * ((1.0 - lam) + lam * k * (1.0 + np.exp(-e)))
