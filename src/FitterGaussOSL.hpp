@@ -18,61 +18,8 @@
 #include <iostream>
 
 #include "CoulombHist.hpp"
+#include "Fitter.hpp"
 
-
-// concept bool X = {
-//   { a + b } -> std::array<double, 3>;
-// };
-
-struct Value {
-  double first, second;
-  operator double() const
-    { return first; }
-};
-
-
-template <typename Fitter>
-struct ResidCalculatorPML {
-  using FitParams = typename Fitter::FitParams;
-  static double resid(const Fitter &f, const FitParams &p)
-    { return f.resid_pml(p); }
-};
-
-template <typename Fitter>
-struct ResidCalculatorChi2 {
-  using FitParams = typename Fitter::FitParams;
-  static double resid(const Fitter &f, const FitParams &p)
-    { return f.resid_chi2(p); }
-};
-
-
-const double
-  HBAR_C = .297,
-  HBAR_C_SQ = HBAR_C * HBAR_C;
-
-
-double chi2_calc(double N, double D, double C)
-{
-  const double
-    R = N / D,
-    variance = (1.0 + R) * R * R / N;
-    // variance = R * (N + D) / (D*D);
-    // variance = R * std::sqrt((1.0/N  + 1.0/D));
-    // variance = R * std::sqrt((1.0 + R) / N);
-
-  return (N == 0.0)
-       ? 0.0
-       : (R-C) * (R-C) / variance;
-}
-
-double loglikelihood_calc(double A, double B, double C)
-{
-  const double
-    ta = (A == 0.0) ? 0.0 : A * std::log((C/A * (A+B) / (C+1.0))),
-    tb = B * std::log((A+B) / B / (C+1.0));
-
-  return -2 * (ta + tb);
-}
 
 
 /// \class FitterGaussOSL
@@ -125,7 +72,8 @@ struct FitterGaussOSL {
   ///
   ///
   struct FitParams {
-    double Ro, Rs, Rl, lam, norm;
+    double norm, lam;
+    double Ro, Rs, Rl;
     double gamma {1.0};
 
     FitParams(double *par)
@@ -178,11 +126,13 @@ struct FitterGaussOSL {
         minuit.GetParameter(idx, v.first, v.second);
       };
 
+      /*
       auto get_sqrt_param = [&minuit=minuit](int idx, Value &v) {
         minuit.GetParameter(idx, v.first, v.second);
         v.first = std::sqrt(v.first);
         v.second = std::sqrt(v.second) / (2 * v.first);
       };
+      */
 
       get_param(NORM_PARAM_IDX, norm);
       get_param(LAM_PARAM_IDX, lam);
@@ -202,7 +152,7 @@ struct FitterGaussOSL {
              " -------------\n", Ro.first, Ro.second,
                                  Rs.first, Rs.second,
                                  Rl.first, Rl.second,
-                                 lam.first, lam.second, lam.first - lam.second, lam.first + lam.second
+                                 lam.first, lam.second, lam.first - lam.second, lam.first + lam.second,
                                  norm.first, norm.second);
     }
 
@@ -292,6 +242,7 @@ struct FitterGaussOSL {
             qo = xaxis->GetBinCenter(i),
             qs = yaxis->GetBinCenter(j),
             ql = zaxis->GetBinCenter(k);
+
           if ((qo < low_lim) || (high_lim < qo) ||
               (qs < low_lim) || (high_lim < qs) ||
               (ql < low_lim) || (high_lim < ql)) {
@@ -448,7 +399,7 @@ struct FitterGaussOSL {
 
   template <typename F>
   FitResult
-  fit(F fcn, double strategy=1.0)
+  fit(F fcn, double fit_method=1.0)
   {
     TMinuit minuit;
 
@@ -473,7 +424,7 @@ struct FitterGaussOSL {
     minuit.SetFCN(fcn);
 
     double strat_args[] = {1.0};
-    double migrad_args[] = {2000.0, strategy};
+    double migrad_args[] = {2000.0, fit_method};
     double hesse_args[] = {2000.0, 1.0};
 
     minuit.mnexcm("SET STRategy", strat_args, 1, errflag);
@@ -485,11 +436,9 @@ struct FitterGaussOSL {
 
     minuit.mnexcm("HESSE", hesse_args, 1, errflag);
 
-
+    /*
     TGraph *g = nullptr;
 
-
-    /*
     for (int i=3; i>0; --i) {
       minuit.SetErrorDef(i);
       TGraph *g = (TGraph*) minuit.Contour(10, 3, 4);
