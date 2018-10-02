@@ -40,10 +40,10 @@ double chi2_calc(double N, double D, double C)
 {
   const double
     R = N / D,
-    variance = (1.0 + R) * R * R / N;
+    // variance = (1.0 + R) * R * R / N;
     // variance = R * (N + D) / (D*D);
     // variance = R * std::sqrt((1.0/N  + 1.0/D));
-    // variance = R * std::sqrt((1.0 + R) / N);
+    variance = R * std::sqrt((1.0 + R) / N);
 
   return (N == 0.0)
        ? 0.0

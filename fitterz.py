@@ -18,6 +18,11 @@ with open("coulomb-interpolation.dat", 'rb') as f:
     del x, y, z
 
 
+from ROOT import gSystem
+gSystem.Load('build/libFemtoFitter.so')
+from ROOT import CoulombHist
+
+
 class Fitter:
     """
     Base fitter - sets up numerator, denominator & masks
@@ -29,6 +34,39 @@ class Fitter:
         from stumpy import Histogram
         num, den, qinv = map(Histogram.BuildFromRootHist, map(tdir.Get, ("num", "den", "qinv")))
         return cls(num, den, qinv, fit_range)
+
+    @classmethod
+    def FromHists(cls, num, den, qinv, fit_range=None):
+        """
+        Build from histogarms
+        """
+        raise NotImplementedError
+
+    @classmethod
+    def FromFitter(cls, fitter):
+        clsname = fitter.__class__.__name__
+        if clsname != 'FitterGaussOSL':
+            raise TypeError(f"Unknown Fitter class {clsname}")
+
+        def valarray_to_numpy(val):
+            buff, size = fitter.to_tuple(val)
+            return np.frombuffer(buff, np.double, size)
+
+        d = fitter.data
+
+        self = cls.__new__(cls)
+        self.n, self.d, self.q = map(valarray_to_numpy, (d.num, d.den, d.qinv, ))
+        self.qo, self.qs, self.ql = map(valarray_to_numpy, d.qspace)
+
+        self._cached_sum = self.n + self.d
+        self._cached_a = np.divide(self._cached_sum, self.n, where=self.n!=0, out=np.zeros_like(self.n))
+        self._cached_b = self._cached_sum / self.d
+
+        # make ratio and relative errors
+        self.r = self.n / self.d
+        self.e = self.n * self._cached_sum / self.d ** 3
+
+        return self
 
     def __init__(self, num, den, qinv, fit_range=None):
         " Build Fitter out of numerators, denominators, q_{inv} "
@@ -104,8 +142,10 @@ class Fitter:
             ratio = n / d
             error = n * (n + d) / d ** 3
 
-        result = np.divide((ratio - theory) ** 2, error, where=error!=0, out=np.zeros_like(ratio))
-        return np.sqrt(result)
+        # result = np.divide((ratio - theory) ** 2, error, where=error!=0, out=np.zeros_like(ratio))
+        # return np.sqrt(result)
+        # return np.divide((ratio - theory), error, where=error!=0, out=np.zeros_like(ratio))
+        return (ratio - theory) / error
 
     def resid(self, params):
         return self.r - self.evaluate(params)
@@ -157,8 +197,10 @@ class Fitter:
         self._fit_range = float(value)
 
     def get_coulomb_factor(self, R):
-        return COULOMB_INTERP(self.q, R)
+        # return COULOMB_INTERP(self.q, R)
         # return COULOMB_INTERP(self.q.flatten(), R).reshape(self.q.shape)
+        hist = CoulombHist.GetHistWithRadius(R)
+        return np.array([hist.Interpolate(q) for q in self.q])
 
     def params_from_series(self, series):
         params = self.default_parameters()
@@ -169,15 +211,14 @@ class Fitter:
 
 class FitterGauss(Fitter):
 
-    def default_parameters(self):
+    @classmethod
+    def default_parameters(cls):
         q3d_params = Parameters()
         q3d_params.add('Ro', value=2.0, min=0.0)
         q3d_params.add('Rs', value=2.0, min=0.0)
         q3d_params.add('Rl', value=2.0, min=0.0)
         q3d_params.add('lam', value=0.40, min=0.0)
         q3d_params.add('norm', value=0.10, min=0.0)
-        # for i in range(len(self.norm_sizes)):
-        #     q3d_params.add('norm_%d' % i, value=0.10, min=0.0)
 
         return q3d_params
 
@@ -199,7 +240,8 @@ class FitterGauss(Fitter):
 
 class FitterGauss4(FitterGauss):
 
-    def default_parameters(self):
+    @classmethod
+    def default_parameters(cls):
         params = FitterGauss.default_parameters(self)
         params.add("Ros", value=5.0)
         return params
@@ -225,8 +267,9 @@ class FitterGauss4(FitterGauss):
 
 class FitterLevy(Fitter):
 
-    def default_parameters(self):
-        q3d_params = FitterGauss.default_parameters(self)
+    @classmethod
+    def default_parameters(cls):
+        q3d_params = FitterGauss.default_parameters()
         q3d_params.add('alpha', value=1.90, min=1.0, max=2.0)
         return q3d_params
 

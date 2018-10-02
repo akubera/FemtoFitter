@@ -168,6 +168,17 @@ struct FitterGaussOSL {
 
       #undef OUT
     }
+
+    operator FitParams() const
+    {
+      double d[6];
+      d[NORM_PARAM_IDX] = norm.first;
+      d[LAM_PARAM_IDX] = lam.first;
+      d[ROUT_PARAM_IDX] = Ro.first;
+      d[RSIDE_PARAM_IDX] = Rs.first;
+      d[RLONG_PARAM_IDX] = Rl.first;
+      return FitParams(d);
+    }
   };
 
   /// The associated fit data
@@ -365,11 +376,17 @@ struct FitterGaussOSL {
   resid_chi2(const FitParams &p) const
     { return resid_calc(p, chi2_calc); }
 
+  double
+  resid_chi2(const FitResult &r) const
+    { return resid_chi2(static_cast<const FitParams&>(r)); }
 
   double
   resid_pml(const FitParams &p) const
     { return resid_calc(p, loglikelihood_calc); }
 
+  double
+  resid_pml(const FitResult &r) const
+    { return resid_pml(static_cast<const FitParams&>(r)); }
 
   static void
   fit_func(Int_t &,
@@ -403,7 +420,7 @@ struct FitterGaussOSL {
   {
     TMinuit minuit;
 
-    minuit.SetPrintLevel(-1);
+    // minuit.SetPrintLevel(-1);
 
     int errflag = 0;
     minuit.mnparm(NORM_PARAM_IDX, "Norm", 0.25, 0.02, 0.0, 0.0, errflag);
@@ -530,6 +547,11 @@ struct FitterGaussOSL {
     return FitResult(minuit);
     */
   }
+
+  static
+  std::pair<const double*, size_t>
+  to_tuple(const std::valarray<double> &v)
+    { return {&v[0], v.size()}; }
 
   std::vector<double> num_as_vec()
     { return std::vector<double>(std::begin(data.num), std::end(data.num)); }
