@@ -37,4 +37,3 @@ $(BUILD_DIR)/Makefile: CMakeLists.txt
 
 docs-html:
 	+make -C docs html
-
