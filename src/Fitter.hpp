@@ -8,12 +8,13 @@
 #include <valarray>
 
 
+class TMinuit;
 
 const double
-  HBAR_C = .297,
+  HBAR_C = 0.19732697,
   HBAR_C_SQ = HBAR_C * HBAR_C;
 
-
+inline
 double chi2_calc(double N, double D, double C)
 {
   const double
@@ -28,6 +29,7 @@ double chi2_calc(double N, double D, double C)
        : (R-C) * (R-C) / variance;
 }
 
+inline
 double loglikelihood_calc(double A, double B, double C)
 {
   const double
@@ -44,6 +46,8 @@ struct Value {
 
   operator double() const
     { return first; }
+
+  Value(const TMinuit &m, size_t idx);
 };
 
 template <typename ResidCalc_t>

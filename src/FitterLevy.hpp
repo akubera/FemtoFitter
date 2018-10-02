@@ -64,6 +64,67 @@ struct FitterLevy {
     return norm * result;
   }
 
+  /// \class FitResult
+  /// \brief Values and stderr from minuit results
+  ///
+  struct FitResult {
+    Value lam,
+          norm,
+          alpha,
+          Ro,
+          Rs,
+          Rl;
+
+    FitResult(const TMinuit &minuit)
+      : lam(minuit, LAM_PARAM_IDX)
+      , norm(minuit, NORM_PARAM_IDX)
+      , alpha(minuit, ALPHA_PARAM_IDX)
+      , Ro(minuit, ROUT_PARAM_IDX)
+      , Rs(minuit, RSIDE_PARAM_IDX)
+      , Rl(minuit, RLONG_PARAM_IDX)
+    {
+    }
+
+    void print() const
+    {
+      std::cout << __str__();
+    }
+
+    std::string
+    __str__() const
+    {
+      std::vector<char> buff(1000);
+
+      snprintf(buff.data(), buff.size(),
+             "Fit-Result:\n"
+             "  Ro=%0.4f ± %0.4f \n"
+             "  Rs=%0.4f ± %0.4f\n"
+             "  Rl=%0.4f ± %0.4f\n"
+             "  lam=%0.4f ± %0.4f (%g, %g)\n"
+             "  alpha=%0.4f ± %0.4f (%g, %g)\n"
+             "  norm=%0.4f ± %0.4f\n"
+             " -------------\n", Ro.first, Ro.second,
+                                 Rs.first, Rs.second,
+                                 Rl.first, Rl.second,
+                                 lam.first, lam.second, lam.first - lam.second, lam.first + lam.second,
+                                 alpha.first, alpha.second, alpha.first - alpha.second, alpha.first + alpha.second,
+                                 norm.first, norm.second);
+      return buff.data();
+    }
+
+    std::map<std::string, double>
+    as_map() const
+    {
+      #define OUT(__name) {#__name, __name.first}, { # __name "_err", __name.second}
+
+      return {
+        OUT(Ro), OUT(Rs), OUT(Rl), OUT(lam), OUT(alpha), OUT(norm)
+      };
+
+      #undef OUT
+    }
+  };
+
   /// \brief 3D Levy fit parameters
   ///
   ///
@@ -79,6 +140,16 @@ struct FitterLevy {
       , Ro(par[ROUT_PARAM_IDX])
       , Rs(par[RSIDE_PARAM_IDX])
       , Rl(par[RLONG_PARAM_IDX])
+    {
+    }
+
+    FitParams(const FitResult &res)
+      : norm(res.norm)
+      , lam(res.lam)
+      , alpha(res.alpha)
+      , Ro(res.Ro)
+      , Rs(res.Rs)
+      , Rl(res.Rl)
     {
     }
 
@@ -107,62 +178,6 @@ struct FitterLevy {
         std::array<double, 3> Rsq = {Ro*Ro, Rs*Rs, Rl*Rl};
         return FitterLevy::gauss(q, Rsq, lam, alpha, K, norm);
       }
-  };
-
-  /// \class FitResult
-  /// \brief Values and stderr from minuit results
-  ///
-  struct FitResult {
-    Value lam,
-          norm,
-          alpha,
-          Ro,
-          Rs,
-          Rl;
-
-    FitResult(TMinuit &minuit)
-    {
-
-      auto get_param = [&minuit](int idx, Value &v) {
-        minuit.GetParameter(idx, v.first, v.second);
-      };
-
-      get_param(NORM_PARAM_IDX, norm);
-      get_param(LAM_PARAM_IDX, lam);
-      get_param(ALPHA_PARAM_IDX, alpha);
-      get_param(ROUT_PARAM_IDX, Ro);
-      get_param(RSIDE_PARAM_IDX, Rs);
-      get_param(RLONG_PARAM_IDX, Rl);
-    }
-
-    void print() const
-    {
-      printf("Fit-Result:\n"
-             "  Ro=%0.4f ± %0.4f \n"
-             "  Rs=%0.4f ± %0.4f\n"
-             "  Rl=%0.4f ± %0.4f\n"
-             "  lam=%0.4f ± %0.4f (%g, %g)\n"
-             "  alpha=%0.4f ± %0.4f (%g, %g)\n"
-             "  norm=%0.4f ± %0.4f\n"
-             " -------------\n", Ro.first, Ro.second,
-                                 Rs.first, Rs.second,
-                                 Rl.first, Rl.second,
-                                 lam.first, lam.second, lam.first - lam.second, lam.first + lam.second,
-                                 alpha.first, alpha.second, alpha.first - alpha.second, alpha.first + alpha.second,
-                                 norm.first, norm.second);
-    }
-
-    std::map<std::string, double>
-    as_map() const
-    {
-      #define OUT(__name) {#__name, __name.first}, { # __name "_err", __name.second}
-
-      return {
-        OUT(Ro), OUT(Rs), OUT(Rl), OUT(lam), OUT(alpha), OUT(norm)
-      };
-
-      #undef OUT
-    }
   };
 
   /// Utility function for building fitter with tdirectory in file

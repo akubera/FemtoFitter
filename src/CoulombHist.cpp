@@ -4,9 +4,14 @@
 
 #include "CoulombHist.hpp"
 
+#include <iostream>
 
-Storage::Interpolator
-Storage::load_interpolator(double R)
+#define DEFAULT_KFILE_FILENAME "KFile2.root"
+
+CoulombHist::Storage CoulombHist::data(std::getenv("KFILE"), DEFAULT_KFILE_FILENAME);
+
+CoulombHist::Interpolator
+CoulombHist::Storage::load_interpolator(double R)
 {
   // get radius for lookup
   auto key = KeyFromRadius(R);
@@ -66,4 +71,3 @@ Storage::load_interpolator(double R)
 
   return result;
 }
-

@@ -367,10 +367,3 @@ struct CoulombHist {
 #endif
 
 #undef USE_COULOMB_HIST_CACHE
-
-//#define DEFAULT_KFILE_FILENAME "K2File.root"
-//#define DEFAULT_KFILE_FILENAME "JKFile.root"
-// #define DEFAULT_KFILE_FILENAME "KuberKFile.root"
-#define DEFAULT_KFILE_FILENAME "KFile2.root"
-
-CoulombHist::Storage CoulombHist::data(std::getenv("KFILE"), DEFAULT_KFILE_FILENAME);

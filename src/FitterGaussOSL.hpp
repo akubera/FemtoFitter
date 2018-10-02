@@ -57,52 +57,6 @@ struct FitterGaussOSL {
     return norm * result;
   }
 
-  struct FitResult;
-
-  /// \brief 3D Gaussian fit parameters
-  ///
-  ///
-  struct FitParams {
-    double norm, lam;
-    double Ro, Rs, Rl;
-    double gamma {1.0};
-
-    FitParams(double *par)
-      : norm(par[NORM_PARAM_IDX])
-      , lam(par[LAM_PARAM_IDX])
-      , Ro(par[ROUT_PARAM_IDX])
-      , Rs(par[RSIDE_PARAM_IDX])
-      , Rl(par[RLONG_PARAM_IDX])
-    {
-    }
-
-    FitParams(const FitResult &res);
-
-    bool is_invalid() const
-    {
-      return Ro < 0
-          || Rs < 0
-          || Rl < 0
-          || lam < 0
-          || norm < 0
-          || std::isnan(Ro)
-          || std::isnan(Rs)
-          || std::isnan(Rl)
-          || std::isnan(lam)
-          || std::isnan(norm);
-    }
-
-    /// Return calculated Rinv: $\sqrt{Ro^2 \gamma + Rs^2 + Rl^2}$
-    double PseudoRinv() const
-      { return std::sqrt(Ro * Ro * gamma + Rs * Rs + Rl * Rl); }
-
-    double gauss(std::array<double, 3> q, double K) const
-      {
-        std::array<double, 3> Rsq = {Ro*Ro, Rs*Rs, Rl*Rl};
-        return FitterGaussOSL::gauss(q, Rsq, lam, K, norm);
-      }
-  };
-
   /// \class FitResult
   /// \brief Values and stderr from minuit results
   ///
@@ -114,16 +68,12 @@ struct FitterGaussOSL {
           Rl;
 
     FitResult(TMinuit &minuit)
+      : lam(minuit, LAM_PARAM_IDX)
+      , norm(minuit, NORM_PARAM_IDX)
+      , Ro(minuit, ROUT_PARAM_IDX)
+      , Rs(minuit, RSIDE_PARAM_IDX)
+      , Rl(minuit, RLONG_PARAM_IDX)
     {
-      auto get_param = [&minuit](int idx, Value &v) {
-        minuit.GetParameter(idx, v.first, v.second);
-      };
-
-      get_param(NORM_PARAM_IDX, norm);
-      get_param(LAM_PARAM_IDX, lam);
-      get_param(ROUT_PARAM_IDX, Ro);
-      get_param(RSIDE_PARAM_IDX, Rs);
-      get_param(RLONG_PARAM_IDX, Rl);
     }
 
     void print() const
@@ -152,19 +102,57 @@ struct FitterGaussOSL {
 
       #undef OUT
     }
+  };
 
-    /*
-    operator FitParams() const
+  /// \brief 3D Gaussian fit parameters
+  ///
+  ///
+  struct FitParams {
+    double norm, lam;
+    double Ro, Rs, Rl;
+    double gamma {1.0};
+
+    FitParams(double *par)
+      : norm(par[NORM_PARAM_IDX])
+      , lam(par[LAM_PARAM_IDX])
+      , Ro(par[ROUT_PARAM_IDX])
+      , Rs(par[RSIDE_PARAM_IDX])
+      , Rl(par[RLONG_PARAM_IDX])
     {
-      double d[6];
-      d[NORM_PARAM_IDX] = norm.first;
-      d[LAM_PARAM_IDX] = lam.first;
-      d[ROUT_PARAM_IDX] = Ro.first;
-      d[RSIDE_PARAM_IDX] = Rs.first;
-      d[RLONG_PARAM_IDX] = Rl.first;
-      return FitParams(d);
     }
-    */
+
+    FitParams(const FitResult &res)
+      : norm(res.norm)
+      , lam(res.lam)
+      , Ro(res.Ro)
+      , Rs(res.Rs)
+      , Rl(res.Rl)
+    {
+    }
+
+    bool is_invalid() const
+    {
+      return Ro < 0
+          || Rs < 0
+          || Rl < 0
+          || lam < 0
+          || norm < 0
+          || std::isnan(Ro)
+          || std::isnan(Rs)
+          || std::isnan(Rl)
+          || std::isnan(lam)
+          || std::isnan(norm);
+    }
+
+    /// Return calculated Rinv: $\sqrt{Ro^2 \gamma + Rs^2 + Rl^2}$
+    double PseudoRinv() const
+      { return std::sqrt(Ro * Ro * gamma + Rs * Rs + Rl * Rl); }
+
+    double gauss(std::array<double, 3> q, double K) const
+      {
+        std::array<double, 3> Rsq = {Ro*Ro, Rs*Rs, Rl*Rl};
+        return FitterGaussOSL::gauss(q, Rsq, lam, K, norm);
+      }
   };
 
   /// The associated fit data
@@ -464,13 +452,3 @@ struct FitterGaussOSL {
     { return std::vector<double>(std::begin(data.num), std::end(data.num)); }
 
 };
-
-inline
-FitterGaussOSL::FitParams::FitParams(const FitResult &res)
-  : norm(res.norm.first)
-  , lam(res.lam.first)
-  , Ro(res.Ro.first)
-  , Rs(res.Rs.first)
-  , Rl(res.Rl.first)
-{
-}
