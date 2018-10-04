@@ -346,14 +346,14 @@ struct FitterGaussFull {
   auto fit_chi2() -> FitResult
     { return fit<CalcChi2>(1.0); }
 
-  auto fit()
+  auto fit() -> FitResult
     { return fit_pml(); }
 
   static
   auto to_tuple(const std::valarray<double> &v) -> std::pair<const double*, size_t>
     { return {&v[0], v.size()}; }
 
-  auto num_as_vec()
+  auto num_as_vec() -> std::vector<double>
     { return std::vector<double>(std::begin(data.num), std::end(data.num)); }
 
 };
