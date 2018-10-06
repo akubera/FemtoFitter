@@ -7,37 +7,9 @@
 
 #include <valarray>
 
+#include "math.hpp"
 
 class TMinuit;
-
-const double
-  HBAR_C = 0.19732697,
-  HBAR_C_SQ = HBAR_C * HBAR_C;
-
-inline
-double chi2_calc(double N, double D, double C)
-{
-  const double
-    R = N / D,
-    // variance = (1.0 + R) * R * R / N;
-    // variance = R * (N + D) / (D*D);
-    // variance = R * std::sqrt((1.0/N  + 1.0/D));
-    variance = R * std::sqrt((1.0 + R) / N);
-
-  return (N == 0.0)
-       ? 0.0
-       : (R-C) * (R-C) / variance;
-}
-
-inline
-double loglikelihood_calc(double A, double B, double C)
-{
-  const double
-    ta = (A == 0.0) ? 0.0 : A * std::log((C/A * (A+B) / (C+1.0))),
-    tb = B * std::log((A+B) / B / (C+1.0));
-
-  return -(ta + tb);
-}
 
 /// \class Value
 /// \brief Fit-Result value, number paired with error
@@ -50,6 +22,9 @@ struct Value {
   Value(const TMinuit &m, size_t idx);
 };
 
+/// \brief static minuit function, forwards paramters to
+///        ResidCalc_t::resid static method
+///
 template <typename ResidCalc_t>
 static void minuit_f(Int_t&, Double_t*, Double_t &retval, Double_t *par, Int_t)
 {
