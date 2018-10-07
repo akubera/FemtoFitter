@@ -6,9 +6,6 @@
 import re
 import sys
 import asyncio
-from copy import copy
-from pprint import pprint
-from itertools import repeat
 from datetime import datetime
 from concurrent.futures import ProcessPoolExecutor
 
@@ -53,11 +50,18 @@ def main(argv=None):
     return 0
 
 
-async def start(filename, count=-1, fitters=('Fitter', ), *, fit_range=0.22, kt='*', centrality='*', pair_type='*', cfg='cfg*'):
-    from ROOT import gROOT
-    gROOT.SetBatch()
+async def start(filename,
+                count=-1,
+                fitters=('Fitter', ),
+                *,
+                fit_range=0.22,
+                kt='*',
+                centrality='*',
+                pair_type='*',
+                cfg='cfg*'):
 
-    from ROOT import TFile
+    from ROOT import gROOT, TFile
+    gROOT.SetBatch()
 
     tfile = TFile.Open(filename)
     if not tfile:
@@ -110,7 +114,8 @@ def run_fit(filename, path, fit_range, fitter_class=FITTER):
         print("Error reading container %r from %r" % (filename, path))
         return
 
-    r = re.compile(r'Q3D/(?P<CFG>cfg\w+)/(?P<pair_type>\w+)/(?P<centrality>[^/]+)/(?P<kt>[^/]+)/(?P<field>[^/]+)')
+    r = re.compile(r'Q3D/(?P<CFG>cfg\w+)/(?P<pair_type>\w+)/'
+                   r'(?P<centrality>[^/]+)/(?P<kt>[^/]+)/(?P<field>[^/]+)')
     try:
         path_info = r.match(path).groupdict()
     except AttributeError:
@@ -136,7 +141,10 @@ def run_fit(filename, path, fit_range, fitter_class=FITTER):
     lam_ratio = perlim_result.params['lam'].value / result.params['lam'].value
     if lam_ratio < .9:
         print('lam %f %s -> %s' % (lam_ratio, perlim_result.params['lam'], result.params['lam']))
-        next_result = lmfit.minimize(fitter.resid, result.params, reduce_fcn=fitter.chi2, method='leastsq')
+        next_result = lmfit.minimize(fitter.resid,
+                                     result.params,
+                                     reduce_fcn=fitter.chi2,
+                                     method='leastsq')
         if np.isclose(next_result.params['lam'].value, result.params['lam'].value, 1e-3):
             print('not much change')
             for k in result.params:
