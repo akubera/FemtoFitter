@@ -86,8 +86,8 @@ public:
 
     // Use the following when doing const 'virtual_radius_bin_count;
     // static_assert(std::numeric_limits<key_t>::max() >= virtual_radius_bin_count,
-    //               "Integer CoulombHist::Interpolator::key_t is too small for number of 'bins'.");
-
+    //               "Integer CoulombHist::Interpolator::key_t is too small for "
+    //               "the number of 'bins'.");
 
     /// File containing the 2D histogram
     TFile fFile;
@@ -141,22 +141,14 @@ public:
     /// Return a "scaled" radius which fits within the acceptable
     /// interpolation range
     double NormalizeR(double R) const
-    {
-      // clip radius to histogram bounds
-      double N = std::min(fRadiusRange.second, std::max(fRadiusRange.first, R));
-      return N;
-    }
+      { return std::min(fRadiusRange.second, std::max(fRadiusRange.first, R)); }
 
     double NormalizeR(double Ro, double Rs, double Rl) const
-    {
-      return NormalizeRadiiSquared(Ro*Ro, Rs*Rs, Rl*Rl);
-    }
+      { return NormalizeRadiiSquared(Ro*Ro, Rs*Rs, Rl*Rl); }
 
     ///
     double NormalizeRadiiSquared(double RoSq, double RsSq, double RlSq) const
-    {
-      return NormalizeR(std::sqrt((RoSq + RsSq + RlSq) / 3));
-    }
+      { return NormalizeR(std::sqrt((RoSq + RsSq + RlSq) / 3)); }
 
     key_t KeyFromRadius(double R)
     {
