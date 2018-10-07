@@ -164,16 +164,10 @@ public:
     Interpolator load_interpolator(double R);
 
     Interpolator load_interpolator(double Ro, double Rs, double Rl)
-    {
-      double phonyR = NormalizeR(Ro, Rs, Rl);
-      return load_interpolator(phonyR);
-    }
+      { return load_interpolator(NormalizeR(Ro, Rs, Rl)); }
 
     Interpolator load_interpolator_with_squared_radii(double RoSq, double RsSq, double RlSq)
-    {
-      double phonyR = NormalizeRadiiSquared(RoSq, RsSq, RlSq);
-      return load_interpolator(phonyR);
-    }
+      { return load_interpolator(NormalizeRadiiSquared(RoSq, RsSq, RlSq)); }
   };
 
 
