@@ -105,8 +105,7 @@ class Fitter:
         self._cached_b = self._cached_sum / self.d
 
         # make ratio and relative errors
-        self.r = self.n / self.d
-        self.e = self.n * self._cached_sum / self.d ** 3
+        self.r, self.e = self.calculate_ratio_and_variance(self.n, self.d)
 
     def evaluate(self, pars):
         """ Forwards parameters to self.func """
@@ -135,17 +134,19 @@ class Fitter:
         result += np.multiply(self.d, np.log(self._cached_b / c_plus_1, out=tmp), out=tmp)
         return -2 * result
 
+    @staticmethod
+    def calculate_ratio_and_variance(num, den):
+        ratio = num / den
+        error = ratio * (num + den) / den ** 2
+        return ratio, error
+
     def chi2(self, theory, pair=None):
         if pair is None:
              ratio = self.r
              error = self.e
         else:
-            n, d = pair
-            ratio = n / d
-            error = n * (n + d) / d ** 3
+            ratio, error = self.calculate_ratio_and_variance(*pair)
 
-        # result = np.divide((ratio - theory) ** 2, error, where=error!=0, out=np.zeros_like(ratio))
-        # return np.sqrt(result)
         # return np.divide((ratio - theory), error, where=error!=0, out=np.zeros_like(ratio))
         return (ratio - theory) / error
 
