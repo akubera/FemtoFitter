@@ -22,7 +22,6 @@ with open("coulomb-interpolation.dat", 'rb') as f:
     del x, y, z
 
 
-
 class Fitter:
     """
     Base fitter - sets up numerator, denominator & masks
@@ -49,7 +48,15 @@ class Fitter:
     @classmethod
     def FromFitter(cls, fitter):
         clsname = fitter.__class__.__name__
-        if clsname != 'FitterGaussOSL':
+
+        def load_from_FitterGaussOSL():
+            pass
+
+        loader_fn_name = 'load_from_%s' % clsname
+
+        try:
+            loader_fn = locals()[loader_fn_name]
+        except KeyError:
             raise TypeError(f"Unknown Fitter class {clsname}")
 
         def valarray_to_numpy(val):
@@ -82,18 +89,19 @@ class Fitter:
         mask = self.get_qspace_mask(qspace, self.fit_range)
         # mask &= num.data != 0
         mask &= den.data != 0
+        self._nonzero_n_mask = num.data[mask] > 0.0
 
         self.qo = qspace[0][mask]
         self.qs = qspace[1][mask]
         self.ql = qspace[2][mask]
 
-        # (num, den, qinv) are histograms, (n,d,q) are the (masked)j data
+        # (num, den, qinv) are histograms, (n,d,q) are the (masked) data
         self.num, self.den, self.qinv = num, den, qinv
         self.n, self.d, self.q = map(lambda h: h.data[mask], (num, den, qinv))
 
         # ratios used in loglike [a = (n + d) / n, b = (n + d) / d]
         self._cached_sum = self.n + self.d
-        self._cached_a = np.divide(self._cached_sum, self.n, where=self.n!=0, out=np.zeros_like(self.n))
+        self._cached_a = np.divide(self._cached_sum, self.n, where=self._nonzero_n_mask, out=np.zeros_like(self.n))
         self._cached_b = self._cached_sum / self.d
 
         # make ratio and relative errors
@@ -117,25 +125,15 @@ class Fitter:
         c_plus_1 = c + 1.0
         tmp = np.zeros_like(c)
 
-        where = (self.n > 0) & (c_plus_1 > 0.0) & (self._cached_a > 0) & (c > 0)
+        # cached_a = (n + d)/n
+        # where = (self.n > 0) & (c_plus_1 > 0.0) & (self._cached_a > 0) & (c > 0)
+        where = self._nonzero_n_mask & (c > 0.0)
         result = self.n * np.log(self._cached_a * c / c_plus_1, where=where, out=tmp)
 
-        # tmp.fill(0.0)
-        result += self.d * np.log(self._cached_b / c_plus_1, out=tmp)
+        # cached_b = (n + d)/d (d guaranteed to be non-zero) - skip 'where' term
+        # result += self.d * np.log(self._cached_b / c_plus_1, out=tmp)
+        result += np.multiply(self.d, np.log(self._cached_b / c_plus_1, out=tmp), out=tmp)
         return -2 * result
-
-        where1 = np.isfinite(c_plus_1) & c_plus_1 > 0.0
-        where2 = where1 & (self.n > 0)
-        where1 &= self.d > 0
-
-        tmp = c * (self.n + self.d) / (self.n * c_plus_1)
-        t1 = self.n * np.log(tmp, where=tmp > 1.0, out=np.zeros_like(c))
-
-        tmp = (self.n + self.d)  / (self.d * c_plus_1)
-
-        t2 = self.d * np.log(tmp, where=(tmp > 0), out=np.zeros_like(c))
-
-        return -2 * (t1 + t2)
 
     def chi2(self, theory, pair=None):
         if pair is None:
@@ -166,10 +164,6 @@ class Fitter:
                 result &= (-fit_bound < qval) & (qval < fit_bound)
 
         return result
-
-    def norm_array(self, parvals):
-        return np.concatenate([np.full(size, parvals['norm_%d' % i])
-                               for i, size in enumerate(self.norm_sizes)])
 
     def resid_chi2(self, params):
         theory = self.evaluate(params)
@@ -237,6 +231,7 @@ class FitterGauss(Fitter):
 
         k = fsi(pseudo_Rinv) if callable(fsi) else fsi
 
+        # e = (qo * Ro) ** 2 + (qs * Rs) ** 2 + (ql * Rl) ** 2
         e = (qo * Ro) ** 2 + (qs * Rs) ** 2 + (ql * Rl) ** 2
 
         return norm * ((1.0 - lam) + lam * k * (1.0 + np.exp(-e)))
