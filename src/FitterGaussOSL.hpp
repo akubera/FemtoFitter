@@ -188,7 +188,7 @@ struct FitterGaussOSL {
 #if __cplusplus <= 201103L
   return std::unique_ptr<FitterGaussOSL>(new FitterGaussOSL(*num, *den, *qinv, limit));
 #else
-  return make_unique<FitterGaussOSL>(*num, *den, *qinv, limit);
+  return std::make_unique<FitterGaussOSL>(*num, *den, *qinv, limit);
 #endif
   }
 
@@ -239,10 +239,8 @@ struct FitterGaussOSL {
         ql = qlong[i],
         n = data.num[i],
         d = data.den[i],
-        q = data.qinv[i];
+        q = data.qinv[i],
 
-      const double
-        // CF = gauss({qo, qs, ql}, {p.Ro, p.Rs, p.Rl}, p.lam, Kfsi(q), p.norm);
         CF = p.gauss({qo, qs, ql}, Kfsi(q));
 
       retval += resid_calc(n, d, CF);
@@ -293,12 +291,9 @@ struct FitterGaussOSL {
               << params.norm << "\n";
   }
 
-  template <typename F>
-  FitResult
-  fit(F fcn, double fit_method=1.0)
+  int
+  setup_minuit(TMinuit &minuit)
   {
-    TMinuit minuit;
-
     // minuit.SetPrintLevel(-1);
 
     int errflag = 0;
@@ -316,99 +311,41 @@ struct FitterGaussOSL {
       std::cerr << "Error setting paramters: " << errflag << "\n";
       throw std::runtime_error("Could not set Minuit parameters.");
     }
+    return errflag;
+  }
+
+  template <typename F>
+  FitResult
+  fit(F fcn, double fit_method=1.0)
+  {
+    TMinuit minuit;
+    setup_minuit(minuit);
 
     minuit.SetFCN(fcn);
 
-    double strat_args[] = {1.0};
-    double migrad_args[] = {2000.0, fit_method};
-    double hesse_args[] = {2000.0, 1.0};
-
-    minuit.mnexcm("SET STRategy", strat_args, 1, errflag);
-    minuit.mnexcm("MIGRAD", migrad_args, 2, errflag);
-
-    strat_args[0] = 2.0;
-    minuit.mnexcm("SET STRategy", strat_args, 1, errflag);
-    minuit.mnexcm("MIGRAD", migrad_args, 2, errflag);
-
-    minuit.mnexcm("HESSE", hesse_args, 1, errflag);
-
-    /*
-    TGraph *g = nullptr;
-
-    for (int i=3; i>0; --i) {
-      minuit.SetErrorDef(i);
-      TGraph *g = (TGraph*) minuit.Contour(10, 3, 4);
-      g->Draw(i != 3 ? "SAME" : "");
-    }
-    */
-
-    return FitResult(minuit);
+    return do_fit_minuit(minuit, fit_method);
   }
-
-/*
-  template <typename F>
-  auto get_fit_func()
-  {
-    return [] (Int_t &,
-           Double_t *,
-           Double_t &retval,
-           Double_t *par,
-           Int_t)
-      {
-        // returned when invalid input or output occurs
-        static const double BAD_VALUE = 3e99;
-        const auto &data = *(const FitterGaussOSL*)(intptr_t)(par[DATA_PARAM_IDX]);
-
-        FitParams params(par);
-        if (params.is_invalid()) {
-          retval = BAD_VALUE;
-          return;
-        }
-
-        // retval = data.resid_pml(params);
-        // retval = resid_calc(data, params);
-        retval = F::resid(data, params);
-        // std::cout << "< " << retval << " ("
-        //           << params.Ro << " "
-        //           << params.Rs << " "
-        //           << params.Rl << ") "
-        //           << params.lam << " "
-        //           << params.norm << "\n";
-      };
-  }
-*/
 
   template <typename ResidCalc_t>
   FitResult
   fit(double fit_factor)
   {
     TMinuit minuit;
-
-    // minuit.SetPrintLevel(-1);
-
-    int errflag = 0;
-    minuit.mnparm(NORM_PARAM_IDX, "Norm", 0.25, 0.02, 0.0, 0.0, errflag);
-    minuit.mnparm(LAM_PARAM_IDX, "Lam", 0.2, 0.1, 0.0, 1.0, errflag);
-    minuit.mnparm(ROUT_PARAM_IDX, "Ro", 2.0, 1.0, 0.0, 0.0, errflag);
-    minuit.mnparm(RSIDE_PARAM_IDX, "Rs", 2.0, 1.0, 0.0, 0.0, errflag);
-    minuit.mnparm(RLONG_PARAM_IDX, "Rl", 2.0, 1.0, 0.0, 0.0, errflag);
-
-    const double this_dbl = static_cast<double>((intptr_t)this);
-    minuit.mnparm(DATA_PARAM_IDX, "DATA_PTR", this_dbl, 0, 0, INTPTR_MAX, errflag);
-
-    minuit.FixParameter(DATA_PARAM_IDX);
-    if (errflag != 0) {
-      std::cerr << "Error setting paramters: " << errflag << "\n";
-      throw std::runtime_error("Could not set Minuit parameters.");
-    }
+    setup_minuit(minuit);
 
     minuit.SetFCN(minuit_f<ResidCalc_t>);
-    // minuit.SetFCN(mminuit_f<FitterGaussOSL>);
 
+    return do_fit_minuit(minuit, fit_factor);
+  }
+
+  FitResult
+  do_fit_minuit(TMinuit &minuit, double fit_factor)
+  {
     double strat_args[] = {1.0};
     double migrad_args[] = {2000.0, fit_factor};
     double hesse_args[] = {2000.0, 1.0};
 
+    int errflag;
     minuit.mnexcm("SET STRategy", strat_args, 1, errflag);
     minuit.mnexcm("MIGRAD", migrad_args, 2, errflag);
 

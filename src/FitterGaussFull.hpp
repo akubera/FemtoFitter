@@ -23,7 +23,7 @@
 
 
 /// \class FitterGaussFull
-/// \brief Fit full q_i R_ij q_j gaussian parameters
+/// \brief Fit full $ q_i q_j R_ij^2 $ gaussian parameters
 ///
 struct FitterGaussFull {
   using CalcLoglike = ResidCalculatorPML<FitterGaussFull>;
@@ -215,7 +215,7 @@ struct FitterGaussFull {
 #if __cplusplus <= 201103L
   return std::unique_ptr<FitterGaussFull>(new FitterGaussFull(*num, *den, *qinv, limit));
 #else
-  return make_unique<FitterGaussFull>(*num, *den, *qinv, limit);
+  return std::make_unique<FitterGaussFull>(*num, *den, *qinv, limit);
 #endif
   }
 
@@ -294,13 +294,9 @@ struct FitterGaussFull {
   resid_pml(const FitResult &r) const
     { return resid_pml(static_cast<const FitParams&>(r)); }
 
-
-  template <typename ResidCalc_t>
-  FitResult
-  fit(double fit_factor)
+  int
+  setup_minuit(TMinuit &minuit)
   {
-    TMinuit minuit;
-
     // minuit.SetPrintLevel(-1);
 
     int errflag = 0;
@@ -322,12 +318,27 @@ struct FitterGaussFull {
       throw std::runtime_error("Could not set Minuit parameters.");
     }
 
-    minuit.SetFCN(minuit_f<ResidCalc_t>);
+    return errflag;
+  }
 
+  template <typename ResidCalc_t>
+  FitResult
+  fit(double fit_factor)
+  {
+    TMinuit minuit;
+    setup_minuit(minuit);
+    minuit.SetFCN(minuit_f<ResidCalc_t>);
+    return do_fit_minuit(minuit, fit_factor);
+  }
+
+  FitResult
+  do_fit_minuit(TMinuit &minuit, double fit_factor)
+  {
     double strat_args[] = {1.0};
     double migrad_args[] = {2000.0, fit_factor};
     double hesse_args[] = {2000.0, 1.0};
 
+    int errflag;
     minuit.mnexcm("SET STRategy", strat_args, 1, errflag);
     minuit.mnexcm("MIGRAD", migrad_args, 2, errflag);
 
