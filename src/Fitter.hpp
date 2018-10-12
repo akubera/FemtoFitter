@@ -4,10 +4,13 @@
 
 #pragma once
 
+#include "math.hpp"
+#include "Data3D.hpp"
+
+
+#include <TMinuit.h>
 
 #include <valarray>
-
-#include "math.hpp"
 
 class TMinuit;
 
@@ -99,3 +102,34 @@ public:
     return fRatio;
   }
 };
+
+
+template <typename FitterType>
+std::unique_ptr<TMinuit>
+get_minuit_chi2(FitterType& fitter)
+{
+  auto minuit = std::unique_ptr<TMinuit>(new TMinuit());
+  fitter.setup_minuit(*minuit);
+  minuit->SetFCN(minuit_f<FitterType::CalcChi2>);
+  return minuit;
+}
+
+template <typename FitterType>
+void
+apply_momentum_resolution_correction(FitterType &fitter, const TH3& mrc)
+{
+  apply_momentum_resolution_correction(fitter.data, mrc);
+}
+
+inline
+void
+apply_momentum_resolution_correction(Data3D &data, const TH3& mrc)
+{
+  const auto &qo = data.qspace[0],
+             &qs = data.qspace[1],
+             &ql = data.qspace[2];
+
+  for (size_t i=0; i < data.num.size(); ++i) {
+    data.num[i] *= const_cast<TH3&>(mrc).Interpolate(qo[i], qs[i], ql[i]);
+  }
+}

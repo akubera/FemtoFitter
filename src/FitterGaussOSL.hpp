@@ -225,10 +225,7 @@ struct FitterGaussOSL {
     auto &c = coulomb_factor;
     auto Kfsi = [&c] (double q) {
 #endif
-      double coulomb =  c.Interpolate(q);
-      // if ((rand() * 1.0 / RAND_MAX) < 1e-5) {
-      //   printf("K(%g) = %g\n", q, coulomb);
-      // }
+      double coulomb = c.Interpolate(q);
       return coulomb;
     };
 

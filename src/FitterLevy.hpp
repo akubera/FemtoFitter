@@ -339,7 +339,7 @@ struct FitterLevy {
     setup_minuit(minuit);
     minuit.SetPrintLevel(-1);
     minuit.SetFCN(fcn);
-    return FitResult(minuit);
+    return do_fit_minuit(minuit, fit_method);
   }
 
   template <typename ResidCalculator_t>
