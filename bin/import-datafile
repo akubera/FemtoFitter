@@ -3,13 +3,41 @@
 # import-datafile
 #
 
+import re
 import sys
+from copy import copy
+from pathlib import Path
+from datetime import datetime
+
+
+from stumpy.utils import walk_matching, iter_tobject, get_tobject
+from cppyy.gbl import nullptr
+
+from typing import Optional, Generator
 
 
 def arg_parser():
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument("data_file", metavar='data-file', help="root data file")
+    parser.add_argument("files",
+                        nargs='+',
+                        metavar='data-file',
+                        help="Source data root-files")
+    parser.add_argument("-o", "--out",
+                        nargs='?',
+                        default=datetime.now().strftime(r"Data-%Y%m%d.root"),
+                        help="Destination file")
+    parser.add_argument("--update",
+                        action='store_true',
+                        help="Open output file in UPDATE mode")
+    parser.add_argument("--container-pattern",
+                        nargs="?",
+                        default='PWG2FEMTO/*',
+                        help="")
+    parser.add_argument("-n", "--dry-run",
+                        action="store_true",
+                        help="Do not write output file")
+
     return parser
 
 
@@ -18,16 +46,238 @@ def main(argv=None):
         argv = sys.argv[1:]
     args = arg_parser().parse_args(argv)
 
-    from ROOT import TFile
-    data_file = TFile.Open(args.data_file)
-    if not data_file:
-        print("Could not open file %r" % args.data_file, file=sys.stderr)
-        return 1
-    
-   
+    from ROOT import TFile, gSystem
+
+    if args.dry_run:
+        from unittest.mock import MagicMock
+        output = MagicMock()
+    else:
+        open_mode = 'UPDATE' if args.update else 'RECREATE'
+        output = LazyTFile(args.out, open_mode)
+
+    paths = set(Path(p).resolve() for p in args.files)
+
+    for path in copy(paths):
+        if path.is_dir():
+            paths.remove(path)
+            print("Scanning directory %s for all .root files" % path)
+            paths.extend(s.resolve() for s in path.glob("**/*.root"))
+
+    for path in paths:
+        process_file(path, output, args.container_pattern)
+
     return 0
+
+
+def process_file(path, output, pattern=None):
+    from ROOT import TFile
+    path = str(path)
+    file = TFile.Open(path, "READ")
+    if not file:
+        return
+
+    for analysis in find_analyses(file, pattern):
+        analysis.write_to_file(output)
+        pass
+
+    print("Finished processing %s" % file.GetName())
+
+
+def find_analyses(file, pattern):
+    from ctypes import c_int, c_int64
+    from ROOT import AliFemtoConfigObject, std
+
+    ANALYSIS_FINDERS = (
+        AnalysisQinv.FindIn,
+        AnalysisQ3D.FindIn,
+        AnalysisTrueQ3D.FindIn,
+    )
+
+    if not file:
+        return
+
+    charge_regex = re.compile(r"charge: (\-?\d+)")
+
+    magfield = field_from_filename(str(file.GetName()))
+
+    for name, container in walk_matching(file, pattern):
+        print('scanning container', container)
+        for analysis in iter_tobject(container):
+            config = get_tobject(analysis, 'AliFemtoConfigObject')
+            if not config:
+                continue
+
+            cent_range = AliFemtoConfigObject.RangeValue_t()
+            config.find_and_load("event_cut.centrality_range", cent_range)
+
+            cent = '%g_%g' % tuple(cent_range)
+
+            track_cut = config.find("track_cut")
+            charge = track_cut.find('track_cut.charge')
+            if charge:
+                print(charge.name_of_type())
+                print('%d' % charge.as_int())
+                print("")
+
+            c = charge_regex.search(str(config.Stringify()))
+            pion_charge = c_int64(int(c.group(1)))
+
+            # if charge.load_int(pion_charge):
+            # if config.find_and_load("track_cut.charge", pion_charge):
+            #     print(pion_charge)
+
+            pion_charge = pion_charge.value
+            pion_type = 'pim' if pion_charge == -1 else 'pip' if pion_charge == 1 else 'pi?'
+
+            key = config.Clone()
+            key.find("track_cut").pop("charge")
+            key.find("event_cut").pop("centrality_range")
+
+            hashkey = f'cfg{key.Hash():015X}'
+
+            for finder in ANALYSIS_FINDERS:
+                for data in finder(analysis):
+                    if not data:
+                        continue
+
+                    kt_bin, data = data
+                    data.storage_key = f'{hashkey}/{pion_type}/{cent}/{kt_bin}/{magfield}'
+                    yield data
+
+
+            # event_cut = config.find("event_cut")
+            # print(analysis.GetName(), '%g-%g' % (cent_range.first, cent_range.second), pion_type)
+            # print(event_cut.Stringify())
+            # print(config.load("eventcut/centrality_range", cent_range))
+
+class AnalysisQinv:
+
+    @classmethod
+    def FindIn(cls, obj):
+        return
+        yield None
+
+
+class AnalysisQ3D:
+
+    @classmethod
+    def FindIn(cls, obj) -> Generator[Optional['AnalysisFinderQ3D'], None, None]:
+
+        container = get_tobject(obj, "KT_Q3D")
+        if container == nullptr:
+            return
+
+        for kt_container in iter_tobject(container):
+            self = cls.From(kt_container)
+            if not self:
+                continue
+            kt_bin = kt_container.GetName()
+            yield kt_bin, self
+        # yield from (a for a in map(cls.From, iter_tobject(container)) if a)
+
+    @classmethod
+    def From(cls, container) -> Optional['AnalysisFinderQ3D']:
+        """
+        """
+
+        num, den, nqinv, dqinv = map(lambda k: get_tobject(container, k),
+                                     ("Num_q3d", "Den_q3d", "NumWqinv_q3d", "DenWqinv_q3d"))
+        if any(x == nullptr for x in (num, den, nqinv, dqinv)):
+            return
+        qinv = nqinv.Clone("qinv")
+        qinv.SetTitle("q_{inv}")
+        if qinv.GetSumw2N() == 0:
+            qinv.Sumw2()
+        qinv.Add(dqinv)
+        sum_ = num.Clone()
+        sum_.Add(den)
+        qinv.Divide(sum_)
+        del sum_
+
+        self = cls(num, den, qinv)
+        return self
+
+    def __init__(self, num, den, qinv):
+        self.num = num
+        self.den = den
+        self.qinv = qinv
+
+    def write_to_file(self, dest):
+        dest.mkdir(self.storage_key)
+        dest.cd(self.storage_key)
+        # dest.getpath()
+        # self.WriteTObject(dest)
+        self.num.Write("num")
+        self.den.Write("den")
+        self.qinv.Write("qinv")
+
+
+class AnalysisTrueQ3D:
+
+    @classmethod
+    def FindIn(cls, obj) -> Generator[Optional['AnalysisTrueQ3D'], None, None]:
+        container = get_tobject(obj, "KT_TrueQ3D")
+        if container == nullptr:
+            return
+
+        for kt_container in iter_tobject(container):
+            self = cls.From(kt_container)
+            if not self:
+                continue
+            kt_bin = kt_container.GetName()
+            yield kt_bin, self
+
+    @classmethod
+    def From(cls, container) -> Optional['AnalysisFinderQ3D']:
+        """
+        """
+        container = get_tobject(obj, "KT_TrueQ3D")
+        nr, ng, dr, dg = map(lambda k: get_tobject(container, k),
+                                     ("NumRec", "NumGen", "DenRec", "DenGen"))
+        if any(x == nullptr for x in (nr, ng, dr, dg)):
+            return
+        mrc = ng.Clone("mrc")
+        mrc.SetTitle("Momentum Resolution Correction")
+        mrc.Multiply(dr)
+        mrc.Divide(dg)
+        mrc.Divide(nr)
+
+        self = cls(mrc)
+        return self
+
+    def __init__(self, mrc):
+        self.mrc
+
+    def write_to_file(self, dest):
+        dest.mkdir(self.storage_key)
+        dest.cd(self.storage_key)
+        self.mrc.Write("mrc")
+
+
+class LazyTFile:
+    """
+    File created upon first use (not object construction)
+    """
+
+    def __init__(self, filename: str, mode: str):
+        self._file = (filename, mode)
+
+    def __getattr__(self, key):
+        if isinstance(self._file, tuple):
+            from ROOT import TFile
+            self._file = TFile.Open(*self._file)
+        return getattr(self._file, key)
+
+
+def field_from_filename(filename: str) -> str:
+    lower = filename.casefold()
+    if 'neg' in lower:
+        return '--'
+    elif 'pos' in lower:
+        return '++'
+    else:
+        return '??'
 
 
 if __name__ == "__main__":
     sys.exit(main())
-
