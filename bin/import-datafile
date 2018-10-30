@@ -110,7 +110,7 @@ def find_analyses(file, pattern):
             cent_range = AliFemtoConfigObject.RangeValue_t()
             config.find_and_load("event_cut.centrality_range", cent_range)
 
-            cent = '%g_%g' % tuple(cent_range)
+            cent = '%02d_%02d' % tuple(cent_range)
 
             track_cut = config.find("track_cut")
             charge = track_cut.find('track_cut.charge')
@@ -141,7 +141,10 @@ def find_analyses(file, pattern):
                         continue
 
                     kt_bin, data = data
-                    data.storage_key = f'{hashkey}/{pion_type}/{cent}/{kt_bin}/{magfield}'
+                    # kt_bin = '%g_%g' % tuple(map(float, kt_bin.split("_")))
+                    kt_dir = '_'.join(('%0.1f' if kt.is_integer() else '%g') % kt
+                                      for kt in map(float, kt_bin.split("_")))
+                    data.storage_key = f'{hashkey}/{pion_type}/{cent}/{kt_dir}/{magfield}'
                     yield data
 
 
@@ -228,7 +231,7 @@ class AnalysisTrueQ3D:
             yield kt_bin, self
 
     @classmethod
-    def From(cls, container) -> Optional['AnalysisFinderQ3D']:
+    def From(cls, obj) -> Optional['AnalysisFinderQ3D']:
         """
         """
         container = get_tobject(obj, "KT_TrueQ3D")
