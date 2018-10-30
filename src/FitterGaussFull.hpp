@@ -67,6 +67,8 @@ struct FitterGaussFull {
       gauss = 1.0 + std::exp(-E / HBAR_C_SQ),
       result = (1.0 - lam) + lam * K * gauss;
 
+    // if (abs(q[0]) < 1e-3 && abs(q[1]) < 1e-3 && abs(q[2]) < 1e-3)
+    // std::cout << "E=" << E << " Ros=" << Ros << "\n";
     return norm * result;
   }
 
@@ -305,9 +307,9 @@ struct FitterGaussFull {
     minuit.mnparm(ROUT_PARAM_IDX, "Ro", 2.0, 1.0, 0.0, 0.0, errflag);
     minuit.mnparm(RSIDE_PARAM_IDX, "Rs", 2.0, 1.0, 0.0, 0.0, errflag);
     minuit.mnparm(RLONG_PARAM_IDX, "Rl", 2.0, 1.0, 0.0, 0.0, errflag);
-    minuit.mnparm(ROS_PARAM_IDX, "Ros", 0.0, 1.0, 0.0, 0.0, errflag);
-    minuit.mnparm(ROL_PARAM_IDX, "Rol", 0.0, 1.0, 0.0, 0.0, errflag);
-    minuit.mnparm(RSL_PARAM_IDX, "Rsl", 0.0, 1.0, 0.0, 0.0, errflag);
+    minuit.mnparm(ROS_PARAM_IDX, "Ros", 1.0, 1.0, 0.0, 0.0, errflag);
+    minuit.mnparm(ROL_PARAM_IDX, "Rol", 1.0, 1.0, 0.0, 0.0, errflag);
+    minuit.mnparm(RSL_PARAM_IDX, "Rsl", 1.0, 1.0, 0.0, 0.0, errflag);
 
     const double this_dbl = static_cast<double>((intptr_t)this);
     minuit.mnparm(DATA_PARAM_IDX, "DATA_PTR", this_dbl, 0, 0, INTPTR_MAX, errflag);
@@ -326,6 +328,7 @@ struct FitterGaussFull {
   fit(double fit_factor)
   {
     TMinuit minuit;
+    minuit.SetPrintLevel(-1);
     setup_minuit(minuit);
     minuit.SetFCN(minuit_f<ResidCalc_t>);
     return do_fit_minuit(minuit, fit_factor);

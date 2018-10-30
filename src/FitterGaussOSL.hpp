@@ -229,6 +229,7 @@ struct FitterGaussOSL {
       return coulomb;
     };
 
+    #pragma omp parallel for reduction(+:retval)
     for (size_t i=0; i<size(); ++i) {
       const double
         qo = qout[i],
@@ -280,18 +281,17 @@ struct FitterGaussOSL {
     }
 
     retval = data.resid_chi2(params);
-    std::cout << "< " << retval << " ("
-              << params.Ro << " "
-              << params.Rs << " "
-              << params.Rl << ") "
-              << params.lam << " "
-              << params.norm << "\n";
+    // std::cout << "< " << retval << " ("
+    //           << params.Ro << " "
+    //           << params.Rs << " "
+    //           << params.Rl << ") "
+    //           << params.lam << " "
+    //           << params.norm << "\n";
   }
 
   int
   setup_minuit(TMinuit &minuit)
   {
-    // minuit.SetPrintLevel(-1);
 
     int errflag = 0;
     minuit.mnparm(NORM_PARAM_IDX, "Norm", 0.25, 0.02, 0.0, 0.0, errflag);
@@ -328,6 +328,7 @@ struct FitterGaussOSL {
   fit(double fit_factor)
   {
     TMinuit minuit;
+    minuit.SetPrintLevel(-1);
     setup_minuit(minuit);
 
     minuit.SetFCN(minuit_f<ResidCalc_t>);
