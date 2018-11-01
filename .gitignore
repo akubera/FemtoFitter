@@ -1,4 +1,7 @@
 
+FitResults
+*.dat
+
 # default build destination
 /build/
 CMakeCache.txt
