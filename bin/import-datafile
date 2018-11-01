@@ -37,7 +37,6 @@ def arg_parser():
     parser.add_argument("-n", "--dry-run",
                         action="store_true",
                         help="Do not write output file")
-
     return parser
 
 
@@ -127,7 +126,9 @@ def find_analyses(file, pattern):
             #     print(pion_charge)
 
             pion_charge = pion_charge.value
-            pion_type = 'pim' if pion_charge == -1 else 'pip' if pion_charge == 1 else 'pi?'
+            pion_type = ('pim' if pion_charge == -1 else
+                         'pip' if pion_charge == 1 else
+                         'pi?')
 
             key = config.Clone()
             key.find("track_cut").pop("charge")
@@ -135,33 +136,43 @@ def find_analyses(file, pattern):
 
             hashkey = f'cfg{key.Hash():015X}'
 
-            for finder in ANALYSIS_FINDERS:
-                for data in finder(analysis):
-                    if not data:
-                        continue
+            def get_storage_key(kt_bin):
+                kt_dir = '_'.join(('%0.1f' if kt.is_integer() else '%g') % kt
+                                  for kt in map(float, kt_bin.split("_")))
+                return f'{hashkey}/{pion_type}/{cent}/{kt_dir}/{magfield}'
 
-                    kt_bin, data = data
-                    # kt_bin = '%g_%g' % tuple(map(float, kt_bin.split("_")))
-                    kt_dir = '_'.join(('%0.1f' if kt.is_integer() else '%g') % kt
-                                      for kt in map(float, kt_bin.split("_")))
-                    data.storage_key = f'{hashkey}/{pion_type}/{cent}/{kt_dir}/{magfield}'
-                    yield data
+            # iterator yielding AnalysisResults
+            found_results = (data for finder in ANALYSIS_FINDERS
+                             for data in finder(analysis))
+
+            for kt_bin, analysis_results in found_results:
+                analysis_results.storage_key = get_storage_key(kt_bin)
+                analysis_results.config = key
+                yield analysis_results
 
 
-            # event_cut = config.find("event_cut")
-            # print(analysis.GetName(), '%g-%g' % (cent_range.first, cent_range.second), pion_type)
-            # print(event_cut.Stringify())
-            # print(config.load("eventcut/centrality_range", cent_range))
-
-class AnalysisQinv:
+class AnalysisResults:
 
     @classmethod
     def FindIn(cls, obj):
         return
-        yield None
+        yield
+
+    def write_config(self, dest):
+        cfg_dest = re.match('.*cfg[A-F0-9]+', self.storage_key)
+        if cfg_dest:
+            config_key = cfg_dest.group() + '/config'
+            key = dest.Get(config_key)
+            if not key:
+                dest.cd(cfg_dest.group())
+                self.config.Write("config")
 
 
-class AnalysisQ3D:
+class AnalysisQinv(AnalysisResults):
+    pass
+
+
+class AnalysisQ3D(AnalysisResults):
 
     @classmethod
     def FindIn(cls, obj) -> Generator[Optional['AnalysisFinderQ3D'], None, None]:
@@ -176,7 +187,6 @@ class AnalysisQ3D:
                 continue
             kt_bin = kt_container.GetName()
             yield kt_bin, self
-        # yield from (a for a in map(cls.From, iter_tobject(container)) if a)
 
     @classmethod
     def From(cls, container) -> Optional['AnalysisFinderQ3D']:
@@ -207,15 +217,22 @@ class AnalysisQ3D:
 
     def write_to_file(self, dest):
         dest.mkdir(self.storage_key)
+        self.write_config(dest)
+
         dest.cd(self.storage_key)
-        # dest.getpath()
-        # self.WriteTObject(dest)
         self.num.Write("num")
         self.den.Write("den")
         self.qinv.Write("qinv")
 
+    @property
+    def storage_key(self):
+        return self._storage_key
 
-class AnalysisTrueQ3D:
+    @storage_key.setter
+    def storage_key(self, value: str):
+        self._storage_key = value
+
+class AnalysisTrueQ3D(AnalysisResults):
 
     @classmethod
     def FindIn(cls, obj) -> Generator[Optional['AnalysisTrueQ3D'], None, None]:
@@ -234,9 +251,8 @@ class AnalysisTrueQ3D:
     def From(cls, obj) -> Optional['AnalysisFinderQ3D']:
         """
         """
-        container = get_tobject(obj, "KT_TrueQ3D")
-        nr, ng, dr, dg = map(lambda k: get_tobject(container, k),
-                                     ("NumRec", "NumGen", "DenRec", "DenGen"))
+        nr, ng, dr, dg = map(lambda k: get_tobject(obj, k),
+                             ("NumRec", "NumGen", "DenRec", "DenGen"))
         if any(x == nullptr for x in (nr, ng, dr, dg)):
             return
         mrc = ng.Clone("mrc")
