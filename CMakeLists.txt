@@ -55,7 +55,7 @@ set(INCS
   src/FitterLevy.hpp
 )
 list(TRANSFORM INCS PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -pedantic -Ofast -march=native")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -pedantic -Ofast -march=native -fopenmp")
 
 set(SRCS
   src/Data3D.cpp
@@ -75,3 +75,7 @@ set(ROOT_LIBS
 message(STATUS ${CMAKE_CXX_COMPILE_FEATURES})
 add_library(FemtoFitter	SHARED femfit_dict ${SRCS})
 target_link_libraries(FemtoFitter ${ROOT_LIBS})
+
+add_executable(run-fit-spec	src/bin/run-fit-spec.cc)
+target_include_directories(run-fit-spec PRIVATE src)
+target_link_libraries(run-fit-spec ROOT::Minuit)
