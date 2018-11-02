@@ -84,6 +84,13 @@ def run_fit(fitter_class,
     from ROOT import apply_momentum_resolution_correction
 
     fitter = fitter_class.From(tfile, path, fit_range)
+    if fitter.size() == 0:
+        return
+
+    if mrc_path:
+        mrc = tfile.Get(mrc_path)
+        apply_momentum_resolution_correction(fitter, mrc)
+        del mrc
 
     fit_results = fitter.fit()
     results = dict(fit_results.as_map())
@@ -123,7 +130,7 @@ def parallel_fit_all(tfile, ofilename=None):
     fitrange = 0.21
     pool = Pool()
     results = pool.starmap(run_fit_gauss, ((str(filename), p, fitrange) for p in paths))
-    df = pd.DataFrame(results)
+    df = pd.DataFrame([r for r in results if r])
     output_data = {
         'filename': str(filename.absolute()),
         'timestamp': datetime.now().isoformat(timespec='milliseconds'),
