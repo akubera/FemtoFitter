@@ -33,6 +33,7 @@ bindings/python/venv/
 .cache
 .coverage*
 coverage.xml
+.mypy_cache
 
 # editor configuration
 .vscode/
