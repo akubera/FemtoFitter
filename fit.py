@@ -117,7 +117,7 @@ def parallel_fit_all(tfile, ofilename=None):
 
     fitrange = 0.21
     pool = Pool()
-    results = pool.starmap(run_fit_gauss, ((str(filename), p, fitrange) for p in paths[:4]))
+    results = pool.starmap(run_fit_gauss, ((str(filename), p, fitrange) for p in paths))
     df = pd.DataFrame(results)
     output_data = {
         'filename': str(filename.absolute()),
