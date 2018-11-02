@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #
 # fit.py
 #
@@ -65,7 +66,11 @@ def run_fit_gauss_full(*args, **kwargs):
     return run_fit(FitterGaussFull, *args, **kwargs)
 
 
-def run_fit(fitter_class, filename: str, query: PathQuery, fit_range: float, mrc_path: str=None):
+def run_fit(fitter_class,
+            filename: str,
+            query: PathQuery,
+            fit_range: float,
+            mrc_path: str=None):
 
     import ROOT
     # TFile, FITTER = bfrom ROOT import TFile
