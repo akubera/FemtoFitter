@@ -341,6 +341,7 @@ struct FitterLevy {
     setup_minuit(minuit);
     minuit.SetPrintLevel(-1);
     minuit.SetFCN(fcn);
+
     return do_fit_minuit(minuit, fit_method);
   }
 
@@ -350,6 +351,7 @@ struct FitterLevy {
   {
     TMinuit minuit;
     setup_minuit(minuit);
+    minuit.SetPrintLevel(-1);
     minuit.SetFCN(minuit_f<ResidCalculator_t>);
     return do_fit_minuit(minuit, fit_method);
   }

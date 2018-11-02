@@ -229,7 +229,6 @@ struct FitterGaussOSL {
       return coulomb;
     };
 
-    #pragma omp parallel for reduction(+:retval)
     for (size_t i=0; i<size(); ++i) {
       const double
         qo = qout[i],
@@ -317,6 +316,7 @@ struct FitterGaussOSL {
   {
     TMinuit minuit;
     setup_minuit(minuit);
+    minuit.SetPrintLevel(-1);
 
     minuit.SetFCN(fcn);
 
@@ -328,8 +328,8 @@ struct FitterGaussOSL {
   fit(double fit_factor)
   {
     TMinuit minuit;
-    minuit.SetPrintLevel(-1);
     setup_minuit(minuit);
+    minuit.SetPrintLevel(-1);
 
     minuit.SetFCN(minuit_f<ResidCalc_t>);
 
