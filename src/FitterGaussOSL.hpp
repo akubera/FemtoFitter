@@ -315,8 +315,8 @@ struct FitterGaussOSL {
   fit(F fcn, double fit_method=1.0)
   {
     TMinuit minuit;
-    setup_minuit(minuit);
     minuit.SetPrintLevel(-1);
+    setup_minuit(minuit);
 
     minuit.SetFCN(fcn);
 
@@ -328,8 +328,8 @@ struct FitterGaussOSL {
   fit(double fit_factor)
   {
     TMinuit minuit;
-    setup_minuit(minuit);
     minuit.SetPrintLevel(-1);
+    setup_minuit(minuit);
 
     minuit.SetFCN(minuit_f<ResidCalc_t>);
 

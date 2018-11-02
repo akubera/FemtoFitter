@@ -299,8 +299,6 @@ struct FitterGaussFull {
   int
   setup_minuit(TMinuit &minuit)
   {
-    // minuit.SetPrintLevel(-1);
-
     int errflag = 0;
     minuit.mnparm(NORM_PARAM_IDX, "Norm", 0.25, 0.02, 0.0, 0.0, errflag);
     minuit.mnparm(LAM_PARAM_IDX, "Lam", 0.2, 0.1, 0.0, 1.0, errflag);

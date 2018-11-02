@@ -311,8 +311,6 @@ struct FitterLevy {
   int
   setup_minuit(TMinuit &minuit)
   {
-    minuit.SetPrintLevel(-1);
-
     int errflag = 0;
     minuit.mnparm(NORM_PARAM_IDX, "Norm", 0.25, 0.02, 0.0, 0.0, errflag);
     minuit.mnparm(LAM_PARAM_IDX, "Lam", 0.2, 0.1, 0.0, 1.0, errflag);
@@ -338,8 +336,8 @@ struct FitterLevy {
   fit(F fcn, double fit_method=1.0)
   {
     TMinuit minuit;
-    setup_minuit(minuit);
     minuit.SetPrintLevel(-1);
+    setup_minuit(minuit);
     minuit.SetFCN(fcn);
 
     return do_fit_minuit(minuit, fit_method);
@@ -350,8 +348,8 @@ struct FitterLevy {
   fit(double fit_method)
   {
     TMinuit minuit;
-    setup_minuit(minuit);
     minuit.SetPrintLevel(-1);
+    setup_minuit(minuit);
     minuit.SetFCN(minuit_f<ResidCalculator_t>);
     return do_fit_minuit(minuit, fit_method);
   }
