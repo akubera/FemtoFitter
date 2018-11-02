@@ -265,7 +265,7 @@ class AnalysisTrueQ3D(AnalysisResults):
         return self
 
     def __init__(self, mrc):
-        self.mrc
+        self.mrc = mrc
 
     def write_to_file(self, dest):
         dest.mkdir(self.storage_key)
