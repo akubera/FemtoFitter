@@ -60,7 +60,7 @@ def main(argv=None):
         if path.is_dir():
             paths.remove(path)
             print("Scanning directory %s for all .root files" % path)
-            paths.extend(s.resolve() for s in path.glob("**/*.root"))
+            paths.update(s.resolve() for s in path.glob("**/*.root"))
 
     for path in paths:
         process_file(path, output, args.container_pattern)
