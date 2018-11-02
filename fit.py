@@ -152,8 +152,14 @@ def get_configuration_json(tfile, queries):
 
 
 if __name__ == "__main__":
+    import sys
+    try:
+        filename = sys.argv[1]
+    except IndexError:
+        filename = 'data.root'
+
     from ROOT import gSystem, TFile
     assert 0 == gSystem.Load('build/libFemtoFitter.so')
 
-    data = TFile.Open("data.root")
+    data = TFile.Open(filename)
     parallel_fit_all(data)
