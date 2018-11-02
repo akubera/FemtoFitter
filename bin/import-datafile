@@ -253,7 +253,15 @@ class AnalysisTrueQ3D(AnalysisResults):
         """
         nr, ng, dr, dg = map(lambda k: get_tobject(obj, k),
                              ("NumRec", "NumGen", "DenRec", "DenGen"))
-        if any(x == nullptr for x in (nr, ng, dr, dg)):
+
+        if not dr:
+            # check for mis-named data produced by AliPhysics::vAN-20181018
+            # (eg: CF_PbPb_MC_AOD#1960)
+            # Delete me after replacement files
+            dr = get_tobject(obj, r'%s_DenRec')
+
+        if any(not x for x in (nr, ng, dr, dg)):
+            print("Could not find files in", obj)
             return
         mrc = ng.Clone("mrc")
         mrc.SetTitle("Momentum Resolution Correction")
