@@ -9,6 +9,9 @@ import sys
 from datetime import datetime
 import pandas as pd
 
+from fit import run_fit
+
+
 MRC_FILE = "mrc.root"
 
 
@@ -47,38 +50,12 @@ def main(argv=None):
     results = run_fit(args.filename, path, args.bounds)
 
     df = pd.DataFrame(results)
-    df.to_json(args.output)
+    with open(args.output, 'w') as f:
+        df.to_json(df, f, indent=True)
 
     print(args.output)
 
     return 0
-
-
-def run_fit(filename: str, path: str, fit_range: float, mrc_path: str=None):
-    from ROOT import TFile
-    tfile = TFile.Open(filename)
-
-    tdir = tfile.Get(path)
-    assert tdir
-
-    from ROOT import apply_momentum_resolution_correction
-    from ROOT import FitterGaussOSL, FitterGaussFull
-    from ROOT import FitterLevy
-
-    FITTER = FitterGauss
-
-    fitter = FITTER.From(tfile, path, fit_range)
-
-    fit_results = fitter.fit()
-    results = dict(fit_results.as_map())
-
-    results['fit_range'] = fit_range
-
-    results['chi2'] = fitter.resid_chi2(fit_results)
-    results['ndof'] = fitter.ndof
-    # results['chi2_per_ndof'] = results['chi2'] / results['ndof']
-    # results['pml_per_ndof'] = fitter.reduced_pml(result.params)
-    return [results]
 
 
 if __name__ == "__main__":
