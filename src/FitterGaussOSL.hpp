@@ -153,6 +153,36 @@ struct FitterGaussOSL {
         std::array<double, 3> Rsq = {Ro*Ro, Rs*Rs, Rl*Rl};
         return FitterGaussOSL::gauss(q, Rsq, lam, K, norm);
       }
+
+    void
+    apply_to(TH3 &hist, TH3& qinv)
+    {
+      const int I = hist.GetNbinsX(),
+                J = hist.GetNbinsY(),
+                K = hist.GetNbinsZ();
+
+      const double phony_r = PseudoRinv();
+      auto coulomb_factor = CoulombHist::GetHistWithRadius(phony_r);
+
+      const TAxis &qout = *hist.GetXaxis(),
+                  &qside = *hist.GetYaxis(),
+                  &qlong = *hist.GetZaxis();
+
+      for (int k=1; k<=K; ++k)
+      for (int j=1; j<=J; ++j)
+      for (int i=1; i<=I; ++i) {
+        const double
+          qo = qout.GetBinCenter(i),
+          qs = qside.GetBinCenter(j),
+          ql = qlong.GetBinCenter(k),
+          q = qinv.GetBinContent(i, j, k),
+          // q = qinv.Interpolate(qo, qs, ql),
+          K = coulomb_factor.Interpolate(q);
+
+        hist.SetBinContent(i,j,k, hist.GetBinContent(i,j,k) * gauss({qo, qs, ql}, K));
+      }
+    }
+
   };
 
   /// The associated fit data
@@ -181,15 +211,12 @@ struct FitterGaussOSL {
         *qinv = static_cast<TH3*>(tdir.Get("qinv"));
 
     if (!num || !den || !qinv) {
+      std::cerr << "Error loading FitterGaussOSL histograms from path "
+                << "'" << tdir.GetName() << "'\n";
       return nullptr;
-      // throw std::runtime_error("Error loading FitterGaussOSL histograms from path '" + path + "'");
     }
 
-#if __cplusplus <= 201103L
-  return std::unique_ptr<FitterGaussOSL>(new FitterGaussOSL(*num, *den, *qinv, limit));
-#else
-  return std::make_unique<FitterGaussOSL>(*num, *den, *qinv, limit);
-#endif
+    return std::make_unique<FitterGaussOSL>(*num, *den, *qinv, limit);
   }
 
   /// Construct fitter from numerator denominator qinv histograms
@@ -291,7 +318,6 @@ struct FitterGaussOSL {
   int
   setup_minuit(TMinuit &minuit)
   {
-
     int errflag = 0;
     minuit.mnparm(NORM_PARAM_IDX, "Norm", 0.25, 0.02, 0.0, 0.0, errflag);
     minuit.mnparm(LAM_PARAM_IDX, "Lam", 0.2, 0.1, 0.0, 1.0, errflag);
