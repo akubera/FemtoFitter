@@ -53,8 +53,7 @@ def run_fit(fitter_class,
             fit_range: float,
             mrc_path: str = None):
 
-    import ROOT
-    # TFile, FITTER = bfrom ROOT import TFile
+    from ROOT import TFile
     tfile = TFile.Open(filename)
     assert tfile
 
@@ -91,7 +90,7 @@ def parallel_fit_all(tfile, ofilename=None):
 
     cfg = 'cfg*'
     pair = cent = kt = mfield = '*'
-    search = f"{cfg}/{pair}/{cent}/{kt}/{mfield}"
+    search = f"AnalysisQ3D/{cfg}/{pair}/{cent}/{kt}/{mfield}"
 
     paths = []
     for path, _ in walk_matching(tfile, search):
@@ -148,4 +147,4 @@ if __name__ == "__main__":
     assert 0 == gSystem.Load('build/libFemtoFitter.so')
 
     data = TFile.Open(filename)
-    parallel_fit_all(data)
+    parallel_fit_all(data, "fitres-latest.json")
