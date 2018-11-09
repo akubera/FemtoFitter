@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+#
+# bin/list-configs
+#
+
+import sys
+from pprint import pprint
+from stumpy.utils import iter_tobject
+
+
+def arg_parser():
+    from argparse import ArgumentParser
+    parser = ArgumentParser()
+    parser.add_argument("files",
+                        nargs='+',
+                        metavar='data-file',
+                        help="Source data root-files")
+    return parser
+
+
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
+    args = arg_parser().parse_args(argv)
+
+    from ROOT import TFile
+
+    analyses = {}
+
+    for filename in args.files:
+        f = TFile.Open(filename)
+        if not f:
+            continue
+
+        for analysis_type in iter_tobject(f):
+            analysis_name = analysis_type.GetName()
+            analysis = analyses.setdefault(analysis_name, {})
+
+            for cfg in iter_tobject(analysis_type):
+                config_hash = cfg.GetName()
+                configs = analysis.setdefault(config_hash, set())
+                configs.add(filename)
+
+    pprint(analyses)
+
+if __name__ == "__main__":
+    sys.exit(main())
