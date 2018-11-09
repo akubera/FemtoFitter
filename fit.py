@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 #
 # fit.py
 #
@@ -14,31 +13,11 @@ import json
 
 import pandas as pd
 
-# PathQuery = namedtuple("PathQuery", ('cfg', 'pair', 'cent', 'kt', 'mfield'))
+from femtofitter import PathQuery
 
-class PathQuery(NamedTuple):
 
-    cfg: str
-    pair: str
-    cent: str
-    kt: str
-    magfield: str
-
-    def as_path(self):
-        return '/'.join(self)
-
-    def as_dict(self):
-        return {key: getattr(self, key)
-                for key in ('cfg', 'pair', 'cent', 'kt', 'magfield')}
-
-    @classmethod
-    def from_path(cls, path):
-        if isinstance(path, str):
-            path = path.split("/")
-        return cls(*path)
-
-# def run_fit1(filename: str, cfg: str, pair: str, cent: str, kt: str, mfield: str, fit_range: float, mrc_path: str=None):
 def find_and_fit(filename: str, query: PathQuery, fit_range: float):
+    query = PathQuery.From(query)
 
     path = query.as_path()
 
@@ -57,9 +36,11 @@ def run_fit_gauss(filename, path, fit_range):
     from ROOT import FitterGaussOSL
     return run_fit(FitterGaussOSL, filename, path, fit_range)
 
+
 def run_fit_levy(*args, **kwargs):
     from ROOT import FitterLevy
     return run_fit(FitterLevy, *args, **kwargs)
+
 
 def run_fit_gauss_full(*args, **kwargs):
     from ROOT import FitterGaussFull
@@ -70,7 +51,7 @@ def run_fit(fitter_class,
             filename: str,
             query: PathQuery,
             fit_range: float,
-            mrc_path: str=None):
+            mrc_path: str = None):
 
     import ROOT
     # TFile, FITTER = bfrom ROOT import TFile
@@ -84,13 +65,6 @@ def run_fit(fitter_class,
     from ROOT import apply_momentum_resolution_correction
 
     fitter = fitter_class.From(tfile, path, fit_range)
-    if fitter.size() == 0:
-        return
-
-    if mrc_path:
-        mrc = tfile.Get(mrc_path)
-        apply_momentum_resolution_correction(fitter, mrc)
-        del mrc
 
     fit_results = fitter.fit()
     results = dict(fit_results.as_map())
@@ -129,8 +103,8 @@ def parallel_fit_all(tfile, ofilename=None):
 
     fitrange = 0.21
     pool = Pool()
-    results = pool.starmap(run_fit_gauss, ((str(filename), p, fitrange) for p in paths))
-    df = pd.DataFrame([r for r in results if r])
+    results = pool.starmap(run_fit_gauss, ((str(filename), p, fitrange) for p in paths[:4]))
+    df = pd.DataFrame(results)
     output_data = {
         'filename': str(filename.absolute()),
         'timestamp': datetime.now().isoformat(timespec='milliseconds'),
