@@ -117,10 +117,6 @@ def find_analyses(file, pattern):
                 print("No charge in track_cut configuration. Skipping")
                 continue
 
-                print(charge.name_of_type())
-                print('%d' % charge.as_int())
-                print("")
-
             c = charge_regex.search(str(config.Stringify()))
             pion_charge = c_int64(int(c.group(1)))
 
@@ -134,6 +130,7 @@ def find_analyses(file, pattern):
                          'pi?')
 
             key = config.Clone()
+            key.pop("is_mc")
             key.pop("track_cut.charge")
             key.pop("event_cut.centrality_range")
 
@@ -170,6 +167,14 @@ class AnalysisResults:
                 dest.cd(cfg_dest.group())
                 self.config.Write("config")
 
+    @property
+    def storage_key(self):
+        return self._storage_key
+
+    @storage_key.setter
+    def storage_key(self, value: str):
+        self._storage_key = self.__class__.__name__ + "/" + value
+
 
 class AnalysisQinv(AnalysisResults):
     pass
@@ -196,8 +201,9 @@ class AnalysisQ3D(AnalysisResults):
         """
         """
 
-        num, den, nqinv, dqinv = map(lambda k: get_tobject(container, k),
-                                     ("Num_q3d", "Den_q3d", "NumWqinv_q3d", "DenWqinv_q3d"))
+        keys = ("Num_q3d", "Den_q3d", "NumWqinv_q3d", "DenWqinv_q3d")
+        num, den, nqinv, dqinv = map(lambda k: get_tobject(container, k), keys)
+
         if any(x == nullptr for x in (num, den, nqinv, dqinv)):
             return
         qinv = nqinv.Clone("qinv")
@@ -227,15 +233,11 @@ class AnalysisQ3D(AnalysisResults):
         self.den.Write("den")
         self.qinv.Write("qinv")
 
-    @property
-    def storage_key(self):
-        return self._storage_key
-
-    @storage_key.setter
-    def storage_key(self, value: str):
-        self._storage_key = value
 
 class AnalysisTrueQ3D(AnalysisResults):
+    """
+    Momentum resolution correction for Q3D
+    """
 
     @classmethod
     def FindIn(cls, obj) -> Generator[Optional['AnalysisTrueQ3D'], None, None]:
@@ -256,15 +258,16 @@ class AnalysisTrueQ3D(AnalysisResults):
         """
 
         keys = ("Trueq3D_NumRec", "Trueq3D_NumGen", "Trueq3D_DenRec", "Trueq3D_DenGen")
-
         nr, ng, dr, dg = (get_tobject(obj, k) for k in keys)
 
-        missing_keys = set(n for n, h in zip(keys, (nr, ng, dr, dg)) if not h)
-        if missing_keys:
-            print("Could not find histograms: %s" % missing_keys)
+        if any(not x for x in (nr, ng, dr, dg)):
+            print("Could not find files in", obj)
             return
 
         mrc = ng.Clone("mrc")
+        if mrc.GetSumw2N() == 0:
+            mrc.Sumw2()
+
         mrc.SetTitle("Momentum Resolution Correction")
         mrc.Multiply(dr)
         mrc.Divide(dg)
@@ -278,7 +281,8 @@ class AnalysisTrueQ3D(AnalysisResults):
 
     def write_to_file(self, dest):
         dest.mkdir(self.storage_key)
-        self.write_config()
+        self.write_config(dest)
+
         dest.cd(self.storage_key)
         self.mrc.Write("mrc")
 
