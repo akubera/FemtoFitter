@@ -41,6 +41,8 @@ def main(argv=None):
                 configs = analysis.setdefault(config_hash, set())
                 configs.add(filename)
 
+        f.Close()
+
     pprint(analyses)
 
 if __name__ == "__main__":
