@@ -265,6 +265,7 @@ class AnalysisTrueQ3D(AnalysisResults):
             return
 
         mrc = ng.Clone("mrc")
+        mrc.SetStats(False)
         if mrc.GetSumw2N() == 0:
             mrc.Sumw2()
 
