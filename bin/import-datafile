@@ -117,14 +117,7 @@ def find_analyses(file, pattern):
                 print("No charge in track_cut configuration. Skipping")
                 continue
 
-            c = charge_regex.search(str(config.Stringify()))
-            pion_charge = c_int64(int(c.group(1)))
-
-            # if charge.load_int(pion_charge):
-            # if config.find_and_load("track_cut.charge", pion_charge):
-            #     print(pion_charge)
-
-            pion_charge = pion_charge.value
+            pion_charge = charge.as_int()
             pion_type = ('pim' if pion_charge == -1 else
                          'pip' if pion_charge == 1 else
                          'pi?')
