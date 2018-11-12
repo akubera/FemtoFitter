@@ -100,12 +100,13 @@ def parallel_fit_all(tfile, ofilename=None):
 
     configuration_information = get_configuration_json(tfile, paths)
 
+    filename = str(filename.absolute())
     fitrange = 0.21
     pool = Pool()
-    results = pool.starmap(run_fit_gauss, ((str(filename), p, fitrange) for p in paths[:4]))
+    results = pool.starmap(run_fit_gauss, ((filename, p, fitrange) for p in paths[:4]))
     df = pd.DataFrame(results)
     output_data = {
-        'filename': str(filename.absolute()),
+        'filename': filename,
         'timestamp': datetime.now().isoformat(timespec='milliseconds'),
         'df': df.to_dict(orient='records'),
         'config': configuration_information,
