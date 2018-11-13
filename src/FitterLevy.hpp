@@ -299,13 +299,6 @@ struct FitterLevy {
     }
 
     retval = data.resid_chi2(params);
-    std::cout << "< " << retval << " ("
-              << params.Ro << " "
-              << params.Rs << " "
-              << params.Rl << ") "
-              << params.lam << " "
-              << params.alpha << " "
-              << params.norm << "\n";
   }
 
   int
