@@ -5,14 +5,14 @@
 
 import sys
 import re
-import subprocess
 import json
-from pprint import pprint
-from subprocess import PIPE
-from pathlib import Path
-from tempfile import TemporaryDirectory
 
-KV_REGEX = re.compile("export (?P<key>\w+)='(?P<value>[^']+)'")
+from pathlib import Path
+from pprint import pprint
+from subprocess import getoutput
+from collections import defaultdict
+
+KV_REGEX = re.compile(r"export (?P<key>\w+)='(?P<value>[^']+)'")
 DEST_DIR = Path("~/alice/data").expanduser()
 
 
@@ -29,7 +29,6 @@ def argparser():
                         help="Path to top-level-directory of rootfile storage")
     parser.add_argument("run_numbers",
                         nargs='*',
-#                        default=[],
                         help="train numbers to pull down")
     return parser
 
@@ -49,142 +48,227 @@ def main(argv=None):
         interactive_fetch(cnx, train=train)
     else:
         for run in map(int, args.run_numbers):
-            fetch_train(cnx, train, run)
+            fetch_train_files(cnx, train, run)
 
 
-def fetch_train(cnx, train, number):
+def interactive_fetch(cnx, train="CF_PbPb"):
+    """ Command line loop for user interactive downloading """
+
+    def _request_train() -> int:
+        nonlocal train
+        train = input(f"train [{train}]: ").strip()
+        number = int(input("number: "))
+        return number
+
+    while True:
+        try:
+            number = _request_train()
+        except EOFError:
+            print("")
+            break
+        except ValueError as e:
+            print("Error:", e)
+            continue
+        fetch_train_files(cnx, train, number)
+
+
+def fetch_train_files(cnx, train, number):
     from shlex import quote
-    from subprocess import getoutput
+    from shutil import copy2 as filecopy
     from ROOT import TFile
 
     PWGCF_train_path = '/alice/cern.ch/user/a/alitrain/PWGCF/'
     train_path = PWGCF_train_path + train
 
+    # all files associated with this train
     found = cnx.Query(train_path, '/%d_2' % number, '', '')
     if found.GetSize() == 0:
         print("Could not find any train with number", number)
         return
 
-    def get_local_md5():
-        local_md5, *_ = getoutput('md5sum %s' % local_filename).strip().split()
+    def get_local_md5(filename):
+        """ Calculate md5 of local file """
+        if isinstance(filename, Path):
+            filename = quote(str(filename))
+        local_md5, *_ = getoutput('md5sum %s' % filename).strip().split()
         return local_md5
 
-    for train_file in found:
-        lfn = Path(str(train_file.GetValue("lfn")))
-        local_filename = quote(str(lfn))
+    def fetch_grid_file(f: dict, verbose=False):
+        """ Download file if not already present """
 
-        if lfn.name != 'AnalysisResults.root':
-            continue
-
-        remote_md5 = str(train_file.GetValue("md5"))
+        lfn = Path(f["lfn"])
+        local = quote(str(lfn))
         if lfn.exists():
-            local_md5 = get_local_md5()
-            if local_md5 == remote_md5:
-                print("File %s already present" %  local_filename)
-                continue
-            else:
-                print("File %s has mismatched checksum (%s != %s); re-downloading" % (
-                         local_filename, local_md5, remote_md5))
+            if verbose:
+                print(f"requested file {local} exists")
+            md5 = get_local_md5(lfn)
+            if md5 == f['md5']:
+                return lfn
+            print(f"md5 mismatch for {local} ({md5} ≠ {f['md5']})")
 
-        remote = quote(str(train_file.GetValue("turl")))
         lfn.parent.mkdir(exist_ok=True, parents=True)
-        TFile.Cp(remote, local_filename)
-        local_md5 = get_local_md5()
-        if local_md5 != remote_md5:
-            print("Unexpected error: File %s has mismatched checksum (%s != %s)" % (
-                         local_filename, local_md5, remote_md5))
-            continue
+        remote = quote(f["turl"])
+        TFile.Cp(remote, local)
 
-        # try
-        train_name = lfn.parent.parent.name
-        m = re.match(r'\d+_(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2}).+?(?P<child>child_\d+)?$', train_name)
-        if not m:
-           print("unexpected directory name %r" % train_name)
+        md5 = get_local_md5(lfn)
+        if md5 != f['md5']:
+            raise ValueError(f"Unexpected error: File {local} has mismatched "
+                             f"md5-checksums {md5}, expected {f['md5']}")
+        return lfn
 
-        runlist = lfn.parent.name
-        if train_name:
-            train_dict = m.groupdict()
-            year = train_dict['year'][2:]
-            month = train_dict['month']
-            day = train_dict['day']
+    def fetch_similar_files(file_list, verify_md5=True):
+        """
+        Searches container of file_info with same md5 value
+        """
 
-            field = ('negfield' if runlist == 'merge_runlist_1' else
-                     'posfield' if runlist == 'merge_runlist_2' else
-                     'unknown')
+        # assert all files share md5 checksums
+        if verify_md5:
+            md5_set = {f['md5'] for f in file_list}
+            if len(md5_set) != 1:
+                raise ValueError(f"Container of files not similar (md5s: {md5_set})")
 
-            production = 'unknown'
+        file_paths = {Path(f['lfn']) for f in file_list}
+        present_files = {f for f in file_paths if f.exists()}
+        missing_files = file_paths - present_files
 
-            child = ('' if train_dict.get('child') is None
-                        else '-' + train_dict['child'])
+        # all files accounted for
+        if not missing_files:
+            return
 
+        # no files present for this md5 - download one
+        if not present_files:
+            source_filename = missing_files.pop()
+            chosen_file = next(f for f in file_list if f['lfn'] == str(source_filename))
+            fetch_grid_file(chosen_file)
+            present_files = {source_filename}
 
-            dest_dir = DEST_DIR / year / month / day
+        # copy remaining missing files
+        src_filename = str(present_files.pop())
+        for dest in missing_files:
+            filecopy(src_filename, str(dest))
 
-            link_filename = f"{train}-{number}-{production}{child}-{field}.root"
+    def parse_env_text(txt):
+        s = KV_REGEX.scanner(txt)
+        env = {m.group('key'): m.group('value') for m in iter(s.search, None)}
+        try:
+            run_chunks = env['RUN_CHUNKS']
+        except KeyError:
+            pass
+        else:
+            # Warning: eval-ing returned data
+            env['RUN_CHUNKS'] = [list(map(int, x.split(','))) for x in eval(run_chunks)]
+        return env
 
-            link_path = dest_dir / link_filename
-            if not link_path.exists():
-                dest_dir.mkdir(exist_ok=True, parents=True)
-                link_path.symlink_to(lfn)
+    def fetch_env_files(env_files):
+        env_md5_map = {}
+        for f in env_files:
+            if not f['lfn'].endswith('env.sh'):
+                print(f"Requested to fetch {f['lfn']} when expecting env.sh")
+            env_md5_map.setdefault(f['md5'], f)
 
-    return
-    traindir = found.At(0)
-    trainurl = str(traindir.GetValue("turl"))
-    traindate = str(traindir.GetValue("ctime")).split(' ', 1)[0]
-    print("Found output directory", trainurl)
-    tmpdir = TemporaryDirectory()
-    tmp_env = tmpdir.name + "/env.sh"
-    TFile.Cp(trainurl + "env.sh", tmp_env)
-    with open(tmp_env) as env:
-        print("sh\n---")
-        print(env.read())
-        print("\n")
+        if len(env_md5_map) != 1:
+            keys = tuple(env_md5_map.keys())
+            raise ValueError("Unexpected number of differing env.sh files "
+                             f"for train {train}/{number} {keys!r}")
 
-    s = KV_REGEX.scanner(open(tmp_env).read())
-    env = {m.group('key'): m.group('value') for m in iter(s.search, None)}
-    print("Loaded environment:")
-    pprint(env)
+        env_file_info = next(iter(env_md5_map.values()))
+        env_file_path = fetch_grid_file(env_file_info)
+        env = parse_env_text(env_file_path.read_text())
+
+        # copy all remaining env files - we know they are identical
+        source = str(env_file_path)
+        for e in env_files:
+            dest = Path(e['lfn'])
+            if dest.exists():
+                continue
+            dest.parent.mkdir(exist_ok=True, parents=True)
+            filecopy(source, str(dest))
+
+        return env_file_path, env
+
+    # all files associated with the file
+    all_files = [tmap_to_dict(f) for f in found]
+
+    env_files = [file for file in all_files if file['lfn'].endswith('env.sh')]
+    if not env_files:
+        print(f"No env.sh files found for train {train}/{number}. Skipping.")
+        return
+
+    # download environment variable files and parse into dict
+    try:
+        env_file_path, env = fetch_env_files(env_files)
+    except Exception as e:
+        raise
+        print(f"error fetching env.sh from {train}/{number}", file=sys.stderr)
+        print(e, file=sys.stderr)
+        return
+
+    train_dir = env_file_path.parent.name
+
+    def get_path_data(fname):
+        m = re.match(r"""
+                \d+_20(?P<year>\d{2})
+                      (?P<month>\d{2})
+                      (?P<day>\d{2})
+                   .+?(?P<child>child_\d+)?$""", fname, re.X)
+        return m.groupdict() if m else None
+
     production = env['PERIOD_NAME']
     train_id = env['TRAIN_RUN_ID']
 
-    dest_dir = DEST_DIR / traindate[2:].replace('-', '/')
+    envpath = get_path_data(train_dir)
 
+    dest_dir = DEST_DIR / envpath['year'] / envpath['month'] / envpath['day']
     dest_dir.mkdir(parents=True, exist_ok=True)
 
-    print(production, train_id)
-    dest = dest_dir / '{train}-{train_id}-{production}'.format(
-        train=train, train_id=train_id, production=production)
+    prefix = f'{train}-{train_id}-{production}'
 
-    dest = str(dest)
-    print("dest :", dest)
+    env_json_path = dest_dir / f"{prefix}-env.json"
+    env_json_path.write_text(json.dumps(env, indent=0))
+
+    # download analysis result root files
+    for file_info in all_files:
+        if not file_info['lfn'].endswith("AnalysisResults.root"):
+            continue
+
+        lfn = fetch_grid_file(file_info)
+        merge_dir = lfn.parent
+        train_dir = merge_dir.parent
+
+        m = get_path_data(train_dir.name)
+        if not m:
+            print(f"Unexpected structue of train directory name {train_dir!r},"
+                  " cannot create link",
+                  file=sys.stderr)
+            continue
+
+        field = ('negfield' if merge_dir.name == 'merge_runlist_1' else
+                 'posfield' if merge_dir.name == 'merge_runlist_2' else
+                 'unknown')
+
+        child = '-' + m['child'] if m.get('child') else ''
+        link_filename = f'{prefix}{child}-{field}.root'
+
+        link_path = dest_dir / link_filename
+        if not link_path.exists():
+            dest_dir.mkdir(exist_ok=True, parents=True)
+            link_path.symlink_to(lfn)
+
+    train_definition_md5s = defaultdict(list)
+    for file_info in all_files:
+        if file_info['lfn'].endswith("MLTrainDefinition.cfg"):
+            train_definition_md5s[file_info['md5']].append(file_info)
+
+    for file_list in train_definition_md5s.values():
+        fetch_similar_files(file_list)
 
 
-    with open(dest + "-env.json", 'w') as envfile:
-        json.dump(env, envfile, indent=0)
+def tmap_to_dict(tmap: 'TMap') -> dict:
+    from ROOT import TMapIter
 
-    negfield_dest = Path(dest + "-negfield.root")
-    posfield_dest = Path(dest + "-posfield.root")
-    if negfield_dest.exists():
-        print("negfield file %r already exists, skipping download" % str(negfield_dest))
-    else:
-        TFile.Cp(trainurl + "merge_runlist_1/AnalysisResults.root", str(negfield_dest))
-    if posfield_dest.exists():
-        print("posfield file %r already exists, skipping download" % str(posfield_dest))
-    else:
-        TFile.Cp(trainurl + "merge_runlist_2/AnalysisResults.root", str(posfield_dest))
-
-
-def interactive_fetch(cnx, train="CF_PbPb"):
-
-    while True:
-        newtrain = input("train [%s]: " % train).strip()
-        if newtrain:
-            train = newtrain
-
-        number = int(input("number: "))
-
-        fetch_train(cnx, train, number)
-
+    map_iter = TMapIter(tmap)
+    keys = map(str, iter(map_iter, None))
+    return {key: str(map_iter.Value()) for key in keys}
 
 
 if __name__ == "__main__":
