@@ -9,6 +9,7 @@ class PathQuery(NamedTuple):
     analysis: str
     cfg: str
     pair: str
+    cent: str
     kt: str
     magfield: str
 
