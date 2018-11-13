@@ -1,0 +1,191 @@
+#!/usr/bin/env python3
+#
+# fetch-train-results
+#
+
+import sys
+import re
+import subprocess
+import json
+from pprint import pprint
+from subprocess import PIPE
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
+KV_REGEX = re.compile("export (?P<key>\w+)='(?P<value>[^']+)'")
+DEST_DIR = Path("~/alice/data").expanduser()
+
+
+def argparser():
+    from argparse import ArgumentParser
+    parser = ArgumentParser()
+    parser.add_argument("--train",
+                        nargs='?',
+                        default='CF_PbPb',
+                        help="Name of train to search for")
+    parser.add_argument("--dest-dir",
+                        nargs='?',
+                        default='data',
+                        help="Path to top-level-directory of rootfile storage")
+    parser.add_argument("run_numbers",
+                        nargs='*',
+#                        default=[],
+                        help="train numbers to pull down")
+    return parser
+
+
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
+    args = argparser().parse_args(argv)
+
+    from ROOT import TGrid
+
+    cnx = TGrid.Connect("alien://")
+    print("Connected to ALICE grid. Current path is %r" % cnx.Pwd())
+
+    train = args.train
+    if not args.run_numbers:
+        interactive_fetch(cnx, train=train)
+    else:
+        for run in map(int, args.run_numbers):
+            fetch_train(cnx, train, run)
+
+
+def fetch_train(cnx, train, number):
+    from shlex import quote
+    from subprocess import getoutput
+    from ROOT import TFile
+
+    PWGCF_train_path = '/alice/cern.ch/user/a/alitrain/PWGCF/'
+    train_path = PWGCF_train_path + train
+
+    found = cnx.Query(train_path, '/%d_2' % number, '', '')
+    if found.GetSize() == 0:
+        print("Could not find any train with number", number)
+        return
+
+    def get_local_md5():
+        local_md5, *_ = getoutput('md5sum %s' % local_filename).strip().split()
+        return local_md5
+
+    for train_file in found:
+        lfn = Path(str(train_file.GetValue("lfn")))
+        local_filename = quote(str(lfn))
+
+        if lfn.name != 'AnalysisResults.root':
+            continue
+
+        remote_md5 = str(train_file.GetValue("md5"))
+        if lfn.exists():
+            local_md5 = get_local_md5()
+            if local_md5 == remote_md5:
+                print("File %s already present" %  local_filename)
+                continue
+            else:
+                print("File %s has mismatched checksum (%s != %s); re-downloading" % (
+                         local_filename, local_md5, remote_md5))
+
+        remote = quote(str(train_file.GetValue("turl")))
+        lfn.parent.mkdir(exist_ok=True, parents=True)
+        TFile.Cp(remote, local_filename)
+        local_md5 = get_local_md5()
+        if local_md5 != remote_md5:
+            print("Unexpected error: File %s has mismatched checksum (%s != %s)" % (
+                         local_filename, local_md5, remote_md5))
+            continue
+
+        # try
+        train_name = lfn.parent.parent.name
+        m = re.match(r'\d+_(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2}).+?(?P<child>child_\d+)?$', train_name)
+        if not m:
+           print("unexpected directory name %r" % train_name)
+
+        runlist = lfn.parent.name
+        if train_name:
+            train_dict = m.groupdict()
+            year = train_dict['year'][2:]
+            month = train_dict['month']
+            day = train_dict['day']
+
+            field = ('negfield' if runlist == 'merge_runlist_1' else
+                     'posfield' if runlist == 'merge_runlist_2' else
+                     'unknown')
+
+            production = 'unknown'
+
+            child = ('' if train_dict.get('child') is None
+                        else '-' + train_dict['child'])
+
+
+            dest_dir = DEST_DIR / year / month / day
+
+            link_filename = f"{train}-{number}-{production}{child}-{field}.root"
+
+            link_path = dest_dir / link_filename
+            if not link_path.exists():
+                dest_dir.mkdir(exist_ok=True, parents=True)
+                link_path.symlink_to(lfn)
+
+    return
+    traindir = found.At(0)
+    trainurl = str(traindir.GetValue("turl"))
+    traindate = str(traindir.GetValue("ctime")).split(' ', 1)[0]
+    print("Found output directory", trainurl)
+    tmpdir = TemporaryDirectory()
+    tmp_env = tmpdir.name + "/env.sh"
+    TFile.Cp(trainurl + "env.sh", tmp_env)
+    with open(tmp_env) as env:
+        print("sh\n---")
+        print(env.read())
+        print("\n")
+
+    s = KV_REGEX.scanner(open(tmp_env).read())
+    env = {m.group('key'): m.group('value') for m in iter(s.search, None)}
+    print("Loaded environment:")
+    pprint(env)
+    production = env['PERIOD_NAME']
+    train_id = env['TRAIN_RUN_ID']
+
+    dest_dir = DEST_DIR / traindate[2:].replace('-', '/')
+
+    dest_dir.mkdir(parents=True, exist_ok=True)
+
+    print(production, train_id)
+    dest = dest_dir / '{train}-{train_id}-{production}'.format(
+        train=train, train_id=train_id, production=production)
+
+    dest = str(dest)
+    print("dest :", dest)
+
+
+    with open(dest + "-env.json", 'w') as envfile:
+        json.dump(env, envfile, indent=0)
+
+    negfield_dest = Path(dest + "-negfield.root")
+    posfield_dest = Path(dest + "-posfield.root")
+    if negfield_dest.exists():
+        print("negfield file %r already exists, skipping download" % str(negfield_dest))
+    else:
+        TFile.Cp(trainurl + "merge_runlist_1/AnalysisResults.root", str(negfield_dest))
+    if posfield_dest.exists():
+        print("posfield file %r already exists, skipping download" % str(posfield_dest))
+    else:
+        TFile.Cp(trainurl + "merge_runlist_2/AnalysisResults.root", str(posfield_dest))
+
+
+def interactive_fetch(cnx, train="CF_PbPb"):
+
+    while True:
+        newtrain = input("train [%s]: " % train).strip()
+        if newtrain:
+            train = newtrain
+
+        number = int(input("number: "))
+
+        fetch_train(cnx, train, number)
+
+
+
+if __name__ == "__main__":
+    sys.exit(main())
