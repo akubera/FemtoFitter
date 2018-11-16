@@ -93,27 +93,29 @@ def fetch_train_files(cnx, train, number):
         local_md5, *_ = getoutput('md5sum %s' % filename).strip().split()
         return local_md5
 
-    def fetch_grid_file(f: dict, verbose=False):
+    def fetch_grid_file(f: dict, verbose=False) -> Path:
         """ Download file if not already present """
 
         lfn = Path(f["lfn"])
+        source_md5 = ['md5']
+
         local = quote(str(lfn))
         if lfn.exists():
             if verbose:
                 print(f"requested file {local} exists")
             md5 = get_local_md5(lfn)
-            if md5 == f['md5']:
+            if md5 == source_md5:
                 return lfn
-            print(f"md5 mismatch for {local} ({md5} ≠ {f['md5']})")
+            print(f"md5 mismatch for {local} ({md5} ≠ {source_md5}). Overwritting.")
 
         lfn.parent.mkdir(exist_ok=True, parents=True)
         remote = quote(f["turl"])
         TFile.Cp(remote, local)
 
         md5 = get_local_md5(lfn)
-        if md5 != f['md5']:
+        if md5 != source_md5:
             raise ValueError(f"Unexpected error: File {local} has mismatched "
-                             f"md5-checksums {md5}, expected {f['md5']}")
+                             f"md5-checksums {md5}, expected {source_md5}")
         return lfn
 
     def fetch_similar_files(file_list, verify_md5=True):
@@ -147,7 +149,7 @@ def fetch_train_files(cnx, train, number):
         for dest in missing_files:
             filecopy(src_filename, str(dest))
 
-    def parse_env_text(txt):
+    def parse_env_text(txt) -> dict:
         s = KV_REGEX.scanner(txt)
         env = {m.group('key'): m.group('value') for m in iter(s.search, None)}
         try:
@@ -170,6 +172,10 @@ def fetch_train_files(cnx, train, number):
             keys = tuple(env_md5_map.keys())
             raise ValueError("Unexpected number of differing env.sh files "
                              f"for train {train}/{number} {keys!r}")
+            # use this to run with differing env.sh
+            for md5 in env_md5_map.keys():
+                fetch_env_files({f for f in env_files if f['md5'] == md5})
+            return
 
         env_file_info = next(iter(env_md5_map.values()))
         env_file_path = fetch_grid_file(env_file_info)
