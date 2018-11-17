@@ -170,7 +170,46 @@ class AnalysisResults:
 
 
 class AnalysisQinv(AnalysisResults):
-    pass
+
+    @classmethod
+    def FindIn(cls, obj) -> Generator[Optional['AnalysisFinderQinv'], None, None]:
+
+        container = get_tobject(obj, "KT_Qinv")
+        if container == nullptr:
+            return
+
+        for kt_container in iter_tobject(container):
+            self = cls.From(kt_container)
+            if not self:
+                continue
+            kt_bin = kt_container.GetName()
+            yield kt_bin, self
+
+    @classmethod
+    def From(cls, container) -> Optional['AnalysisFinderQ3D']:
+
+        keys = ("Num_qinv", "Den_qinv", "kTDep_qinv")
+        num, den, kt = (get_tobject(container, k) for k in keys)
+
+        if any(x == nullptr for x in (num, den, kt)):
+            return
+        self = cls(num, den, kt)
+        return self
+
+    def __init__(self, num, den, kt=None):
+        self.num = num
+        self.den = den
+        self.kt = kt
+
+    def write_to_file(self, dest):
+        dest.mkdir(self.storage_key)
+        self.write_config(dest)
+
+        dest.cd(self.storage_key)
+        self.num.Write("num")
+        self.den.Write("den")
+        if self.kt:
+            self.kt.Write("kt_dist")
 
 
 class AnalysisQ3D(AnalysisResults):
