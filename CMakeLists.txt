@@ -59,6 +59,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -pedantic -Ofast -m
 
 set(SRCS
   src/Data3D.cpp
+  src/Data1D.cpp
   src/Fitter.cpp
   src/CoulombHist.cpp
 #   ${CMAKE_CURRENT_SOURCE_DIR}/femtofitter/MomentumResolutionCorrector.cxx
