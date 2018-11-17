@@ -41,7 +41,12 @@ def main(argv=None):
     from ROOT import TGrid
 
     cnx = TGrid.Connect("alien://")
-    print("Connected to ALICE grid. Current path is %r" % cnx.Pwd())
+    pwd = cnx.Pwd()
+    if not pwd:
+        print("Could not connect to grid. Aborting")
+        return 1
+
+    print(f"Connected to ALICE grid. Current path is {pwd!r}")
 
     train = args.train
     if not args.run_numbers:
@@ -97,7 +102,7 @@ def fetch_train_files(cnx, train, number):
         """ Download file if not already present """
 
         lfn = Path(f["lfn"])
-        source_md5 = ['md5']
+        source_md5 = f['md5']
 
         local = quote(str(lfn))
         if lfn.exists():
