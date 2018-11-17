@@ -73,7 +73,6 @@ set(ROOT_LIBS
   ROOT::Minuit
 )
 
-message(STATUS ${CMAKE_CXX_COMPILE_FEATURES})
 add_library(FemtoFitter	SHARED femfit_dict ${SRCS})
 target_link_libraries(FemtoFitter ${ROOT_LIBS})
 
