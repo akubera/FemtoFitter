@@ -54,13 +54,13 @@ def main(argv=None):
         open_mode = 'UPDATE' if args.update else 'RECREATE'
         output = LazyTFile(args.out, open_mode)
 
-    paths = set(Path(p).resolve() for p in args.files)
+    paths = set(Path(p).absolute() for p in args.files)
 
     for path in copy(paths):
         if path.is_dir():
             paths.remove(path)
             print("Scanning directory %s for all .root files" % path)
-            paths.update(s.resolve() for s in path.glob("**/*.root"))
+            paths.update(s.absolute() for s in path.glob("**/*.root"))
 
     for path in paths:
         print(f"\nBeginning scan of {path}")

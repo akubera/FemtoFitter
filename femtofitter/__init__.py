@@ -83,3 +83,29 @@ def flatten_config(cfg: dict, delim: str='.') -> dict:
                 result[key] = val
         else:
             result[key] = val
+
+
+def unique_histnames():
+    i = 1
+    while True:
+        yield "hist_%d" % i
+        i += 1
+
+histname = unique_histnames()
+
+def yield_projections(*hists, lim=0.2, scale=False):
+    from ROOT import TH3
+    projections = TH3.ProjectionX, TH3.ProjectionY, TH3.ProjectionZ
+    axis_getters = TH3.GetXaxis, TH3.GetYaxis, TH3.GetZaxis
+
+    for project, get_axis in zip(projections, axis_getters):
+        results = ()
+        for h in hists:
+            ax = get_axis(h)
+            lobin, hibin = map(ax.FindBin, (-lim, lim))
+            ph = project(h, next(histname), *(lobin, hibin)*2)
+            ph.SetStats(False)
+            if scale:
+                ph.Scale(1.0 / (hibin - lowbin + 1) **2)
+            results += (ph, )
+        yield results
