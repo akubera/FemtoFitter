@@ -85,6 +85,25 @@ def flatten_config(cfg: dict, delim: str='.') -> dict:
     return result
 
 
+def fitresult_data_df(json_data):
+    import pandas as pd
+    df = pd.DataFrame(json_data['df'])
+    return df
+
+
+def fitresult_config_df(json_data):
+    import pandas as pd
+    config = json_data['config'] if 'config' in json_data else json_data
+    result = []
+
+    for v, c in config.items():
+        flat = flatten_config(c)
+        flat['cfg'] = v.partition("/")[2]
+        result.append(flat)
+
+    return pd.DataFrame(result)
+
+
 def unique_histnames():
     i = 1
     while True:
