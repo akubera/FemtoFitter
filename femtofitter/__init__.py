@@ -59,3 +59,14 @@ def get_momentum_resolution_correction_map(path='mrcdata.yaml'):
             result[d] = cfg
 
     return result
+
+
+def flatten_config(cfg: dict, delim: str='.') -> dict:
+    result = {}
+    for key, val in cfg.items():
+        if isinstance(val, dict):
+            for subkey, val in flatten_config(val).items():
+                key = f'{key}{delim}{subkey}'
+                result[key] = val
+        else:
+            result[key] = val
