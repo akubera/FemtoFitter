@@ -94,7 +94,7 @@ public:
 
     minuit.SetFCN(minuit_f<ResidCalc_t>);
 
-    return Impl::do_fit_minuit(minuit, fit_factor);
+    return do_fit_minuit(minuit, fit_factor);
   }
 
   auto fit_pml()

@@ -180,39 +180,6 @@ struct FitterLevy : public Fitter3D<FitterLevy> {
       }
   };
 
-  /// Utility function for building fitter with tdirectory in file
-  /// at specified path
-  static std::unique_ptr<FitterLevy>
-  From(TFile &file, const std::string &path, double limit=0.0)
-  {
-    auto tdir = static_cast<TDirectory*>(file.Get(path.c_str()));
-    if (!tdir) {
-      return nullptr;
-    }
-    return From(*tdir, limit);
-  }
-
-  /// Construct from ("num", "den", "qinv") histograms in tdirectory
-  /// limit sets the fit-range.
-  ///
-  static std::unique_ptr<FitterLevy>
-  From(TDirectory &tdir, double limit=0.0)
-  {
-    TH3 *num = static_cast<TH3*>(tdir.Get("num")),
-        *den = static_cast<TH3*>(tdir.Get("den")),
-        *qinv = static_cast<TH3*>(tdir.Get("qinv"));
-
-    if (!num || !den || !qinv) {
-      return nullptr;
-      // throw std::runtime_error("Error loading FitterLevy histograms from path '" + path + "'");
-    }
-#if __cplusplus > 201103L
-    return make_unique<FitterLevy>(*num, *den, *qinv, limit);
-#else
-    return std::unique_ptr<FitterLevy>(new FitterLevy(*num, *den, *qinv, limit));
-#endif
-  }
-
   /// Construct fitter from numerator denominator qinv histograms
   /// and a fit-range limit
   ///
@@ -221,41 +188,9 @@ struct FitterLevy : public Fitter3D<FitterLevy> {
   {
   }
 
-  /// Number of entries in fitter
-  std::size_t size() const
-    { return data.size(); }
-
   static double
   gauss(std::array<double, 3> q, const FitParams &p, double K)
     { return p.gauss(q, K); }
-
-  double
-  resid_chi2(const FitParams &p) const
-    { return resid_calc(p, chi2_calc); }
-
-  double
-  resid_pml(const FitParams &p) const
-    { return resid_calc(p, loglikelihood_calc); }
-
-  static void
-  fit_func(Int_t &,
-           Double_t *,
-           Double_t &retval,
-           Double_t *par,
-           Int_t)
-  {
-    // returned when invalid input or output occurs
-    static const double BAD_VALUE = 3e99;
-    const auto &data = *(const FitterLevy*)(intptr_t)(par[DATA_PARAM_IDX]);
-
-    FitParams params(par);
-    if (params.is_invalid()) {
-      retval = BAD_VALUE;
-      return;
-    }
-
-    retval = data.resid_chi2(params);
-  }
 
   int
   setup_minuit(TMinuit &minuit)
@@ -279,62 +214,4 @@ struct FitterLevy : public Fitter3D<FitterLevy> {
 
     return errflag;
   }
-
-  template <typename F>
-  FitResult
-  fit(F fcn, double fit_method=1.0)
-  {
-    TMinuit minuit;
-    minuit.SetPrintLevel(-1);
-    setup_minuit(minuit);
-    minuit.SetFCN(fcn);
-
-    return do_fit_minuit(minuit, fit_method);
-  }
-
-  template <typename ResidCalculator_t>
-  FitResult
-  fit(double fit_method)
-  {
-    TMinuit minuit;
-    minuit.SetPrintLevel(-1);
-    setup_minuit(minuit);
-    minuit.SetFCN(minuit_f<ResidCalculator_t>);
-    return do_fit_minuit(minuit, fit_method);
-  }
-
-  FitResult
-  do_fit_minuit(TMinuit &minuit, double fit_method)
-  {
-    double strat_args[] = {1.0};
-    double migrad_args[] = {2000.0, fit_method};
-    double hesse_args[] = {2000.0, 1.0};
-
-    int errflag;
-    minuit.mnexcm("SET STRategy", strat_args, 1, errflag);
-    minuit.mnexcm("MIGRAD", migrad_args, 2, errflag);
-
-    strat_args[0] = 2.0;
-    minuit.mnexcm("SET STRategy", strat_args, 1, errflag);
-    minuit.mnexcm("MIGRAD", migrad_args, 2, errflag);
-    minuit.mnexcm("HESSE", hesse_args, 1, errflag);
-
-    return FitResult(minuit);
-  }
-
-  FitResult
-  fit_pml()
-    { return fit<PMLCALC>(0.5); }
-
-  FitResult
-  fit_chi2()
-    { return fit<CalcChi2>(1.0); }
-
-  FitResult
-  fit()
-    { return fit(fit_func, 1.0); }
-
-  auto num_as_vec() const -> std::vector<double>
-    { return numerator_as_vec(*this); }
-
 };
