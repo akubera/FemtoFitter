@@ -109,3 +109,21 @@ def yield_projections(*hists, lim=0.2, scale=False):
                 ph.Scale(1.0 / (hibin - lowbin + 1) **2)
             results += (ph, )
         yield results
+
+
+def normalize_yaxis(canvas, offset_percent=2):
+    from ROOT import TH1
+
+    lofact = 1 - offset_percent / 100
+    hifact = 1 + offset_percent / 100
+
+    pads = canvas.GetListOfPrimitives()
+    hists = [pad.GetListOfPrimitives().At(0) for pad in pads]
+    hists = [h for h in hists if isinstance(h, TH1)]
+    range_min, range_max = 100, 0
+
+    range_min = min(range_min, *(h.GetMinimum() for h in hists))
+    range_max = max(range_max, *(h.GetMaximum() for h in hists))
+
+    for h in hists:
+        h.GetYaxis().SetRangeUser(range_min * lofact, range_max * hifact)
