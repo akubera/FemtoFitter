@@ -81,3 +81,7 @@ target_link_libraries(FemtoFitter ${ROOT_LIBS})
 add_executable(run-fit-spec	src/bin/run-fit-spec.cc)
 target_include_directories(run-fit-spec PRIVATE src)
 target_link_libraries(run-fit-spec ROOT::Minuit)
+
+add_executable(quick-fit src/bin/quick-fit.cc)
+target_include_directories(quick-fit PRIVATE src)
+target_link_libraries(quick-fit FemtoFitter)
