@@ -19,13 +19,14 @@
 
 #include "CoulombHist.hpp"
 #include "Fitter.hpp"
+#include "Fitter3D.hpp"
 #include "Data3D.hpp"
 
 
 /// \class FitterGaussOSL
 /// \brief Fit out-side-long with gaussian parameters
 ///
-struct FitterGaussOSL {
+struct FitterGaussOSL : public Fitter3D<FitterGaussOSL>{
   using CalcLoglike = ResidCalculatorPML<FitterGaussOSL>;
   using CalcChi2 = ResidCalculatorChi2<FitterGaussOSL>;
 
@@ -41,8 +42,8 @@ struct FitterGaussOSL {
   };
 
   static double
-  gauss(std::array<double, 3> q,
-        std::array<double, 3> RSq,
+  gauss(const std::array<double, 3> &q,
+        const std::array<double, 3> &RSq,
         double lam,
         double K=1.0,
         double norm=1.0)
@@ -148,11 +149,8 @@ struct FitterGaussOSL {
     double PseudoRinv() const
       { return std::sqrt(Ro * Ro * gamma + Rs * Rs + Rl * Rl); }
 
-    double gauss(std::array<double, 3> q, double K) const
-      {
-        std::array<double, 3> Rsq = {Ro*Ro, Rs*Rs, Rl*Rl};
-        return FitterGaussOSL::gauss(q, Rsq, lam, K, norm);
-      }
+    double gauss(const std::array<double, 3> &q, double K) const
+      { return FitterGaussOSL::gauss(q, {Ro*Ro, Rs*Rs, Rl*Rl}, lam, K, norm); }
 
     void
     apply_to(TH3 &hist, TH3& qinv)
@@ -182,135 +180,19 @@ struct FitterGaussOSL {
         hist.SetBinContent(i,j,k, hist.GetBinContent(i,j,k) * gauss({qo, qs, ql}, K));
       }
     }
-
   };
-
-  /// The associated fit data
-  Data3D data;
-
-  /// Utility function for building fitter with tdirectory in file
-  /// at specified path
-  static std::unique_ptr<FitterGaussOSL>
-  From(TFile &file, const std::string &path, double limit=0.0)
-  {
-    auto tdir = static_cast<TDirectory*>(file.Get(path.c_str()));
-    if (!tdir) {
-      return nullptr;
-    }
-    return From(*tdir, limit);
-  }
-
-  /// Construct from ("num", "den", "qinv") histograms in tdirectory
-  /// limit sets the fit-range.
-  ///
-  static std::unique_ptr<FitterGaussOSL>
-  From(TDirectory &tdir, double limit=0.0)
-  {
-    TH3 *num = static_cast<TH3*>(tdir.Get("num")),
-        *den = static_cast<TH3*>(tdir.Get("den")),
-        *qinv = static_cast<TH3*>(tdir.Get("qinv"));
-
-    if (!num || !den || !qinv) {
-      std::cerr << "Error loading FitterGaussOSL histograms from path "
-                << "'" << tdir.GetName() << "'\n";
-      return nullptr;
-    }
-
-    return std::make_unique<FitterGaussOSL>(*num, *den, *qinv, limit);
-  }
 
   /// Construct fitter from numerator denominator qinv histograms
   /// and a fit-range limit
   ///
   FitterGaussOSL(TH3 &n, TH3 &d, TH3 &q, double limit=0.0)
-    : data(n, d, q, limit)
+    : Fitter3D(n, d, q, limit)
   {
   }
-
-  /// Number of entries in fitter
-  std::size_t size() const
-    { return data.size(); }
 
   static double
-  gauss(std::array<double, 3> q, const FitParams &p, double K)
+  gauss(const std::array<double, 3>& q, const FitParams &p, double K)
     { return p.gauss(q, K); }
-
-  template <typename ResidFunc>
-  double resid_calc(const FitParams &p, ResidFunc resid_calc) const
-  {
-    double retval = 0;
-
-    double phony_r = p.PseudoRinv();
-    auto coulomb_factor = CoulombHist::GetHistWithRadius(phony_r);
-
-#if __cplusplus > 201103L
-    auto Kfsi = [&c=coulomb_factor] (double q) {
-#else
-    auto &c = coulomb_factor;
-    auto Kfsi = [&c] (double q) {
-#endif
-      double coulomb = c.Interpolate(q);
-      return coulomb;
-    };
-
-    for (const auto &datum : data.data) {
-      const double
-        qo = datum.qo,
-        qs = datum.qs,
-        ql = datum.ql,
-        n = datum.num,
-        d = datum.den,
-        q = datum.qinv,
-
-        CF = p.gauss({qo, qs, ql}, Kfsi(q));
-
-      retval += resid_calc(n, d, CF);
-    }
-
-    return retval;
-  }
-
-  double
-  resid_chi2(const FitParams &p) const
-    { return resid_calc(p, chi2_calc); }
-
-  double
-  resid_chi2(const FitResult &r) const
-    { return resid_chi2(static_cast<const FitParams&>(r)); }
-
-  double
-  resid_pml(const FitParams &p) const
-    { return resid_calc(p, loglikelihood_calc); }
-
-  double
-  resid_pml(const FitResult &r) const
-    { return resid_pml(static_cast<const FitParams&>(r)); }
-
-  static void
-  fit_func(Int_t &,
-           Double_t *,
-           Double_t &retval,
-           Double_t *par,
-           Int_t)
-  {
-    // returned when invalid input or output occurs
-    static const double BAD_VALUE = 3e99;
-    const auto &data = *(const FitterGaussOSL*)(intptr_t)(par[DATA_PARAM_IDX]);
-
-    FitParams params(par);
-    if (params.is_invalid()) {
-      retval = BAD_VALUE;
-      return;
-    }
-
-    retval = data.resid_chi2(params);
-    // std::cout << "< " << retval << " ("
-    //           << params.Ro << " "
-    //           << params.Rs << " "
-    //           << params.Rl << ") "
-    //           << params.lam << " "
-    //           << params.norm << "\n";
-  }
 
   int
   setup_minuit(TMinuit &minuit)
@@ -332,81 +214,5 @@ struct FitterGaussOSL {
     }
     return errflag;
   }
-
-  template <typename F>
-  FitResult
-  fit(F fcn, double fit_method=1.0)
-  {
-    TMinuit minuit;
-    minuit.SetPrintLevel(-1);
-    setup_minuit(minuit);
-
-    minuit.SetFCN(fcn);
-
-    return do_fit_minuit(minuit, fit_method);
-  }
-
-  template <typename ResidCalc_t>
-  FitResult
-  fit(double fit_factor)
-  {
-    TMinuit minuit;
-    minuit.SetPrintLevel(-1);
-    setup_minuit(minuit);
-
-    minuit.SetFCN(minuit_f<ResidCalc_t>);
-
-    return do_fit_minuit(minuit, fit_factor);
-  }
-
-  FitResult
-  do_fit_minuit(TMinuit &minuit, double fit_factor)
-  {
-    double strat_args[] = {1.0};
-    double migrad_args[] = {2000.0, fit_factor};
-    double hesse_args[] = {2000.0, 1.0};
-
-    int errflag;
-    minuit.mnexcm("SET STRategy", strat_args, 1, errflag);
-    minuit.mnexcm("MIGRAD", migrad_args, 2, errflag);
-
-    strat_args[0] = 2.0;
-    minuit.mnexcm("SET STRategy", strat_args, 1, errflag);
-    minuit.mnexcm("MIGRAD", migrad_args, 2, errflag);
-
-    minuit.mnexcm("HESSE", hesse_args, 1, errflag);
-
-    /*
-    TGraph *g = nullptr;
-
-    for (int i=3; i>0; --i) {
-      minuit.SetErrorDef(i);
-      TGraph *g = (TGraph*) minuit.Contour(10, 3, 4);
-      g->Draw(i != 3 ? "SAME" : "");
-    }
-    */
-
-    return FitResult(minuit);
-  }
-
-  FitResult
-  fit_pml()
-    { return fit<CalcLoglike>(0.5); }
-
-  FitResult
-  fit_chi2()
-    { return fit<CalcChi2>(1.0); }
-
-  FitResult
-  fit()
-    { return fit(fit_func, 1.0); }
-
-  static
-  std::pair<const double*, size_t>
-  to_tuple(const std::valarray<double> &v)
-    { return {&v[0], v.size()}; }
-
-  auto num_as_vec() const -> std::vector<double>
-    { return numerator_as_vec(*this); }
 
 };
