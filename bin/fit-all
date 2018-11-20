@@ -1,0 +1,49 @@
+#!/usr/bin/env python
+#
+# fit-all
+#
+
+import sys
+from pathlib import Path
+
+
+def arg_parser():
+    from argparse import ArgumentParser
+    parser = ArgumentParser()
+    parser.add_argument("input",
+                        help="file to fit")
+    return parser
+
+
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
+    args = arg_parser().parse_args(argv)
+    if sys.path[0] != '':
+        sys.path.insert(0, '')
+
+    from femtofitter.fit import parallel_fit_all
+    from ROOT import gSystem, TFile
+
+    if gSystem.Load("build/libFemtoFitter.so") != 0:
+        print("Could not load libFemtoFitter")
+        return 1
+
+    tfile = TFile.Open(args.input)
+    if not tfile:
+        return 1
+
+    input_path = Path(args.input)
+
+    dest_filename = "fitres-%s.json" % input_path.name
+    dest_dir = Path("fit-results")
+    dest_dir.mkdir(exist_ok=True, parents=True)
+    dest = dest_dir / dest_filename
+
+    parallel_fit_all(tfile, str(dest))
+
+    return 0
+
+
+if __name__ == "__main__":
+    exit(main())
