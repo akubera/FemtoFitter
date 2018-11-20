@@ -80,33 +80,53 @@ public:
     return retval;
   }
 
+  template <typename FitResult>
+  double
+  resid_chi2(const FitResult &r) const
+  {
+    auto params = static_cast<const typename Impl::FitParams>(r);
+    return resid_calc(params, chi2_calc);
+  }
+
+  template <typename FitResult>
+  double
+  resid_pml(const FitResult &r) const
+  {
+    auto params = static_cast<const typename Impl::FitParams>(r);
+    return resid_calc(params, loglikelihood_calc);
+  }
+
+
   /// Automatic Fit Function
   ///
   /// Create minuit function and call minuit_f with the
   /// ResidualCalculation template parameter
   ///
-  template <typename ResidCalc_t>
-  auto fit(double fit_factor) // -> Impl::FitResult
+  template <typename ResidCalc_t, typename FitResult>
+  FitResult fot(double fit_factor) // -> Impl::FitResult
   {
     TMinuit minuit;
     minuit.SetPrintLevel(-1);
-    Impl::setup_minuit(minuit);
+    static_cast<Impl*>(this)->setup_minuit(minuit);
 
     minuit.SetFCN(minuit_f<ResidCalc_t>);
 
     return do_fit_minuit(minuit, fit_factor);
   }
 
-  auto fit_pml()
-    { return fit<Impl::CalcLoglike>(0.5); }
+  // auto fit_pml()
+  //   { return fit<Impl::CalcLoglike>(0.5); }
 
   // template <typename FitResult>
   // FitResult fit_chi2()
-  auto fit_chi2()
-    { return Impl::fit<Impl::CalcChi2>(1.0); }
+  // // auto fit_chi2()
+  //   {
+  //     FitResult res = template fot<Impl::CalcChi2>(1.0);
+  //     return res;
+  //   }
 
-  auto fit()
-    { return Impl::fit(Impl::fit_func, 1.0); }
+  // auto fit()
+  //   { return fit(Impl::fit_func, 1.0); }
 
   auto num_as_vec() const -> std::vector<double>
     { return numerator_as_vec(*this); }
@@ -127,7 +147,7 @@ public:
 
     minuit.mnexcm("HESSE", hesse_args, 1, errflag);
 
-    return Impl::FitResult(minuit);
+    return typename Impl::FitResult(minuit);
   }
 
   static
@@ -154,27 +174,6 @@ public:
     }
 
     retval = data.resid_chi2(params);
-  }
-
-  // template <typename FitParams>
-  // double
-  // resid_chi2(const FitParams &p) const
-  //   { return resid_calc(p, chi2_calc); }
-
-  template <typename FitResult>
-  double
-  resid_chi2(const FitResult &r) const
-  {
-    auto params = static_cast<const typename Impl::FitParams&>(r);
-    return resid_chi2(params);
-  }
-
-  template <typename FitResult>
-  double
-  resid_pml(const FitResult &r) const
-  {
-    auto params = static_cast<const typename Impl::FitParams&>(r);
-    return resid_pml(params);
   }
 
   std::size_t size() const

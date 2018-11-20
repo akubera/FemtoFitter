@@ -215,4 +215,13 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL>{
     return errflag;
   }
 
+  using Super = Fitter3D<FitterGaussOSL>;
+  using Self = FitterGaussOSL;
+
+  FitResult fit()
+    { return fot<CalcChi2, FitResult>(1.0); }
+    // { return fit_chi2<FitResult>(); }
+  //   { return Super::fit<Super::fit_func>(1.0); }
+
+
 };
