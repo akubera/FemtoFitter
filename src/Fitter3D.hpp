@@ -12,6 +12,9 @@
 template <typename Impl>
 class Fitter3D {
 public:
+  using CalcLoglike = ResidCalculatorPML<Impl>;
+  using CalcChi2 = ResidCalculatorChi2<Impl>;
+
 
   /// The Associated fit data
   Data3D data;
@@ -84,7 +87,7 @@ public:
   double
   resid_chi2(const FitResult &r) const
   {
-    auto params = static_cast<const typename Impl::FitParams>(r);
+    auto params = static_cast<const typename Impl::FitParams&>(r);
     return resid_calc(params, chi2_calc);
   }
 
@@ -92,7 +95,7 @@ public:
   double
   resid_pml(const FitResult &r) const
   {
-    auto params = static_cast<const typename Impl::FitParams>(r);
+    auto params = static_cast<const typename Impl::FitParams&>(r);
     return resid_calc(params, loglikelihood_calc);
   }
 
@@ -102,8 +105,8 @@ public:
   /// Create minuit function and call minuit_f with the
   /// ResidualCalculation template parameter
   ///
-  template <typename ResidCalc_t, typename FitResult>
-  FitResult fot(double fit_factor) // -> Impl::FitResult
+  template <typename ResidCalc_t>
+  auto fit(double fit_factor) // -> Impl::FitResult
   {
     TMinuit minuit;
     minuit.SetPrintLevel(-1);
@@ -115,21 +118,16 @@ public:
   }
 
   // auto fit_pml()
-  //   { return fit<Impl::CalcLoglike>(0.5); }
+  //   { return fot<ResidCalculatorPML<Impl>>(0.5); }
 
-  // template <typename FitResult>
-  // FitResult fit_chi2()
-  // // auto fit_chi2()
-  //   {
-  //     FitResult res = template fot<Impl::CalcChi2>(1.0);
-  //     return res;
-  //   }
+  auto fit_pml()
+    { return fit<typename Impl::CalcLoglike>(0.5); }
 
-  // auto fit()
-  //   { return fit(Impl::fit_func, 1.0); }
+  auto fit_chi2()
+    { return fit<typename Impl::CalcLoglike>(1.0); }
 
-  auto num_as_vec() const -> std::vector<double>
-    { return numerator_as_vec(*this); }
+  auto fit()
+    { return fit_chi2(); }
 
   auto do_fit_minuit(TMinuit &minuit, double fit_factor) // -> FitResult
   {
@@ -149,11 +147,6 @@ public:
 
     return typename Impl::FitResult(minuit);
   }
-
-  static
-  std::pair<const double*, size_t>
-  to_tuple(const std::valarray<double> &v)
-    { return {&v[0], v.size()}; }
 
   static
   void
@@ -178,6 +171,9 @@ public:
 
   std::size_t size() const
     { return data.size(); }
+
+  auto num_as_vec() const -> std::vector<double>
+    { return numerator_as_vec(*this); }
 
 };
 

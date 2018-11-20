@@ -29,8 +29,6 @@
 /// \brief Fit out-side-long with gaussian parameters
 ///
 struct FitterLevy : public Fitter3D<FitterLevy> {
-  using PMLCALC = ResidCalculatorPML<FitterLevy>;
-  using CalcChi2 = ResidCalculatorChi2<FitterLevy>;
 
   /// constants used to lookup data from pointer
   enum {

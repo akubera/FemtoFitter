@@ -26,9 +26,7 @@
 /// \class FitterGaussOSL
 /// \brief Fit out-side-long with gaussian parameters
 ///
-struct FitterGaussOSL : public Fitter3D<FitterGaussOSL>{
-  using CalcLoglike = ResidCalculatorPML<FitterGaussOSL>;
-  using CalcChi2 = ResidCalculatorChi2<FitterGaussOSL>;
+struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
 
   /// constants used to lookup data from pointer
   enum {
@@ -214,14 +212,5 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL>{
     }
     return errflag;
   }
-
-  using Super = Fitter3D<FitterGaussOSL>;
-  using Self = FitterGaussOSL;
-
-  FitResult fit()
-    { return fot<CalcChi2, FitResult>(1.0); }
-    // { return fit_chi2<FitResult>(); }
-  //   { return Super::fit<Super::fit_func>(1.0); }
-
 
 };
