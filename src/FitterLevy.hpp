@@ -18,15 +18,26 @@
 #include <iostream>
 
 #include "CoulombHist.hpp"
+#include "FitterTraits.hpp"
 #include "Fitter.hpp"
+#include "Fitter3D.hpp"
 #include "Data3D.hpp"
 
+
+struct FitterLevy;
+struct FitterLevy::FitParams;
+
+template <>
+struct fitter_traits<FitterLevy> {
+  using param_type = typename FitterLevy::FitParams;
+
+};
 
 
 /// \class FitterLevy
 /// \brief Fit out-side-long with gaussian parameters
 ///
-struct FitterLevy {
+struct FitterLevy : public Fitter3D<FitterLevy> {
   using PMLCALC = ResidCalculatorPML<FitterLevy>;
   using CalcChi2 = ResidCalculatorChi2<FitterLevy>;
 
@@ -43,11 +54,11 @@ struct FitterLevy {
   };
 
   /// The associated fit data
-  Data3D data;
+  // Data3D data;
 
   static double
-  gauss(std::array<double, 3> q,
-        std::array<double, 3> RSq,
+  gauss(const std::array<double, 3> &q,
+        const std::array<double, 3> &RSq,
         double lam,
         double alpha,
         double K=1.0,
@@ -86,12 +97,10 @@ struct FitterLevy {
     }
 
     void print() const
-    {
-      std::cout << __str__();
-    }
+      { std::cout << __str__(); }
 
-    std::string
-    __str__() const
+    /// for printing within a python environment
+    auto __str__() const -> std::string
     {
       std::vector<char> buff(1000);
 
@@ -217,7 +226,7 @@ struct FitterLevy {
   /// and a fit-range limit
   ///
   FitterLevy(TH3 &n, TH3 &d, TH3 &q, double limit=0.0)
-    : data(n, d, q, limit)
+    : Fitter3D(n, d, q, limit)
   {
   }
 
@@ -228,50 +237,6 @@ struct FitterLevy {
   static double
   gauss(std::array<double, 3> q, const FitParams &p, double K)
     { return p.gauss(q, K); }
-
-  template <typename ResidFunc>
-  double resid_calc(const FitParams &p, ResidFunc resid_calc) const
-  {
-    double retval = 0;
-
-    double phony_r = p.PseudoRinv();
-    auto coulomb_factor = CoulombHist::GetHistWithRadius(phony_r);
-
-    auto &qout = data.qspace[0],
-         &qside = data.qspace[1],
-         &qlong = data.qspace[2];
-
-#if __cplusplus > 201103L
-    auto Kfsi = [&c=coulomb_factor] (double q) {
-#else
-    auto &c = coulomb_factor;
-    auto Kfsi = [&c] (double q) {
-#endif
-      double coulomb = c.Interpolate(q);
-      // if ((rand() * 1.0 / RAND_MAX) < 1e-5) {
-      //   printf("K(%g) = %g\n", q, coulomb);
-      // }
-      return coulomb;
-    };
-
-    for (size_t i=0; i<size(); ++i) {
-      const double
-        qo = qout[i],
-        qs = qside[i],
-        ql = qlong[i],
-        n = data.num[i],
-        d = data.den[i],
-        q = data.qinv[i];
-
-      const double
-        // CF = gauss({qo, qs, ql}, {p.Ro, p.Rs, p.Rl}, p.lam, Kfsi(q), p.norm);
-        CF = p.gauss({qo, qs, ql}, Kfsi(q));
-
-      retval += resid_calc(n, d, CF);
-    }
-
-    return retval;
-  }
 
   double
   resid_chi2(const FitParams &p) const
@@ -378,8 +343,7 @@ struct FitterLevy {
   fit()
     { return fit(fit_func, 1.0); }
 
-  std::vector<double>
-  num_as_vec()
-    { return std::vector<double>(std::begin(data.num), std::end(data.num)); }
+  auto num_as_vec() const -> std::vector<double>
+    { return numerator_as_vec(*this); }
 
 };
