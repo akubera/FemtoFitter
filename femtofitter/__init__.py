@@ -78,11 +78,11 @@ def flatten_config(cfg: dict, delim: str='.') -> dict:
     result = {}
     for key, val in cfg.items():
         if isinstance(val, dict):
-            for subkey, val in flatten_config(val).items():
-                key = f'{key}{delim}{subkey}'
-                result[key] = val
+            for subkey, subval in flatten_config(val).items():
+                result[f'{key}{delim}{subkey}'] = subval
         else:
             result[key] = val
+    return result
 
 
 def unique_histnames():
