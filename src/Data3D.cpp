@@ -33,14 +33,11 @@ Data3D::Data3D(const TH3 &n, const TH3 &d, const TH3 &q, double limit_)
     limit = xaxis->GetXmax();
   }
 
-  const Int_t
+  const size_t
     lo_bin = xaxis->FindBin(-limit),
     hi_bin = xaxis->FindBin(limit);
 
   true_limit = xaxis->GetBinUpEdge(hi_bin);
-
-  double lo_lim = xaxis->GetBinLowEdge(limit <= 0.0 ? 1 : xaxis->FindBin(-limit)),
-         hi_lim = xaxis->GetBinUpEdge(limit <= 0.0 ? nbinsx : xaxis->FindBin(limit));
 
   data.reserve(nbins);
 
@@ -52,30 +49,20 @@ Data3D::Data3D(const TH3 &n, const TH3 &d, const TH3 &q, double limit_)
   yaxis->GetCenter(axisY.data());
   zaxis->GetCenter(axisZ.data());
 
-  for (size_t k = 1; k <= nbinsz; ++k)
-  {
-    for (size_t j = 1; j <= nbinsy; ++j)
-    {
-      for (size_t i = 1; i <= nbinsx; ++i)
-      {
+  for (size_t k = lo_bin; k <= hi_bin; ++k) {
+    for (size_t j = lo_bin; j <= hi_bin; ++j) {
+      for (size_t i = lo_bin; i <= hi_bin; ++i) {
+
         const double den = d.GetBinContent(i, j, k);
         if (den == 0.0) {
           continue;
         }
 
         const double
-            qo = axisX[i],
-            qs = axisY[j],
-            ql = axisZ[k];
+          qo = axisX[i],
+          qs = axisY[j],
+          ql = axisZ[k],
 
-        if ((qo < lo_lim) || (hi_lim < qo) ||
-            (qs < lo_lim) || (hi_lim < qs) ||
-            (ql < lo_lim) || (hi_lim < ql))
-        {
-          continue;
-        }
-
-        const double
           num = n.GetBinContent(i, j, k),
           qinv = q.GetBinContent(i, j, k);
 

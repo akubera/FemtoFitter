@@ -4,43 +4,24 @@
 
 #pragma once
 
-
-#ifndef FITTER3D_IMPL
+#ifndef FITTER3D_HPP
+#define FITTER3D_HPP
 
 
 template <typename Impl>
 class Fitter3D {
-  using FitParams = typename fitter_traits<Impl>::param_type;
-  // using FitParams = typename Impl::FitParams;
-  // extern FitParams;
-  // struct FitParams = Impl::FitParams;
-
 public:
 
   /// The Associated fit data
   Data3D data;
 
-
   Fitter3D(TH3 &n, TH3 &d, TH3 &q, double limit)
     : data(n, d, q, limit)
   { }
 
-  template <typename ResidFunc>
-  double resid_calc(const FitParams &p, ResidFunc resid_calc) const;
-
-  double
-  resid_chi2(const FitParams &p) const
-    { return resid_calc(p, Impl::chi2_calc); }
-
-};
-
-
-#else
-
-template <typename Impl, typename FitParams>
-double
-Fitter3D<Impl, FitParams>::resid_calc(const FitParams &p, ResidFunc resid_calc) const
-{
+  template <typename ResidFunc, typename FitParams>
+  double resid_calc(const FitParams &p, ResidFunc resid_calc) const
+  {
     double retval = 0;
 
     double phony_r = p.PseudoRinv();
@@ -66,5 +47,12 @@ Fitter3D<Impl, FitParams>::resid_calc(const FitParams &p, ResidFunc resid_calc) 
 
     return retval;
   }
+
+  template <typename FitParams>
+  double
+  resid_chi2(const FitParams &p) const
+    { return resid_calc(p, Impl::chi2_calc); }
+
+};
 
 #endif

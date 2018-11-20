@@ -24,15 +24,6 @@
 #include "Data3D.hpp"
 
 
-struct FitterLevy;
-struct FitterLevy::FitParams;
-
-template <>
-struct fitter_traits<FitterLevy> {
-  using param_type = typename FitterLevy::FitParams;
-
-};
-
 
 /// \class FitterLevy
 /// \brief Fit out-side-long with gaussian parameters
