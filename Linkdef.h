@@ -1,4 +1,6 @@
 
+#pragma link C++ class Data3D;
+
 #pragma link C++ class FitterGaussOSL;
 #pragma link C++ class FitterGaussOSL::Data;
 #pragma link C++ class FitterGaussOSL::FitParams;
