@@ -243,9 +243,6 @@ struct FitterGaussOSL {
     double phony_r = p.PseudoRinv();
     auto coulomb_factor = CoulombHist::GetHistWithRadius(phony_r);
 
-    auto &qout = data.qspace[0],
-         &qside = data.qspace[1],
-         &qlong = data.qspace[2];
 #if __cplusplus > 201103L
     auto Kfsi = [&c=coulomb_factor] (double q) {
 #else
@@ -256,14 +253,14 @@ struct FitterGaussOSL {
       return coulomb;
     };
 
-    for (size_t i=0; i<size(); ++i) {
+    for (const auto &datum : data.data) {
       const double
-        qo = qout[i],
-        qs = qside[i],
-        ql = qlong[i],
-        n = data.num[i],
-        d = data.den[i],
-        q = data.qinv[i],
+        qo = datum.qo,
+        qs = datum.qs,
+        ql = datum.ql,
+        n = datum.num,
+        d = datum.den,
+        q = datum.qinv,
 
         CF = p.gauss({qo, qs, ql}, Kfsi(q));
 
@@ -409,7 +406,7 @@ struct FitterGaussOSL {
   to_tuple(const std::valarray<double> &v)
     { return {&v[0], v.size()}; }
 
-  std::vector<double> num_as_vec()
-    { return std::vector<double>(std::begin(data.num), std::end(data.num)); }
+  auto num_as_vec() const -> std::vector<double>
+    { return numerator_as_vec(*this); }
 
 };

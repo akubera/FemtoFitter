@@ -125,11 +125,29 @@ inline
 void
 apply_momentum_resolution_correction(Data3D &data, const TH3& mrc)
 {
-  const auto &qo = data.qspace[0],
-             &qs = data.qspace[1],
-             &ql = data.qspace[2];
+  auto &moco = const_cast<TH3&>(mrc);
 
-  for (size_t i=0; i < data.num.size(); ++i) {
-    data.num[i] *= const_cast<TH3&>(mrc).Interpolate(qo[i], qs[i], ql[i]);
+  for (auto &datum : data.data) {
+    datum.num *= moco.Interpolate(datum.qo, datum.qs, datum.ql);
   }
+}
+
+
+template <typename FitterType>
+std::vector<double> numerator_as_vec(const FitterType &fitter)
+{
+  auto &data = fitter.data;
+  std::vector<double> result;
+  result.reserve(data.size());
+
+  for (const auto &datum : data) {
+    result.push_back(datum.num);
+  }
+
+  // which is better, for loop or std::transform?
+  // std::transform(data.begin(), data.end(),
+  //                std::back_inserter(result),
+  //                [] (const auto &datum) { return datum.num; });
+
+  return result;
 }

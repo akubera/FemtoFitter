@@ -245,9 +245,6 @@ struct FitterGaussFull {
     double phony_r = p.PseudoRinv();
     auto coulomb_factor = CoulombHist::GetHistWithRadius(phony_r);
 
-    auto &qout = data.qspace[0],
-         &qside = data.qspace[1],
-         &qlong = data.qspace[2];
 #if __cplusplus > 201103L
     auto Kfsi = [&c=coulomb_factor] (double q) {
 #else
@@ -261,17 +258,15 @@ struct FitterGaussFull {
       return coulomb;
     };
 
-    for (size_t i=0; i<size(); ++i) {
+    for (const auto &datum : data) {
       const double
-        qo = qout[i],
-        qs = qside[i],
-        ql = qlong[i],
-        n = data.num[i],
-        d = data.den[i],
-        q = data.qinv[i];
+        qo = datum.qo,
+        qs = datum.qs,
+        ql = datum.ql,
+        n = datum.num,
+        d = datum.den,
+        q = datum.qinv,
 
-      const double
-        // CF = gauss({qo, qs, ql}, {p.Ro, p.Rs, p.Rl}, p.lam, Kfsi(q), p.norm);
         CF = p.gauss({qo, qs, ql}, Kfsi(q));
 
       retval += resid_calc(n, d, CF);
@@ -366,6 +361,6 @@ struct FitterGaussFull {
     { return {&v[0], v.size()}; }
 
   auto num_as_vec() -> std::vector<double>
-    { return std::vector<double>(std::begin(data.num), std::end(data.num)); }
+    { return numerator_as_vec(*this); }
 
 };
