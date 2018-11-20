@@ -32,13 +32,26 @@ class PathQuery(NamedTuple):
 
     @classmethod
     def From(cls, obj):
+        from pathlib import Path
+
         if isinstance(obj, cls):
             return obj
 
         if isinstance(obj, dict):
             return cls.from_dict(obj)
 
-        return cls.from_path(obj)
+        if isinstance(obj, str):
+            return cls.from_path(obj)
+
+        if isinstance(obj, Path):
+            return cls.from_path(str(obj))
+
+        from ROOT import TDirectory
+        if isinstance(obj, TDirectory):
+            path = obj.GetName()
+            return cls.from_path(path)
+
+        raise TypeError(f"Cannot build pathquery from {obj.__class__}")
 
 
 def get_momentum_resolution_correction_map(path='mrcdata.yaml'):
