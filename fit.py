@@ -33,16 +33,19 @@ def find_and_fit(filename: str, query: PathQuery, fit_range: float, mrc_path=Non
 #     return run_fit(FitterGaussOSL, *args, **kwargs)
 
 def run_fit_gauss(*args, **kwargs):
+    from ROOT import Data3D
     from ROOT import FitterGaussOSL
     return run_fit(FitterGaussOSL, *args, **kwargs)
 
 
 def run_fit_levy(*args, **kwargs):
+    from ROOT import Data3D
     from ROOT import FitterLevy
     return run_fit(FitterLevy, *args, **kwargs)
 
 
 def run_fit_gauss_full(*args, **kwargs):
+    from ROOT import Data3D
     from ROOT import FitterGaussFull
     return run_fit(FitterGaussFull, *args, **kwargs)
 
@@ -54,6 +57,7 @@ def run_fit(fitter_class,
             mrc_path: str = None):
 
     from ROOT import TFile
+    from ROOT import Data3D
     tfile = TFile.Open(filename)
     assert tfile
 
@@ -73,6 +77,9 @@ def run_fit(fitter_class,
         apply_momentum_resolution_correction(fitter.data, mrc)
 
     fit_results = fitter.fit()
+    if not fit_results:
+        print(f"Could not fit: {query.as_path()}")
+        return
     results = dict(fit_results.as_map())
     results.update(query.as_dict())
 
