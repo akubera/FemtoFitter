@@ -1,6 +1,7 @@
 
 #include "FitterGaussOSL.hpp"
 #include "FitterLevy.hpp"
+#include "FitterLevyFull.hpp"
 
 #include <TFile.h>
 
@@ -10,7 +11,7 @@ void runfit(TDirectory &tdir, double limit)
   auto fitter = Fitter_t::From(tdir, limit);
   std::cout << "fitter: " << fitter.get() << "\n";
 
-  auto res = fitter->fit();
+  auto res = fitter->fit_chi2();
   res.print();
 }
 
@@ -28,8 +29,9 @@ main()
   auto path = "AnalysisQ3D/cfgB19FE5D669F43E46/pip/00_05/0.4_0.5/++";
   auto tdir = dynamic_cast<TDirectory*>(tfile->Get(path));
 
-  double limit = 0.12;
+  double limit = 0.14;
 
-  runfit<FitterGaussOSL>(*tdir, limit);
-  runfit<FitterLevy>(*tdir, limit);
+  // runfit<FitterGaussOSL>(*tdir, limit);
+  // runfit<FitterLevy>(*tdir, limit);
+  runfit<FitterLevyFull>(*tdir, limit);
 }
