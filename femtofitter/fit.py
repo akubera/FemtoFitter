@@ -73,13 +73,14 @@ def run_fit(fitter_class,
         print("MRC:",mrc)
         if mrc == None:
             print("missing mrc path %r" % mrc_path)
-            return
+            return {}
         apply_momentum_resolution_correction(fitter.data, mrc)
 
     fit_results = fitter.fit()
     if not fit_results:
         print(f"Could not fit: {query.as_path()}")
-        return
+        return {}
+
     results = dict(fit_results.as_map())
     results.update(query.as_dict())
 
