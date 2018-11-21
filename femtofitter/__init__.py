@@ -2,6 +2,7 @@
 # femtofitter/__init__.py
 #
 
+import json
 from typing import NamedTuple
 import pandas as pd
 
@@ -106,7 +107,7 @@ class FitResults:
         self._data = data
 
     @staticmethod
-    def data_data_df(json_data):
+    def get_data_df(json_data):
         data = json_data['df'] if 'df' in json_data else json_data
         return pd.DataFrame(data)
 
