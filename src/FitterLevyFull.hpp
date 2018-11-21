@@ -190,7 +190,7 @@ struct FitterLevyFull : public Fitter3D<FitterLevyFull> {
 
     /// Return calculated Rinv: $\sqrt{Ro^2 \gamma + Rs^2 + Rl^2}$
     double PseudoRinv() const
-      { return std::sqrt(Ro * Ro * gamma + Rs * Rs + Rl * Rl); }
+      { return std::sqrt((Ro * Ro * gamma + Rs * Rs + Rl * Rl) / 3.0); }
 
     double gauss(std::array<double, 3> q, double K) const
       {
@@ -239,10 +239,10 @@ struct FitterLevyFull : public Fitter3D<FitterLevyFull> {
 
   FitResult fit_chi2()
     { return Fitter3D::fit_chi2(); }
-  
+
   FitResult fit_pml()
     { return Fitter3D::fit_pml(); }
-  
+
   FitResult fit()
     { return Fitter3D::fit(); }
 
