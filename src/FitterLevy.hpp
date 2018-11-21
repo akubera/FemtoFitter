@@ -212,4 +212,14 @@ struct FitterLevy : public Fitter3D<FitterLevy> {
 
     return errflag;
   }
+
+  FitResult fit_chi2()
+    { return Fitter3D::fit_chi2(); }
+
+  FitResult fit_pml()
+    { return Fitter3D::fit_pml(); }
+ 
+  FitResult fit()
+    { return Fitter3D::fit(); }
+
 };

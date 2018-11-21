@@ -213,4 +213,14 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
     return errflag;
   }
 
+
+  FitResult fit_chi2()
+    { return Fitter3D::fit_chi2(); }
+
+  FitResult fit_pml()
+    { return Fitter3D::fit_pml(); }
+
+  FitResult fit()
+    { return Fitter3D::fit(); }
+
 };
