@@ -124,7 +124,7 @@ public:
     { return fit<typename Impl::CalcLoglike>(0.5); }
 
   auto fit_chi2()
-    { return fit<typename Impl::CalcLoglike>(1.0); }
+    { return fit<typename Impl::CalcChi2>(1.0); }
 
   auto fit()
     { return fit_chi2(); }
