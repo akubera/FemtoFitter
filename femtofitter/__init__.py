@@ -3,6 +3,7 @@
 #
 
 from typing import NamedTuple
+import pandas as pd
 
 
 class PathQuery(NamedTuple):
@@ -86,23 +87,40 @@ def flatten_config(cfg: dict, delim: str='.') -> dict:
 
 
 def fitresult_data_df(json_data):
-    import pandas as pd
-    df = pd.DataFrame(json_data['df'])
-    return df
+    return FitResults.get_data_df(json_data)
 
 
 def fitresult_config_df(json_data):
-    import pandas as pd
-    config = json_data['config'] if 'config' in json_data else json_data
-    result = []
+    return FitResults.get_config_df(json_data)
 
-    for v, c in config.items():
-        flat = flatten_config(c)
-        flat['cfg'] = v.partition("/")[2]
-        result.append(flat)
 
-    return pd.DataFrame(result)
+class FitResults:
 
+    def __init__(self, path):
+
+        with open(path) as f:
+            data = json.load(f)
+
+        self.df = self.get_data_df(data)
+        self.config = self.get_config_df(data)
+        self._data = data
+
+    @staticmethod
+    def data_data_df(json_data):
+        data = json_data['df'] if 'df' in json_data else json_data
+        return pd.DataFrame(data)
+
+    @staticmethod
+    def get_config_df(json_data):
+        config = json_data['config'] if 'config' in json_data else json_data
+        result = []
+
+        for v, c in config.items():
+            flat = flatten_config(c)
+            flat['cfg'] = v.partition("/")[2]
+            result.append(flat)
+
+        return pd.DataFrame(result)
 
 def unique_histnames():
     i = 1
