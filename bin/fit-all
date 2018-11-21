@@ -12,6 +12,10 @@ def arg_parser():
     parser = ArgumentParser()
     parser.add_argument("input",
                         help="file to fit")
+    parser.add_argument("--mrc-path",
+                        nargs='?',
+                        default=False,
+                        help="file to fit")
     return parser
 
 
@@ -40,7 +44,7 @@ def main(argv=None):
     dest_dir.mkdir(exist_ok=True, parents=True)
     dest = dest_dir / dest_filename
 
-    parallel_fit_all(tfile, str(dest))
+    parallel_fit_all(tfile, str(dest), args.mrc_path)
 
     return 0
 

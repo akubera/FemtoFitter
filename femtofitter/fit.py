@@ -95,7 +95,7 @@ def run_fit(fitter_class,
     return results
 
 
-def parallel_fit_all(tfile, ofilename=None):
+def parallel_fit_all(tfile, ofilename=None, mrc=False):
     """
     """
 
@@ -108,7 +108,14 @@ def parallel_fit_all(tfile, ofilename=None):
     cfg = 'cfg*'
     pair = cent = kt = mfield = '*'
     search = f"AnalysisQ3D/{cfg}/{pair}/{cent}/{kt}/{mfield}"
-    mrc_path = "AnalysisTrueQ3D/cfg5348379EA4DD77C6/{pair}/00_90/{kt}/{magfield}/mrc"
+    if mrc:
+        if isinstance(mrc, PathQuery):
+            mrc_path = mrc.as_path()
+        else:
+            mrc_cfg = mrc if isinstance(mrc, str) else "cfg5348379EA4DD77C6"
+            mrc_path = "AnalysisTrueQ3D/%s/{pair}/00_90/{kt}/{magfield}/mrc" % mrc_cfg
+    else:
+        mrc_path = None
 
     paths = []
     mrc_paths = []
@@ -116,7 +123,8 @@ def parallel_fit_all(tfile, ofilename=None):
         query = PathQuery.from_path(path)
         assert path == query.as_path()
         paths.append(query)
-        mrc_paths.append((query, mrc_path.format(**query.as_dict())))
+        if mrc_path:
+            mrc_paths.append((query, mrc_path.format(**query.as_dict())))
 
     configuration_information = get_configuration_json(tfile, paths)
 
