@@ -69,8 +69,10 @@ def run_fit(fitter_class,
 
     if mrc_path is not None:
         from ROOT import apply_momentum_resolution_correction
-        mrc = tfile.Get(mrc_path)
-        print("MRC:",mrc)
+        mrc_file = TFile.Open("Data-MRC-1987.root")
+        mrc = mrc_file.Get(mrc_path)
+        mrc_file.Close()
+        # print("MRC:",mrc)
         if mrc == None:
             print("missing mrc path %r" % mrc_path)
             return {}

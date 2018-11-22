@@ -51,7 +51,12 @@ def main(argv=None):
     else:
         dest = args.output
 
-    parallel_fit_all(tfile, str(dest), args.mrc_path)
+    if args.mrc_path == 'True':
+        mrc_path = True
+    else:
+        mrc_path = args.mrc_path
+
+    parallel_fit_all(tfile, str(dest), mrc_path)
 
     return 0
 
