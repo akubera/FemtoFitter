@@ -1,6 +1,9 @@
 
 FitResults
+fit-results/
 *.dat
+*.json
+*.ipynb
 
 # default build destination
 /build/
@@ -46,3 +49,4 @@ nbproject/
 *.svg
 *.pdf
 *.root
+
