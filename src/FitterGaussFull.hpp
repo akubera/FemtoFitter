@@ -19,15 +19,14 @@
 
 #include "CoulombHist.hpp"
 #include "Fitter.hpp"
+#include "Fitter3D.hpp"
 #include "Data3D.hpp"
 
 
 /// \class FitterGaussFull
 /// \brief Fit full $ q_i q_j R_ij^2 $ gaussian parameters
 ///
-struct FitterGaussFull {
-  using CalcLoglike = ResidCalculatorPML<FitterGaussFull>;
-  using CalcChi2 = ResidCalculatorChi2<FitterGaussFull>;
+struct FitterGaussFull : public Fitter3D<FitterGaussFull>{
 
   /// constants used to lookup data from pointer
   enum {
@@ -67,8 +66,6 @@ struct FitterGaussFull {
       gauss = 1.0 + std::exp(-E / HBAR_C_SQ),
       result = (1.0 - lam) + lam * K * gauss;
 
-    // if (abs(q[0]) < 1e-3 && abs(q[1]) < 1e-3 && abs(q[2]) < 1e-3)
-    // std::cout << "E=" << E << " Ros=" << Ros << "\n";
     return norm * result;
   }
 
@@ -103,11 +100,17 @@ struct FitterGaussFull {
              "  Ro=%0.4f ± %0.4f \n"
              "  Rs=%0.4f ± %0.4f\n"
              "  Rl=%0.4f ± %0.4f\n"
+             "  Ros=%0.4f ± %0.4f\n"
+             "  Rol=%0.4f ± %0.4f\n"
+             "  Rsl=%0.4f ± %0.4f\n"
              "  lam=%0.4f ± %0.4f (%g, %g)\n"
              "  norm=%0.4f ± %0.4f\n"
              " -------------\n", Ro.first, Ro.second,
                                  Rs.first, Rs.second,
                                  Rl.first, Rl.second,
+                                 Ros.first, Ros.second,
+                                 Rol.first, Rol.second,
+                                 Rsl.first, Rsl.second,
                                  lam.first, lam.second, lam.first - lam.second, lam.first + lam.second,
                                  norm.first, norm.second);
     }
@@ -118,7 +121,9 @@ struct FitterGaussFull {
       #define OUT(__name) {#__name, __name.first}, { # __name "_err", __name.second}
 
       return {
-        OUT(Ro), OUT(Rs), OUT(Rl), OUT(lam), OUT(norm)
+        OUT(Ro), OUT(Rs), OUT(Rl),
+        OUT(Ros), OUT(Rol), OUT(Rsl),
+        OUT(lam), OUT(norm)
       };
 
       #undef OUT
@@ -182,114 +187,52 @@ struct FitterGaussFull {
         // return FitterGaussOSL::gauss(q, Rsq, lam, K, norm);
         return FitterGaussFull::gauss(q, Ro, Rs, Rl, Ros, Rol, Rsl, lam, K, norm);
       }
+
+    /// Multiply histogram with values from this correlation function
+    void
+    apply_to(TH3 &hist, TH3 &qinv)
+      {
+        const int I = hist.GetNbinsX(),
+                  J = hist.GetNbinsY(),
+                  K = hist.GetNbinsZ();
+
+        const double phony_r = PseudoRinv();
+        auto coulomb_factor = CoulombHist::GetHistWithRadius(phony_r);
+
+        const TAxis &qout = *hist.GetXaxis(),
+                    &qside = *hist.GetYaxis(),
+                    &qlong = *hist.GetZaxis();
+
+        for (int k=1; k<=K; ++k)
+        for (int j=1; j<=J; ++j)
+        for (int i=1; i<=I; ++i) {
+          const double
+            qo = qout.GetBinCenter(i),
+            qs = qside.GetBinCenter(j),
+            ql = qlong.GetBinCenter(k),
+            q = qinv.GetBinContent(i, j, k),
+            K = coulomb_factor.Interpolate(q),
+
+            CF = gauss({qo, qs, ql}, K),
+            factor = hist.GetBinContent(i,j,k);
+
+          hist.SetBinContent(i,j,k, CF * factor );
+        }
+      }
   };
 
-  /// The associated fit data
-  Data3D data;
-
-  /// Utility function for building fitter with tdirectory in file
-  /// at specified path
-  static std::unique_ptr<FitterGaussFull>
-  From(TFile &file, const std::string &path, double limit=0.0)
-  {
-    auto tdir = static_cast<TDirectory*>(file.Get(path.c_str()));
-    if (!tdir) {
-      return nullptr;
-    }
-    return From(*tdir, limit);
-  }
-
-  /// Construct from ("num", "den", "qinv") histograms in tdirectory
-  /// limit sets the fit-range.
+  /// Construct fitter from numeratork, denominator, & qinv histograms
   ///
-  static std::unique_ptr<FitterGaussFull>
-  From(TDirectory &tdir, double limit=0.0)
-  {
-    TH3 *num = static_cast<TH3*>(tdir.Get("num")),
-        *den = static_cast<TH3*>(tdir.Get("den")),
-        *qinv = static_cast<TH3*>(tdir.Get("qinv"));
-
-    if (!num || !den || !qinv) {
-      return nullptr;
-      // throw std::runtime_error("Error loading FitterGaussOSL histograms from path '" + path + "'");
-    }
-
-#if __cplusplus <= 201103L
-  return std::unique_ptr<FitterGaussFull>(new FitterGaussFull(*num, *den, *qinv, limit));
-#else
-  return std::make_unique<FitterGaussFull>(*num, *den, *qinv, limit);
-#endif
-  }
-
-  /// Construct fitter from numerator denominator qinv histograms
-  /// and a fit-range limit
+  /// limit specifies fit-range
   ///
   FitterGaussFull(TH3 &n, TH3 &d, TH3 &q, double limit=0.0)
-    : data(n, d, q, limit)
-  {
-  }
-
-  /// Number of entries in fitter
-  std::size_t size() const
-    { return data.size(); }
-
-  static double
-  gauss(std::array<double, 3> q, const FitParams &p, double K)
-    { return p.gauss(q, K); }
-
-  template <typename ResidFunc>
-  double resid_calc(const FitParams &p, ResidFunc resid_calc) const
-  {
-    double retval = 0;
-
-    double phony_r = p.PseudoRinv();
-    auto coulomb_factor = CoulombHist::GetHistWithRadius(phony_r);
-
-#if __cplusplus > 201103L
-    auto Kfsi = [&c=coulomb_factor] (double q) {
-#else
-    auto &c = coulomb_factor;
-    auto Kfsi = [&c] (double q) {
-#endif
-      double coulomb =  c.Interpolate(q);
-      // if ((rand() * 1.0 / RAND_MAX) < 1e-5) {
-      //   printf("K(%g) = %g\n", q, coulomb);
-      // }
-      return coulomb;
-    };
-
-    for (const auto &datum : data) {
-      const double
-        qo = datum.qo,
-        qs = datum.qs,
-        ql = datum.ql,
-        n = datum.num,
-        d = datum.den,
-        q = datum.qinv,
-
-        CF = p.gauss({qo, qs, ql}, Kfsi(q));
-
-      retval += resid_calc(n, d, CF);
+    : Fitter3D(n, d, q, limit)
+    {
     }
 
-    return retval;
-  }
-
-  double
-  resid_chi2(const FitParams &p) const
-    { return resid_calc(p, chi2_calc); }
-
-  double
-  resid_chi2(const FitResult &r) const
-    { return resid_chi2(static_cast<const FitParams&>(r)); }
-
-  double
-  resid_pml(const FitParams &p) const
-    { return resid_calc(p, loglikelihood_calc); }
-
-  double
-  resid_pml(const FitResult &r) const
-    { return resid_pml(static_cast<const FitParams&>(r)); }
+  static double
+  gauss(const std::array<double, 3> &q, const FitParams &p, double K)
+    { return p.gauss(q, K); }
 
   int
   setup_minuit(TMinuit &minuit)
@@ -316,51 +259,13 @@ struct FitterGaussFull {
     return errflag;
   }
 
-  template <typename ResidCalc_t>
-  FitResult
-  fit(double fit_factor)
-  {
-    TMinuit minuit;
-    minuit.SetPrintLevel(-1);
-    setup_minuit(minuit);
-    minuit.SetFCN(minuit_f<ResidCalc_t>);
-    return do_fit_minuit(minuit, fit_factor);
-  }
-
-  FitResult
-  do_fit_minuit(TMinuit &minuit, double fit_factor)
-  {
-    double strat_args[] = {1.0};
-    double migrad_args[] = {2000.0, fit_factor};
-    double hesse_args[] = {2000.0, 1.0};
-
-    int errflag;
-    minuit.mnexcm("SET STRategy", strat_args, 1, errflag);
-    minuit.mnexcm("MIGRAD", migrad_args, 2, errflag);
-
-    strat_args[0] = 2.0;
-    minuit.mnexcm("SET STRategy", strat_args, 1, errflag);
-    minuit.mnexcm("MIGRAD", migrad_args, 2, errflag);
-
-    minuit.mnexcm("HESSE", hesse_args, 1, errflag);
-
-    return FitResult(minuit);
-  }
-
   auto fit_pml() -> FitResult
-    { return fit<CalcLoglike>(0.5); }
+    { return Fitter3D::fit_pml(); }
 
   auto fit_chi2() -> FitResult
-    { return fit<CalcChi2>(1.0); }
+    { return Fitter3D::fit_chi2(); }
 
   auto fit() -> FitResult
-    { return fit_pml(); }
-
-  static
-  auto to_tuple(const std::valarray<double> &v) -> std::pair<const double*, size_t>
-    { return {&v[0], v.size()}; }
-
-  auto num_as_vec() -> std::vector<double>
-    { return numerator_as_vec(*this); }
+    { return Fitter3D::fit(); }
 
 };
