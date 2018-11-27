@@ -1,7 +1,9 @@
 #
-# fitter.py
+# femtofitter/pyfitter.py
 #
-
+"""
+SciPy/LMFit-based femto correlation function fitter. No Minuit.
+"""
 
 import numpy as np
 from lmfit import Parameters
