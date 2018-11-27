@@ -22,8 +22,8 @@ struct BinInfo {
 
   BinInfo(const TAxis &axis)
     : bins(axis.GetNbins())
-    , min(axis.GetMinimum())
-    , max(axis.GetMaximum())
+    , min(axis.GetXmin())
+    , max(axis.GetXmax())
   {}
 
 };
@@ -49,8 +49,8 @@ class CorrFctnRatio : public MomentumCorrector<DIM> {
 
 
 
-template<>
-struct mrc_traits<mrc::MomentumMap> {};
+// template<>
+// struct mrc_traits<mrc::MomentumMap> {};
 
 /// \class femto::MomentumResolutionCorrector3D
 /// \brief Interface for "un-smearing" momentum resolution effects
@@ -78,14 +78,14 @@ protected:
 
 };
 
-template <typename T>
-std::ostream& operator<<(std::ostream &out, const MomentumCorrector<T> &mc)
+template <unsigned N>
+std::ostream& operator<<(std::ostream &out, const MomentumResolutionCorrector<N> &mc)
 {
   return out;
 }
 
-template <typename T>
-std::istream& operator>>(std::istream &in, const MomentumCorrector<T> &mc)
+template <unsigned N>
+std::istream& operator>>(std::istream &in, const MomentumResolutionCorrector<N> &mc)
 {
   return in;
 }
