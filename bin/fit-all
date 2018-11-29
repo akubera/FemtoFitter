@@ -13,8 +13,9 @@ def arg_parser():
     parser.add_argument("input",
                         help="file to fit")
     parser.add_argument("-o", "--output",
+                        nargs='?',
                         default=None,
-                        help="Output json file")
+                        help="Output fitresult json file")
     parser.add_argument("--mrc-path",
                         nargs='?',
                         default=False,
@@ -42,14 +43,14 @@ def main(argv=None):
 
     input_path = Path(args.input)
 
-    if args.output is None:
+    if args.output:
+        dest = args.output
+    else:
         dest_filename = "fitres-%s.json" % input_path.name
         dest_dir = Path("fit-results")
         dest_dir.mkdir(exist_ok=True, parents=True)
         dest = dest_dir / dest_filename
         # todo: Check if dest exists and warn user?
-    else:
-        dest = args.output
 
     if args.mrc_path == 'True':
         mrc_path = True
