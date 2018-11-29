@@ -124,7 +124,7 @@ def find_analyses(file, pattern):
             key.pop("track_cut.charge")
             key.pop("event_cut.centrality_range")
 
-            hashkey = f'cfg{key.Hash():015X}'
+            hashkey = f'cfg{key.Hash():016X}'
 
             def get_storage_key(kt_bin):
                 kt_dir = '_'.join(('%0.1f' if kt.is_integer() else '%g') % kt
