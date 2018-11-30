@@ -16,6 +16,13 @@ def arg_parser():
                         nargs='?',
                         default=None,
                         help="Output fitresult json file")
+    parser.add_argument("--chi2",
+                        action='store_true',
+                        help="file to fit")
+    parser.add_argument("--fitrange",
+                        type=float,
+                        default=0.21,
+                        help="symmetric limit to fit")
     parser.add_argument("--mrc-path",
                         nargs='?',
                         default=False,
@@ -57,7 +64,7 @@ def main(argv=None):
     else:
         mrc_path = args.mrc_path
 
-    parallel_fit_all(tfile, str(dest), mrc_path)
+    parallel_fit_all(tfile, str(dest), mrc_path, args.fitrange, args.chi2)
 
     return 0
 
