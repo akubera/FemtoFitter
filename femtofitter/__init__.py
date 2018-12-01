@@ -48,6 +48,9 @@ class PathQuery(NamedTuple):
         if isinstance(obj, Path):
             return cls.from_path(str(obj))
 
+        if isinstance(obj, pd.Series):
+            return cls(*obj[list(cls._fields)])
+        
         from ROOT import TDirectory
         if isinstance(obj, TDirectory):
             path = obj.GetName()
