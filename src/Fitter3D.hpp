@@ -117,14 +117,33 @@ public:
     return do_fit_minuit(minuit, fit_factor);
   }
 
-  // auto fit_pml()
-  //   { return fot<ResidCalculatorPML<Impl>>(0.5); }
+  void setup_pml_fitter(TMinuit &minuit)
+    {
+      static_cast<Impl*>(this)->setup_minuit(minuit);
+      minuit.SetFCN(minuit_f<typename Impl::CalcLoglike>);
+    }
+
+  void setup_chi2_fitter(TMinuit &minuit)
+    {
+      static_cast<Impl*>(this)->setup_minuit(minuit);
+      minuit.SetFCN(minuit_f<typename Impl::CalcChi2>);
+    }
 
   auto fit_pml()
-    { return fit<typename Impl::CalcLoglike>(0.5); }
+    {
+      TMinuit minuit;
+      minuit.SetPrintLevel(-1);
+      setup_pml_fitter(minuit);
+      return do_fit_minuit(minuit, 0.5);
+    }
 
   auto fit_chi2()
-    { return fit<typename Impl::CalcChi2>(1.0); }
+    {
+      TMinuit minuit;
+      minuit.SetPrintLevel(-1);
+      setup_chi2_fitter(minuit);
+      return do_fit_minuit(minuit, 1.0);
+    }
 
   auto fit()
     { return fit_chi2(); }
