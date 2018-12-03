@@ -50,7 +50,7 @@ class PathQuery(NamedTuple):
 
         if isinstance(obj, pd.Series):
             return cls(*obj[list(cls._fields)])
-        
+
         from ROOT import TDirectory
         if isinstance(obj, TDirectory):
             path = obj.GetName()
@@ -105,17 +105,20 @@ class FitResults:
         with open(path) as f:
             data = json.load(f)
 
-        self.df = self.get_data_df(data)
-        self.config = self.get_config_df(data)
+        self.df = self.extract_data_df(data)
+        self.config = self.extract_config_df(data)
         self._data = data
 
+    def get_merged_df(self):
+        return pd.merge(self.df, self.config, on='cfg')
+
     @staticmethod
-    def get_data_df(json_data):
+    def extract_data_df(json_data):
         data = json_data['df'] if 'df' in json_data else json_data
         return pd.DataFrame(data)
 
     @staticmethod
-    def get_config_df(json_data):
+    def extract_config_df(json_data):
         config = json_data['config'] if 'config' in json_data else json_data
         result = []
 
@@ -125,6 +128,7 @@ class FitResults:
             result.append(flat)
 
         return pd.DataFrame(result)
+
 
 def unique_histnames():
     i = 1
