@@ -46,7 +46,7 @@ struct FitterGaussFull : public Fitter3D<FitterGaussFull>{
   gauss(std::array<double, 3> q,
         // std::array<double, 6> RSq,
         double Ro, double Rs, double Rl,
-        double Ros, double Rol, double Rsl,
+        double Ros2, double Rol2, double Rsl2,
         double lam,
         double K=1.0,
         double norm=1.0)
@@ -59,9 +59,9 @@ struct FitterGaussFull : public Fitter3D<FitterGaussFull>{
       E = qo * qo * Ro * Ro
         + qs * qs * Rs * Rs
         + ql * ql * Rl * Rl
-        + 2 * qo * qs * Ros * Ros
-        + 2 * qo * ql * Rol * Rol
-        + 2 * qs * ql * Rsl * Rsl,
+        + 2 * qo * qs * Ros2
+        + 2 * qo * ql * Rol2
+        + 2 * qs * ql * Rsl2,
 
       gauss = 1.0 + std::exp(-E / HBAR_C_SQ),
       result = (1.0 - lam) + lam * K * gauss;
@@ -100,9 +100,9 @@ struct FitterGaussFull : public Fitter3D<FitterGaussFull>{
              "  Ro=%0.4f ± %0.4f \n"
              "  Rs=%0.4f ± %0.4f\n"
              "  Rl=%0.4f ± %0.4f\n"
-             "  Ros=%0.4f ± %0.4f\n"
-             "  Rol=%0.4f ± %0.4f\n"
-             "  Rsl=%0.4f ± %0.4f\n"
+             "  Ros²=%0.4f ± %0.4f\n"
+             "  Rol²=%0.4f ± %0.4f\n"
+             "  Rsl²=%0.4f ± %0.4f\n"
              "  lam=%0.4f ± %0.4f (%g, %g)\n"
              "  norm=%0.4f ± %0.4f\n"
              " -------------\n", Ro.first, Ro.second,
@@ -239,13 +239,13 @@ struct FitterGaussFull : public Fitter3D<FitterGaussFull>{
   {
     int errflag = 0;
     minuit.mnparm(NORM_PARAM_IDX, "Norm", 0.25, 0.02, 0.0, 0.0, errflag);
-    minuit.mnparm(LAM_PARAM_IDX, "Lam", 0.2, 0.1, 0.0, 1.0, errflag);
+    minuit.mnparm(LAM_PARAM_IDX, "Lam", 0.2, 0.01, 0.0, 0.0, errflag);
     minuit.mnparm(ROUT_PARAM_IDX, "Ro", 2.0, 1.0, 0.0, 0.0, errflag);
     minuit.mnparm(RSIDE_PARAM_IDX, "Rs", 2.0, 1.0, 0.0, 0.0, errflag);
     minuit.mnparm(RLONG_PARAM_IDX, "Rl", 2.0, 1.0, 0.0, 0.0, errflag);
-    minuit.mnparm(ROS_PARAM_IDX, "Ros", 1.0, 1.0, 0.0, 0.0, errflag);
-    minuit.mnparm(ROL_PARAM_IDX, "Rol", 1.0, 1.0, 0.0, 0.0, errflag);
-    minuit.mnparm(RSL_PARAM_IDX, "Rsl", 1.0, 1.0, 0.0, 0.0, errflag);
+    minuit.mnparm(ROS_PARAM_IDX, "Ros²", 0.0, 0.05, 0.0, 0.0, errflag);
+    minuit.mnparm(ROL_PARAM_IDX, "Rol²", 0.0, 0.05, 0.0, 0.0, errflag);
+    minuit.mnparm(RSL_PARAM_IDX, "Rsl²", 0.0, 0.05, 0.0, 0.0, errflag);
 
     const double this_dbl = static_cast<double>((intptr_t)this);
     minuit.mnparm(DATA_PARAM_IDX, "DATA_PTR", this_dbl, 0, 0, INTPTR_MAX, errflag);
