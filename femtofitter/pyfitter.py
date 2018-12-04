@@ -5,12 +5,14 @@
 SciPy/LMFit-based femto correlation function fitter. No Minuit.
 """
 
+from os import environ
 import numpy as np
 from lmfit import Parameters
 from scipy.interpolate import interp2d
 
 from ROOT import gSystem
-gSystem.Load('build/libFemtoFitter.so')
+assert gSystem.Load(environ.get("FEMTOFITTERLIB", 'build/libFemtoFitter.so')) >= 0
+
 from ROOT import CoulombHist  # noqa
 
 HBAR_C = 0.19732697
@@ -22,6 +24,141 @@ with open("coulomb-interpolation.dat", 'rb') as f:
     z = np.load(f)
     COULOMB_INTERP = interp2d(x, y, z)
     del x, y, z
+
+
+
+class Data3D:
+
+    @classmethod
+    def From(cls, tdir, fit_range):
+        self = cls(*map(tdir.Get, ('num', 'den', 'qinv')), fit_range)
+        return self
+
+
+    def __init__(self, num, den, qinv, fit_range):
+        from ROOT import TH3, TH3F, TH3D
+        from itertools import starmap
+
+        def histogram_data_to_numpy(h):
+            dtype = np.float32 if isinstance(h, TH3F) else np.float64
+            buffer = np.frombuffer(h.GetArray(), count=h.GetNcells(), dtype=dtype)
+            return buffer.reshape(h.GetNbinsZ()+2, h.GetNbinsY()+2, h.GetNbinsX()+2)
+
+        def get_bin_centers(axis):
+            nbins = axis.GetNbins()
+            start, stop = map(axis.GetBinCenter, (0, nbins+1))
+            # enable to use "cleaner" numbers: "0.199999" -> "0.2"
+            start, stop = map(float, ('%g' % start, '%g' % stop))
+            return np.linspace(start, stop, num=nbins+2)
+
+        def get_fitrange_bins(axis):
+            return (axis.FindBin(-fit_range), axis.FindBin(fit_range) + 1)
+
+        def axes_of(hist):
+            # iter_axes = (TH3.GetXaxis, TH3.GetYaxis, TH3.GetZaxis)
+            iter_axes = (TH3.GetZaxis, TH3.GetYaxis, TH3.GetXaxis)
+            yield from (a(hist) for a in iter_axes)
+
+
+        n, d, qinv = map(histogram_data_to_numpy, (num, den, qinv))
+        assert n.shape == d.shape == qinv.shape
+
+        axes = list(axes_of(num))
+        qspace = np.meshgrid(*map(get_bin_centers, axes), indexing='ij')
+        fitrange_slices = tuple(starmap(slice, map(get_fitrange_bins, axes)))
+
+
+        mask = np.zeros_like(n, dtype=bool)
+        mask[fitrange_slices] = True
+        mask &= (d != 0.0)
+        # mask &= (n != 0.0)
+
+        self.num = n[mask]
+        self.den = d[mask]
+        self.qinv = qinv[mask]
+        self.ql, self.qs, self.qo = (q[mask] for q in qspace)
+        self.qspace = np.array([self.qo, self.qs, self.ql])
+
+
+class FemtoFitterGauss:
+
+    def __init__(self):
+        pass
+
+    def fit(self, data):
+        from functools import partial
+        import lmfit
+
+        fsi = partial(self.get_fsi_factor, data.qinv)
+
+        func = self.chi2_evaluator(data)
+        mini = lmfit.Minimizer(func, self.default_parameters(), (data.qspace, fsi, ))
+        return mini
+
+    @classmethod
+    def chi2_evaluator(self, data):
+        """
+        Return a function that evaluates
+        """
+        ratio = data.num / data.den
+        variance = ratio * np.sqrt((1.0 + ratio) / data.num)
+        # variance = ratio * (data.num + data.den) / data.den ** 2
+        # variance = ratio * np.sqrt((1.0/N  + 1.0/D))
+
+        def _eval(params, *args):
+            model = self.func(params, *args)
+            diff = model - ratio
+
+            return diff / variance
+
+        return _eval
+
+    @classmethod
+    def chi2(cls, *args):
+        hypothesis = cls.func(*args)  # data.qo, data.qs, data.ql)
+        return ()
+
+    @staticmethod
+    def get_fsi_factor(qinv, R):
+        return COULOMB_INTERP(qinv, R)
+
+    @classmethod
+    def default_parameters(cls):
+        from lmfit import Parameters
+        q3d_params = Parameters()
+        q3d_params.add('Ro', value=2.0, min=0.0)
+        q3d_params.add('Rs', value=2.0, min=0.0)
+        q3d_params.add('Rl', value=2.0, min=0.0)
+        q3d_params.add('Ros', value=0.0)
+        q3d_params.add('Rsl', value=0.0)
+        q3d_params.add('Rol', value=0.0)
+        q3d_params.add('lam', value=0.40, min=0.0)
+        q3d_params.add('norm', value=0.10, min=0.0)
+        return q3d_params
+
+    @staticmethod
+    # def func(params, qo, qs, ql, fsi, gamma=1.0):
+    def func(params, qspace, fsi, gamma=1.0):
+        value = params.valuesdict()
+        # print(value)
+        pseudo_Rinv = np.sqrt((gamma * (value['Ro'] ** 2) + value['Rs'] ** 2 + value['Rl'] ** 2) / 3.0)
+
+        Ro, Rs, Rl = (value[k] / HBAR_C for k in ('Ro', 'Rs', 'Rl'))
+        lam = value['lam']
+        norm = value['norm']
+
+        Ros, Rol, Rsl = (value[k] / HBAR_C ** 2 for k in ('Ros', 'Rol', 'Rsl'))
+
+        k = fsi(pseudo_Rinv) if callable(fsi) else fsi
+
+        e = ((np.array([[Ro, Rs, Rl]]).T * qspace) ** 2).sum(axis=0)
+        # e = (qo * Ro) ** 2 + (qs * Rs) ** 2 + (ql * Rl) ** 2
+        # e = (qo * Ro) ** 2 + (qs * Rs) ** 2 + (ql * Rl) ** 2
+        e += 2 * (qspace[0] * qspace[1] * Ros
+                  + qspace[0] * qspace[2] * Rol
+                  + qspace[2] * qspace[1] * Rsl)
+
+        return norm * ((1.0 - lam) + lam * k * (1.0 + np.exp(-e)))
 
 
 class Fitter:
@@ -244,7 +381,7 @@ class FitterGauss4(FitterGauss):
 
     @classmethod
     def default_parameters(cls):
-        params = FitterGauss.default_parameters(self)
+        params = FitterGauss.default_parameters()
         params.add("Ros", value=5.0)
         return params
 
