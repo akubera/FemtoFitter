@@ -19,8 +19,12 @@ public:
   /// The Associated fit data
   Data3D data;
 
+  /// Approximate gamma factor of pairs
+  double gamma;
+
   Fitter3D(TH3 &n, TH3 &d, TH3 &q, double limit)
     : data(n, d, q, limit)
+    , gamma(1.0)
   { }
 
   /// Utility function for building fitter with tdirectory in file
