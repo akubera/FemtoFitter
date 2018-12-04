@@ -40,7 +40,7 @@ def main(argv=None):
     from femtofitter.fit import parallel_fit_all
     from ROOT import gSystem, TFile
 
-    if gSystem.Load("build/libFemtoFitter.so") != 0:
+    if gSystem.Load("build/libFemtoFitter.so") < 0:
         print("Could not load libFemtoFitter")
         return 1
 
