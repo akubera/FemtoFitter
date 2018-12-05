@@ -15,6 +15,10 @@ class PathQuery(NamedTuple):
     kt: str
     magfield: str
 
+    def mean_kt(self):
+        from statistics import mean
+        return mean(map(float, self.kt.split("_")))
+
     def as_path(self):
         return '/'.join(self)
 
