@@ -54,6 +54,7 @@ def run_fit(fitter_class,
             filename: str,
             query: PathQuery,
             fit_range: float,
+            fit_chi2: bool = False,
             mrc_path: str = None):
 
     from ROOT import TFile
@@ -76,7 +77,8 @@ def run_fit(fitter_class,
             return
         apply_momentum_resolution_correction(fitter.data, mrc)
 
-    fit_results = fitter.fit()
+    fit_results = fitter.fit_chi2() if fit_chi2 else fitter.fit_pml()
+
     if not fit_results:
         print(f"Could not fit: {query.as_path()}")
         return
@@ -94,7 +96,11 @@ def run_fit(fitter_class,
     return results
 
 
-def parallel_fit_all(tfile, ofilename=None):
+def parallel_fit_all(tfile,
+                     ofilename=None,
+                     mrc_path=None,
+                     fitrange=0.21,
+                     chi2=False):
     """
     """
 
@@ -120,16 +126,15 @@ def parallel_fit_all(tfile, ofilename=None):
     configuration_information = get_configuration_json(tfile, paths)
 
     filename = str(filename.absolute())
-    fitrange = 0.21
     pool = Pool()
     # results = pool.starmap(run_fit_gauss, ((filename, p, fitrange) for p in paths[:4]))
 
     work = chain(
-        ((filename, p, fitrange) for p in paths),
-        ((filename, p, fitrange, m) for p, m in mrc_paths),
+        ((filename, p, fitrange, chi2) for p in paths),
+        ((filename, p, fitrange, chi2, m) for p, m in mrc_paths),
     )
 
-    results = pool.starmap(run_fit_gauss, work)
+    results = pool.starmap(run_fit_gauss_full, work)
     #results += pool.starmap(run_fit_gauss, ])
     #results += pool.starmap(run_fit_levy, [(filename, p, fitrange) for p in paths[:1]])
     df = pd.DataFrame(results)
