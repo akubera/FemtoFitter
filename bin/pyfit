@@ -1,0 +1,106 @@
+#!/usr/bin/env python
+#
+# pyfit
+#
+
+import sys
+from pathlib import Path
+from multiprocessing import Pool
+
+
+def arg_parser():
+    from argparse import ArgumentParser
+    parser = ArgumentParser()
+    parser.add_argument("input",
+                        help="file to fit")
+    parser.add_argument("-o", "--output",
+                        nargs='?',
+                        default=None,
+                        help="Output fitresult json file")
+    parser.add_argument("--chi2",
+                        action='store_true',
+                        help="file to fit")
+    parser.add_argument("--fitrange",
+                        type=float,
+                        default=0.21,
+                        help="symmetric limit to fit")
+    parser.add_argument("--mrc-path",
+                        nargs='?',
+                        default='False',
+                        help="file to fit")
+    return parser
+
+
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
+    args = arg_parser().parse_args(argv)
+    if sys.path[0] != '':
+        sys.path.insert(0, '')
+
+    from femtofitter.fit import parallel_fit_all
+    from stumpy.utils import walk_matching
+    from ROOT import gSystem, TFile
+
+    if gSystem.Load("build/libFemtoFitter.so") < 0:
+        print("Could not load libFemtoFitter")
+        return 1
+
+    tfile = TFile.Open(args.input)
+    if not tfile:
+        return 1
+
+    filename = Path(args.input).resolve()
+
+    if args.output:
+        dest = args.output
+    else:
+        dest_filename = "fitres-%s.json" % tfile.GetName()
+        dest_dir = Path("fit-results")
+        dest_dir.mkdir(exist_ok=True, parents=True)
+        dest = dest_dir / dest_filename
+        # todo: Check if dest exists and warn user?
+
+    if args.mrc_path.lower() == 'true':
+        mrc_path = True
+    else:
+        mrc_path = args.mrc_path
+
+    fit_range = args.fitrange
+
+    with Pool() as pool:
+        # for path, _  in walk_matching(tfile, "/AnalysisQ3D/cfg*"):
+        # (path for path, _  in walk_matching(tfile, "/AnalysisQ3D/cfg*"))
+
+        paths = list(walk_matching(tfile, "AnalysisQ3D/cfg*/*/*/*/*"))
+        # paths = walk_matching(tfile, "Q3D/cfg*")
+        pool.starmap(do_fit, ((str(filename), path, fit_range) for path, _  in paths))
+
+    # parallel_fit_all(tfile, str(dest), mrc_path, args.fitrange, args.chi2)
+
+    return 0
+
+
+def do_fit(filename, path, fit_range):
+    from ROOT import gSystem, TFile
+    from femtofitter import PathQuery
+    if gSystem.Load("build/libFemtoFitter.so") < 0:
+        return None
+
+    tfile = TFile.Open(filename)
+    if not tfile:
+        return None
+
+    tdir = tfile.Get(path)
+    if not tdir:
+        return None
+
+    results = PathQuery.from_path(path).as_dict()
+
+    from femtofitter.pyfitter import Data3D,
+
+    return results
+
+
+if __name__ == "__main__":
+    exit(main())
