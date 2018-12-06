@@ -7,7 +7,7 @@ SciPy/LMFit-based femto correlation function fitter. No Minuit.
 
 from os import environ
 from functools import partial
-from typing import Callable
+from typing import Callable, Any
 
 import numpy as np
 from lmfit import Parameters, Minimizer
@@ -38,7 +38,7 @@ class Data3D:
         return self
 
     def __init__(self, num, den, qinv, fit_range, gamma=3.0):
-        from ROOT import TH3, TH3F, TH3D
+        from ROOT import TH3, TH3F
         from itertools import starmap
 
         def histogram_data_to_numpy(h):
@@ -81,55 +81,11 @@ class Data3D:
 
         self.gamma = gamma
 
-
-class FemtoFitterGauss:
-
-    def __init__(self, data=None):
-        self.data = data
-
-    @staticmethod
-    def chi2(ratio, variance, hypothesis):
-        diff = hypothesis - ratio
-        return diff / variance
-
-    @classmethod
-    def chi2_calculator(cls, num, den):  # -> Callable[[Parameters], float]:
-        """
-        Optimized chi2 calculator
-        """
-        ratio = num / den
-        variance = ratio * np.sqrt((1.0 + ratio) / num)
-
-        # ratio = data.num / data.den
-        # variance = ratio * np.sqrt((1.0 + ratio) / data.num)
-        # variance = ratio * (data.num + data.den) / data.den ** 2
-        # variance = ratio * np.sqrt((1.0/N  + 1.0/D))
-
-        def _calc_chi2(hypothesis):
-            " Curried chi2 function "
-            return cls.chi2(ratio, variance, hypothesis)
-
-        return _calc_chi2
-
-    @staticmethod
-    def lnlike(num, den, hypothesis):
-        a, b, c = num, den, hypothesis
-
-        a_plus_b_over_a = (a + b) / a
-        a_plus_b_over_b = (a + b) / b
-        c_plus_1 = c + 1.0
-
-        tmp = a * np.log(a_plus_b_over_a * c / c_plus_1, where=a > 0, out=np.zeros_like(c))
-        tmp += b * np.log(a_plus_b_over_b / c_plus_1)
-
-        return -2 * tmp
-
-    @staticmethod
-    def lnlike_calculator(num, den):
+    def lnlike_calculator(self):
         """
         Return function optimized to calculate log-like given model
         """
-        a, b = num, den
+        a, b = self.num, self.den
 
         a_plus_b_over_a = np.divide(a + b, a, where=a > 0.0, out=np.zeros_like(a))
         a_plus_b_over_b = (a + b) / b
@@ -144,6 +100,35 @@ class FemtoFitterGauss:
 
         return _calc
 
+    def chi2_calculator(self):  # -> Callable[[Parameters], float]:
+        """
+        Optimized chi2 calculator
+        """
+        ratio = self.num / self.den
+        variance = ratio * np.sqrt((1.0 + ratio) / self.num)
+
+        # ratio = data.num / data.den
+        # variance = ratio * np.sqrt((1.0 + ratio) / data.num)
+        # variance = ratio * (data.num + data.den) / data.den ** 2
+        # variance = ratio * np.sqrt((1.0/N  + 1.0/D))
+
+        def _calc_chi2(hypothesis):
+            " Curried chi2 function "
+            return (ratio - hypothesis) / variance
+
+        return _calc_chi2
+
+
+class FemtoFitter3D:
+
+    def __init__(self, data=None):
+        """ Build with optional data object """
+        self.data = data
+
+    @staticmethod
+    def get_fsi_factor(qinv, R):
+        return COULOMB_INTERP(qinv, R)
+
     def chi2_minimizer(self, data=None, gamma=None) -> Minimizer:
         """
         Create lmfit.Minimizer with default settings and bound to
@@ -156,25 +141,30 @@ class FemtoFitterGauss:
         mini = Minimizer(func, self.default_parameters(), (data.qspace, fsi, gamma))
         return mini
 
-    def pml_minimizer(self, data=None, gamma=None) -> Minimizer:
+    def pml_minimizer(self, data=None, gamma=None, fsi=None) -> Minimizer:
         """
         Create lmfit.Minimizer with default settings and bound to
         this class's chi2 evaluator method
         """
         data = data or self.data
-        fsi = partial(self.get_fsi_factor, data.qinv)
-        gamma = gamma if gamma is not None else data.gamma
+
+        if gamma is None:
+            gamma = data.gamma
+
+        if fsi is None:
+            fsi = partial(self.get_fsi_factor, data.qinv)
+
         func = self.pml_evaluator(data)
         mini = Minimizer(func, self.default_parameters(), (data.qspace, fsi, gamma))
         return mini
 
     @classmethod
-    def chi2_evaluator(cls, data):
+    def chi2_evaluator(cls, data: Data3D) -> Callable[[Parameters, Any], float]:
         """
-        Return a function that evaluates
+        Return a function that evaluates chisquared from parameters to cls.func
         """
 
-        chi2_calc = cls.chi2_calculator(data.num, data.den)
+        chi2_calc = data.chi2_calculator()
 
         def _eval(params, *args):
             model = cls.func(params, *args)
@@ -183,8 +173,11 @@ class FemtoFitterGauss:
         return _eval
 
     @classmethod
-    def pml_evaluator(cls, data):
-        loglike_calc = cls.lnlike_calculator(data.num, data.den)
+    def pml_evaluator(cls, data: Data3D) -> Callable[[], float]:
+        """
+        Return a function that evaluates loglikelihood from parameters to cls.func
+        """
+        loglike_calc = data.lnlike_calculator()
 
         def _eval(params, *args):
             model = cls.func(params, *args)
@@ -198,7 +191,6 @@ class FemtoFitterGauss:
 
         p = params.copy()
         val = p[key].value
-
 
         if values is None and factors is None:
             factors = np.linspace(0.5, 1.5, 30)
@@ -214,58 +206,24 @@ class FemtoFitterGauss:
 
         return np.array(results)
 
-    def pml_alt(self, data=None) -> Callable[[Parameters], float]:
-        data = data if data is not None else self.data
-        fsi = partial(self.get_fsi_factor, data.qinv)
-        args = (data.qspace, fsi, data.gamma)
-
-        loglike_calc = self.lnlike_calculator(data.num, data.den)
-
-        def _return_pml(params):
-            model = self.func(params, *args)
-            return loglike_calc(model)
-
-        return _return_pml
+    @staticmethod
+    def chi2(ratio, variance, hypothesis):
+        """ 'Raw' chi2 function for tests"""
+        diff = hypothesis - ratio
+        return diff / variance
 
     @staticmethod
-    def get_fsi_factor(qinv, R):
-        return COULOMB_INTERP(qinv, R)
+    def lnlike(a, b, c):
+        """ 'Raw' log-likelihood function """
 
-    @classmethod
-    def default_parameters(cls):
-        from lmfit import Parameters
-        q3d_params = Parameters()
-        q3d_params.add('Ro', value=2.0, min=0.0)
-        q3d_params.add('Rs', value=2.0, min=0.0)
-        q3d_params.add('Rl', value=2.0, min=0.0)
-        q3d_params.add('Ros', value=0.0)
-        q3d_params.add('Rsl', value=0.0)
-        q3d_params.add('Rol', value=0.0)
-        q3d_params.add('lam', value=0.40, min=0.0)
-        q3d_params.add('norm', value=0.10, min=0.0)
-        return q3d_params
+        a_plus_b_over_a = (a + b) / a
+        a_plus_b_over_b = (a + b) / b
+        c_plus_1 = c + 1.0
 
-    @staticmethod
-    # def func(params, qo, qs, ql, fsi, gamma=1.0):
-    def func(params, qspace, fsi, gamma=1.0):
-        value = params.valuesdict()
-        # print(value)
-        pseudo_Rinv = np.sqrt((gamma * (value['Ro']) ** 2 + value['Rs'] ** 2 + value['Rl'] ** 2) / 3.0)
+        tmp = a * np.log(a_plus_b_over_a * c / c_plus_1, where=a > 0, out=np.zeros_like(c))
+        tmp += b * np.log(a_plus_b_over_b / c_plus_1)
 
-        Ro, Rs, Rl = (value[k] / HBAR_C for k in ('Ro', 'Rs', 'Rl'))
-        lam = value['lam']
-        norm = value['norm']
-
-        Ros, Rol, Rsl = (value[k] / HBAR_C ** 2 for k in ('Ros', 'Rol', 'Rsl'))
-
-        k = fsi(pseudo_Rinv) if callable(fsi) else fsi
-
-        e = ((np.array([[Ro, Rs, Rl]]).T * qspace) ** 2).sum(axis=0)
-        e += 2 * np.sum((qspace[0] * qspace[1] * Ros,
-                         qspace[0] * qspace[2] * Rol,
-                         qspace[2] * qspace[1] * Rsl))
-
-        return norm * ((1.0 - lam) + lam * k * (1.0 + np.exp(-e)))
+        return -2 * tmp
 
 
 class Fitter:
@@ -280,7 +238,10 @@ class Fitter:
     @classmethod
     def FromDirectory(cls, tdir, fit_range=None):
         from stumpy import Histogram
-        num, den, qinv = map(Histogram.BuildFromRootHist, map(tdir.Get, ("num", "den", "qinv")))
+
+        hists = map(tdir.Get, ("num", "den", "qinv"))
+        num, den, qinv = map(Histogram.BuildFromRootHist, hists)
+
         return cls(num, den, qinv, fit_range)
 
     @classmethod
@@ -511,6 +472,42 @@ class FitterGauss4(FitterGauss):
 
         return norm * ((1.0 - lam) + lam * k * (1.0 + np.exp(-e)))
 
+
+class FitterGauss6(FemtoFitter3D):
+
+    @classmethod
+    def default_parameters(cls):
+        from lmfit import Parameters
+        q3d_params = Parameters()
+        q3d_params.add('Ro', value=2.0, min=0.0)
+        q3d_params.add('Rs', value=2.0, min=0.0)
+        q3d_params.add('Rl', value=2.0, min=0.0)
+        q3d_params.add('Ros', value=0.0)
+        q3d_params.add('Rsl', value=0.0)
+        q3d_params.add('Rol', value=0.0)
+        q3d_params.add('lam', value=0.40, min=0.0)
+        q3d_params.add('norm', value=0.10, min=0.0)
+        return q3d_params
+
+    @staticmethod
+    def func(params, qspace, fsi, gamma=1.0, norm=None):
+        value = params.valuesdict()
+        pseudo_Rinv = np.sqrt((gamma * (value['Ro']) ** 2 + value['Rs'] ** 2 + value['Rl'] ** 2) / 3.0)
+
+        Ro, Rs, Rl = (value[k] / HBAR_C for k in ('Ro', 'Rs', 'Rl'))
+        Ros, Rol, Rsl = (value[k] / HBAR_C ** 2 for k in ('Ros', 'Rol', 'Rsl'))
+
+        lam = value['lam']
+        norm = value['norm'] if norm is None else norm
+
+        k = fsi(pseudo_Rinv) if callable(fsi) else fsi
+
+        e = ((np.array([[Ro, Rs, Rl]]).T * qspace) ** 2).sum(axis=0)
+        e += 2 * np.sum((qspace[0] * qspace[1] * Ros,
+                         qspace[0] * qspace[2] * Rol,
+                         qspace[1] * qspace[2] * Rsl))
+
+        return norm * ((1.0 - lam) + lam * k * (1.0 + np.exp(-e)))
 
 class FitterLevy(Fitter):
 
