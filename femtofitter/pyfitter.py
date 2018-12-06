@@ -85,18 +85,28 @@ class FemtoFitterGauss:
     def __init__(self):
         pass
 
-    def fit(self, data):
+    def fit(self, data, gamma=1.0):
         from functools import partial
         import lmfit
 
         fsi = partial(self.get_fsi_factor, data.qinv)
 
         func = self.chi2_evaluator(data)
-        mini = lmfit.Minimizer(func, self.default_parameters(), (data.qspace, fsi, ))
+        mini = lmfit.Minimizer(func, self.default_parameters(), (data.qspace, fsi, gamma))
+        return mini
+
+    def fit_pml(self, data, gamma=1.0):
+        from functools import partial
+        import lmfit
+
+        fsi = partial(self.get_fsi_factor, data.qinv)
+
+        func = self.lnlike_evaluator(data)
+        mini = lmfit.Minimizer(func, self.default_parameters(), (data.qspace, fsi, gamma))
         return mini
 
     @classmethod
-    def chi2_evaluator(self, data):
+    def chi2_evaluator(cls, data):
         """
         Return a function that evaluates
         """
@@ -106,17 +116,36 @@ class FemtoFitterGauss:
         # variance = ratio * np.sqrt((1.0/N  + 1.0/D))
 
         def _eval(params, *args):
-            model = self.func(params, *args)
+            model = cls.func(params, *args)
             diff = model - ratio
-
             return diff / variance
 
         return _eval
 
     @classmethod
     def chi2(cls, *args):
-        hypothesis = cls.func(*args)  # data.qo, data.qs, data.ql)
-        return ()
+        hypothesis = cls.func(*args)
+        return
+
+    @classmethod
+    def lnlike_evaluator(cls, data):
+        a = data.num
+        b = data.den
+
+        a_plus_b_over_b = (a + b) / b
+        a_plus_b_over_a = np.divide(a + b, a, where=a>0, out=np.zeros_like(a))
+
+        def _eval(params, *args):
+            model = cls.func(params, *args)
+            c = model
+            c_plus_1 = c + 1.0
+
+            tmp = a * np.log(a_plus_b_over_a * c / c_plus_1, where=a > 0, out=np.zeros_like(c))
+            tmp += b * np.log(a_plus_b_over_b / c_plus_1)
+
+            return -2.0 * tmp
+
+        return _eval
 
     @staticmethod
     def get_fsi_factor(qinv, R):
@@ -141,7 +170,7 @@ class FemtoFitterGauss:
     def func(params, qspace, fsi, gamma=1.0):
         value = params.valuesdict()
         # print(value)
-        pseudo_Rinv = np.sqrt((gamma * (value['Ro'] ** 2) + value['Rs'] ** 2 + value['Rl'] ** 2) / 3.0)
+        pseudo_Rinv = np.sqrt((gamma * (value['Ro']) ** 2 + value['Rs'] ** 2 + value['Rl'] ** 2) / 3.0)
 
         Ro, Rs, Rl = (value[k] / HBAR_C for k in ('Ro', 'Rs', 'Rl'))
         lam = value['lam']
@@ -470,7 +499,9 @@ class FitterLevy3(Fitter):
     @staticmethod
     def func(params, qo, qs, ql, fsi, norm=1.0, gamma=1.0):
         value = params.valuesdict()
-        pseudo_Rinv = np.sqrt((gamma * (value['Ro'] ** 2) + value['Rs'] ** 2 + value['Rl'] ** 2) / 3.0)
+        pseudo_Rinv = np.sqrt(((gamma * value['Ro'] ** 2)
+                               + value['Rs'] ** 2
+                               + value['Rl'] ** 2) / 3.0)
 
         Ro, Rs, Rl = map(lambda k: value[k] / HBAR_C, ('Ro', 'Rs', 'Rl'))
         lam = value['lam']
