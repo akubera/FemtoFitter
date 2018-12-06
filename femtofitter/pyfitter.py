@@ -6,8 +6,11 @@ SciPy/LMFit-based femto correlation function fitter. No Minuit.
 """
 
 from os import environ
+from functools import partial
+from typing import Callable
+
 import numpy as np
-from lmfit import Parameters
+from lmfit import Parameters, Minimizer
 from scipy.interpolate import interp2d
 
 from ROOT import gSystem
@@ -34,8 +37,7 @@ class Data3D:
         self = cls(*map(tdir.Get, ('num', 'den', 'qinv')), fit_range)
         return self
 
-
-    def __init__(self, num, den, qinv, fit_range):
+    def __init__(self, num, den, qinv, fit_range, gamma=3.0):
         from ROOT import TH3, TH3F, TH3D
         from itertools import starmap
 
@@ -79,30 +81,93 @@ class Data3D:
         self.ql, self.qs, self.qo = (q[mask] for q in qspace)
         self.qspace = np.array([self.qo, self.qs, self.ql])
 
+        self.gamma = gamma
+
 
 class FemtoFitterGauss:
 
-    def __init__(self):
-        pass
+    def __init__(self, data=None):
+        self.data = data
 
-    def fit(self, data, gamma=1.0):
-        from functools import partial
-        import lmfit
+    @staticmethod
+    def chi2(ratio, variance, hypothesis):
+        diff = hypothesis - ratio
+        return diff / variance
 
+    @classmethod
+    def chi2_calculator(cls, num, den):  # -> Callable[[Parameters], float]:
+        """
+        Optimized chi2 calculator
+        """
+        ratio = num / den
+        variance = ratio * np.sqrt((1.0 + ratio) / num)
+
+        # ratio = data.num / data.den
+        # variance = ratio * np.sqrt((1.0 + ratio) / data.num)
+        # variance = ratio * (data.num + data.den) / data.den ** 2
+        # variance = ratio * np.sqrt((1.0/N  + 1.0/D))
+
+        def _calc_chi2(hypothesis):
+            " Curried chi2 function "
+            return cls.chi2(ratio, variance, hypothesis)
+
+        return _calc_chi2
+
+    @staticmethod
+    def lnlike(num, den, hypothesis):
+        a, b, c = num, den, hypothesis
+
+        a_plus_b_over_a = (a + b) / a
+        a_plus_b_over_b = (a + b) / b
+        c_plus_1 = c + 1.0
+
+        tmp = a * np.log(a_plus_b_over_a * c / c_plus_1, where=a > 0, out=np.zeros_like(c))
+        tmp += b * np.log(a_plus_b_over_b / c_plus_1)
+
+        return -2 * tmp
+
+    @staticmethod
+    def lnlike_calculator(num, den):
+        """
+        Return function optimized to calculate log-like given model
+        """
+        a, b = num, den
+
+        a_plus_b_over_a = np.divide(a + b, a, where=a > 0.0, out=np.zeros_like(a))
+        a_plus_b_over_b = (a + b) / b
+
+        def _calc(c):
+            c_plus_1 = c + 1.0
+
+            tmp = a * np.log(a_plus_b_over_a * c / c_plus_1)
+            tmp += b * np.log(a_plus_b_over_b / c_plus_1)
+
+            return -2 * tmp
+
+        return _calc
+
+    def chi2_minimizer(self, data=None, gamma=None) -> Minimizer:
+        """
+        Create lmfit.Minimizer with default settings and bound to
+        this class's chi2 evaluator method
+        """
+        data = data or self.data
         fsi = partial(self.get_fsi_factor, data.qinv)
-
+        gamma = gamma if gamma is not None else data.gamma
         func = self.chi2_evaluator(data)
-        mini = lmfit.Minimizer(func, self.default_parameters(), (data.qspace, fsi, gamma))
+        mini = Minimizer(func, self.default_parameters(), (data.qspace, fsi, gamma))
         return mini
 
-    def fit_pml(self, data, gamma=1.0):
-        from functools import partial
-        import lmfit
-
+    def pml_minimizer(self, data=None, gamma=None) -> Minimizer:
+        """
+        Create lmfit.Minimizer with default settings and bound to
+        this class's chi2 evaluator method
+        """
+        data = data or self.data
         fsi = partial(self.get_fsi_factor, data.qinv)
-
-        func = self.lnlike_evaluator(data)
-        mini = lmfit.Minimizer(func, self.default_parameters(), (data.qspace, fsi, gamma))
+        gamma = gamma if gamma is not None else data.gamma
+        func = self.pml_evaluator(data)
+        mini = Minimizer(func, self.default_parameters(), (data.qspace, fsi, gamma))
         return mini
 
     @classmethod
@@ -110,42 +175,37 @@ class FemtoFitterGauss:
         """
         Return a function that evaluates
         """
-        ratio = data.num / data.den
-        variance = ratio * np.sqrt((1.0 + ratio) / data.num)
-        # variance = ratio * (data.num + data.den) / data.den ** 2
-        # variance = ratio * np.sqrt((1.0/N  + 1.0/D))
+
+        chi2_calc = cls.chi2_calculator(data.num, data.den)
 
         def _eval(params, *args):
             model = cls.func(params, *args)
-            diff = model - ratio
-            return diff / variance
+            return chi2_calc(model)
 
         return _eval
 
     @classmethod
-    def chi2(cls, *args):
-        hypothesis = cls.func(*args)
-        return
-
-    @classmethod
-    def lnlike_evaluator(cls, data):
-        a = data.num
-        b = data.den
-
-        a_plus_b_over_b = (a + b) / b
-        a_plus_b_over_a = np.divide(a + b, a, where=a>0, out=np.zeros_like(a))
+    def pml_evaluator(cls, data):
+        loglike_calc = cls.lnlike_calculator(data.num, data.den)
 
         def _eval(params, *args):
             model = cls.func(params, *args)
-            c = model
-            c_plus_1 = c + 1.0
-
-            tmp = a * np.log(a_plus_b_over_a * c / c_plus_1, where=a > 0, out=np.zeros_like(c))
-            tmp += b * np.log(a_plus_b_over_b / c_plus_1)
-
-            return -2.0 * tmp
+            return loglike_calc(model)
 
         return _eval
+
+    def pml_alt(self, data=None) -> Callable[[Parameters], float]:
+        data = data if data is not None else self.data
+        fsi = partial(self.get_fsi_factor, data.qinv)
+        args = (data.qspace, fsi, data.gamma)
+
+        loglike_calc = self.lnlike_calculator(data.num, data.den)
+
+        def _return_pml(params):
+            model = self.func(params, *args)
+            return loglike_calc(model)
+
+        return _return_pml
 
     @staticmethod
     def get_fsi_factor(qinv, R):
@@ -161,7 +221,7 @@ class FemtoFitterGauss:
         q3d_params.add('Ros', value=0.0)
         q3d_params.add('Rsl', value=0.0)
         q3d_params.add('Rol', value=0.0)
-        q3d_params.add('lam', value=0.40, min=0.0, max=1.0)
+        q3d_params.add('lam', value=0.40, min=0.0)
         q3d_params.add('norm', value=0.10, min=0.0)
         return q3d_params
 
@@ -181,11 +241,9 @@ class FemtoFitterGauss:
         k = fsi(pseudo_Rinv) if callable(fsi) else fsi
 
         e = ((np.array([[Ro, Rs, Rl]]).T * qspace) ** 2).sum(axis=0)
-        # e = (qo * Ro) ** 2 + (qs * Rs) ** 2 + (ql * Rl) ** 2
-        # e = (qo * Ro) ** 2 + (qs * Rs) ** 2 + (ql * Rl) ** 2
-        e += 2 * (qspace[0] * qspace[1] * Ros
-                  + qspace[0] * qspace[2] * Rol
-                  + qspace[2] * qspace[1] * Rsl)
+        e += 2 * np.sum((qspace[0] * qspace[1] * Ros,
+                         qspace[0] * qspace[2] * Rol,
+                         qspace[2] * qspace[1] * Rsl))
 
         return norm * ((1.0 - lam) + lam * k * (1.0 + np.exp(-e)))
 
@@ -201,7 +259,6 @@ class Fitter:
 
     @classmethod
     def FromDirectory(cls, tdir, fit_range=None):
-        from ROOT import TFile
         from stumpy import Histogram
         num, den, qinv = map(Histogram.BuildFromRootHist, map(tdir.Get, ("num", "den", "qinv")))
         return cls(num, den, qinv, fit_range)
@@ -310,8 +367,8 @@ class Fitter:
 
     def chi2(self, theory, pair=None):
         if pair is None:
-             ratio = self.r
-             error = self.e
+            ratio = self.r
+            error = self.e
         else:
             ratio, error = self.calculate_ratio_and_variance(*pair)
 
@@ -424,11 +481,13 @@ class FitterGauss4(FitterGauss):
 
         k = fsi(pseudo_Rinv) if callable(fsi) else fsi
 
-        e = (qo * Ro) ** 2 + (qs * Rs) ** 2 + (ql * Rl) ** 2
-        e = ((qo * Ro) ** 2
-             + (qs * Rs) ** 2
-             + (ql * Rl) ** 2
-             + (qo * qs * Ros ** 2))
+        e = (qo * Ro) ** 2
+        e += (qs * Rs) ** 2
+        e += (ql * Rl) ** 2
+        e += (qo * Ro) ** 2
+        e += (qs * Rs) ** 2
+        e += (ql * Rl) ** 2
+        e += (qo * qs * Ros ** 2)
 
         return norm * ((1.0 - lam) + lam * k * (1.0 + np.exp(-e)))
 
@@ -452,9 +511,9 @@ class FitterLevy(Fitter):
 
         k = fsi(pseudo_Rinv) if callable(fsi) else fsi
 
-        e = (np.power((qo * Ro) ** 2, alpha/2)
-           + np.power((qs * Rs) ** 2, alpha/2)
-           + np.power((ql * Rl) ** 2, alpha/2))
+        e = np.sum((np.power((qo * Ro) ** 2, alpha/2),
+                    np.power((qs * Rs) ** 2, alpha/2),
+                    np.power((ql * Rl) ** 2, alpha/2)))
 
         return norm * ((1.0 - lam) + lam * k * (1.0 + np.exp(-e)))
 
@@ -479,9 +538,9 @@ class FitterLevy2(Fitter):
 
         k = fsi(pseudo_Rinv) if callable(fsi) else fsi
 
-        e = (np.power((qo * Ro) ** 2, alpha_ol/2)
-           + np.power((qs * Rs) ** 2, alpha_s/2)
-           + np.power((ql * Rl) ** 2, alpha_ol/2))
+        e = np.sum((np.power((qo * Ro) ** 2, alpha_ol/2),
+                    np.power((qs * Rs) ** 2, alpha_s/2),
+                    np.power((ql * Rl) ** 2, alpha_ol/2)))
 
         return norm * ((1.0 - lam) + lam * k * (1.0 + np.exp(-e)))
 
@@ -511,8 +570,8 @@ class FitterLevy3(Fitter):
 
         k = fsi(pseudo_Rinv) if callable(fsi) else fsi
 
-        e = (np.power((qo * Ro) ** 2, alpha_o/2)
-           + np.power((qs * Rs) ** 2, alpha_s/2)
-           + np.power((ql * Rl) ** 2, alpha_l/2))
+        e = np.sum((np.power((qo * Ro) ** 2, alpha_o/2),
+                    np.power((qs * Rs) ** 2, alpha_s/2),
+                    np.power((ql * Rl) ** 2, alpha_l/2)))
 
         return norm * ((1.0 - lam) + lam * k * (1.0 + np.exp(-e)))
