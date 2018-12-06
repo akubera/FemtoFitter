@@ -161,7 +161,7 @@ class FemtoFitterGauss:
         q3d_params.add('Ros', value=0.0)
         q3d_params.add('Rsl', value=0.0)
         q3d_params.add('Rol', value=0.0)
-        q3d_params.add('lam', value=0.40, min=0.0)
+        q3d_params.add('lam', value=0.40, min=0.0, max=1.0)
         q3d_params.add('norm', value=0.10, min=0.0)
         return q3d_params
 
