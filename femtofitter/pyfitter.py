@@ -11,6 +11,7 @@ from typing import Callable
 
 import numpy as np
 from lmfit import Parameters, Minimizer
+from lmfit.minimizer import MinimizerResult
 from scipy.interpolate import interp2d
 
 from ROOT import gSystem
@@ -27,7 +28,6 @@ with open("coulomb-interpolation.dat", 'rb') as f:
     z = np.load(f)
     COULOMB_INTERP = interp2d(x, y, z)
     del x, y, z
-
 
 
 class Data3D:
@@ -61,14 +61,12 @@ class Data3D:
             iter_axes = (TH3.GetZaxis, TH3.GetYaxis, TH3.GetXaxis)
             yield from (a(hist) for a in iter_axes)
 
-
         n, d, qinv = map(histogram_data_to_numpy, (num, den, qinv))
         assert n.shape == d.shape == qinv.shape
 
         axes = list(axes_of(num))
         qspace = np.meshgrid(*map(get_bin_centers, axes), indexing='ij')
         fitrange_slices = tuple(starmap(slice, map(get_fitrange_bins, axes)))
-
 
         mask = np.zeros_like(n, dtype=bool)
         mask[fitrange_slices] = True
@@ -193,6 +191,28 @@ class FemtoFitterGauss:
             return loglike_calc(model)
 
         return _eval
+
+    def vary_chi2(self, params, key, *, values=None, factors=None, data=None):
+        if isinstance(params, MinimizerResult):
+            params = params.params
+
+        p = params.copy()
+        val = p[key].value
+
+
+        if values is None and factors is None:
+            factors = np.linspace(0.5, 1.5, 30)
+
+        if factors:
+            values = val * factors
+
+        chi2 = self.chi2_evaluator(data)
+        results = []
+        for val in values:
+            p[key].value = val
+            results.append(chi2(p))
+
+        return np.array(results)
 
     def pml_alt(self, data=None) -> Callable[[Parameters], float]:
         data = data if data is not None else self.data
