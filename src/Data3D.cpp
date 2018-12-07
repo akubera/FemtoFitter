@@ -11,6 +11,7 @@
 void store_into(std::vector<double> &v, std::vector<double> &dest)
   { dest = std::move(v); }
 
+
 void store_into(std::vector<double> &v, std::valarray<double> &dest)
   { dest = std::valarray<double>(v.data(), v.size()); }
 
@@ -70,6 +71,14 @@ Data3D::Data3D(const TH3 &n, const TH3 &d, const TH3 &q, double limit_)
       }
     }
   }
+}
+
+
+Data3D::Data3D(std::vector<Datum> data_, double limit_, double true_limit_)
+  : data(data_)
+  , limit(limit_)
+  , true_limit_(true_limit_)
+{
 }
 
 

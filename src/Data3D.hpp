@@ -49,6 +49,9 @@ struct Data3D {
   ///
   Data3D(const TH3& num, const TH3& den, const TH3& qinv, double limit=0.0);
 
+  /// Data limit
+  Data3D(std::vector<Datum> data, double limit, double true_limit);
+
   size_t size() const
     { return data.size(); }
 
@@ -64,4 +67,37 @@ struct Data3D {
   auto end() const
     { return data.cend(); }
 
+  /// get out-side datapoints from quadrants I-III
+  std::unique_ptr<Data3D> cowboy_subset() const
+    {
+      std::vector<Datum> subset;
+      for (auto &dat : data) {
+        bool accept =
+          ((dat.qo > 0.0) && (dat.qs > 0.0)) ||
+          ((dat.qo < 0.0) && (dat.qs < 0.0));
+
+        if (accept) {
+          subset.emplace_back(dat);
+        }
+      }
+
+      return std::make_unique<Data3D>(subset, limit, true_limit);
+    }
+
+  /// get out-side datapoints from quadrants II-IV
+  std::unique_ptr<Data3D> sailor_subset() const
+    {
+      std::vector<Datum> subset;
+      for (auto &dat : data) {
+        bool accept =
+          ((dat.qo < 0.0) && (dat.qs > 0.0)) ||
+          ((dat.qo > 0.0) && (dat.qs < 0.0));
+
+        if (accept) {
+          subset.emplace_back(dat);
+        }
+      }
+
+      return std::make_unique<Data3D>(subset, limit, true_limit);
+    }
 };
