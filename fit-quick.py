@@ -19,7 +19,6 @@ def arg_parser():
     from argparse import ArgumentParser
     parser = ArgumentParser()
     parser.add_argument('filename',
-                        default="~/Physics/data/1234813315/AnalysisResults.root",
                         help='input rootfile')
     parser.add_argument("-b", "--bounds",
                         type=float,
