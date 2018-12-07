@@ -129,16 +129,15 @@ class FemtoFitter3D:
     def get_fsi_factor(qinv, R):
         return COULOMB_INTERP(qinv, R)
 
-    def chi2_minimizer(self, data=None, gamma=None) -> Minimizer:
+    def chi2_minimizer(self, data=None, gamma=None, fsi=None) -> Minimizer:
         """
         Create lmfit.Minimizer with default settings and bound to
         this class's chi2 evaluator method
         """
         data = data or self.data
-        fsi = partial(self.get_fsi_factor, data.qinv)
-        gamma = gamma if gamma is not None else data.gamma
+        args = self.func_args(data, gamma, fsi)
         func = self.chi2_evaluator(data)
-        mini = Minimizer(func, self.default_parameters(), (data.qspace, fsi, gamma))
+        mini = Minimizer(func, self.default_parameters(), args)
         return mini
 
     def pml_minimizer(self, data=None, gamma=None, fsi=None) -> Minimizer:
@@ -151,11 +150,9 @@ class FemtoFitter3D:
         if gamma is None:
             gamma = data.gamma
 
-        if fsi is None:
-            fsi = partial(self.get_fsi_factor, data.qinv)
-
+        args = self.func_args(data, gamma, fsi)
         func = self.pml_evaluator(data)
-        mini = Minimizer(func, self.default_parameters(), (data.qspace, fsi, gamma))
+        mini = Minimizer(func, self.default_parameters(), args, reduce_fcn=np.sum)
         return mini
 
     @classmethod
@@ -173,7 +170,7 @@ class FemtoFitter3D:
         return _eval
 
     @classmethod
-    def pml_evaluator(cls, data: Data3D) -> Callable[[], float]:
+    def pml_evaluator(cls, data: Data3D) -> Callable[[Parameters, Any], float]:
         """
         Return a function that evaluates loglikelihood from parameters to cls.func
         """
@@ -195,16 +192,45 @@ class FemtoFitter3D:
         if values is None and factors is None:
             factors = np.linspace(0.5, 1.5, 30)
 
-        if factors:
+        if factors is not None:
             values = val * factors
 
+        if data is None:
+            data = self.data
+
+        args = self.func_args(data)
         chi2 = self.chi2_evaluator(data)
         results = []
         for val in values:
             p[key].value = val
-            results.append(chi2(p))
+            results.append(chi2(p, *args))
 
         return np.array(results)
+
+    def chi2_of(self, params, data=None, gamma=1.0):
+        """ get chi2 of the parameters (inefficient, use chi2_calculator) """
+        if data is None:
+            data = self.data
+
+        if isinstance(params, MinimizerResult):
+            params = params.params
+
+        calc_chi2 = self.chi2_evaluator(data)
+        return calc_chi2(params, *self.func_args(data, gamma))
+
+    @classmethod
+    def func_args(cls, data: Data3D, gamma=None, fsi=None) -> (np.array, float, float):
+        """
+        Create tuple of arguments to be used in the function's func()
+        """
+
+        if fsi is None:
+            fsi = partial(cls.get_fsi_factor, data.qinv)
+
+        if gamma is None:
+            gamma = data.gamma
+
+        return (data.qspace, fsi, gamma)
 
     @staticmethod
     def chi2(ratio, variance, hypothesis):
@@ -484,7 +510,7 @@ class FitterGauss6(FemtoFitter3D):
         q3d_params.add('Rl', value=2.0, min=0.0)
         q3d_params.add('Ros', value=0.0)
         q3d_params.add('Rsl', value=0.0)
-        q3d_params.add('Rol', value=0.0)
+        q3d_params.add('Rlo', value=0.0)
         q3d_params.add('lam', value=0.40, min=0.0)
         q3d_params.add('norm', value=0.10, min=0.0)
         return q3d_params
@@ -495,7 +521,7 @@ class FitterGauss6(FemtoFitter3D):
         pseudo_Rinv = np.sqrt((gamma * (value['Ro']) ** 2 + value['Rs'] ** 2 + value['Rl'] ** 2) / 3.0)
 
         Ro, Rs, Rl = (value[k] / HBAR_C for k in ('Ro', 'Rs', 'Rl'))
-        Ros, Rol, Rsl = (value[k] / HBAR_C ** 2 for k in ('Ros', 'Rol', 'Rsl'))
+        Ros, Rol, Rsl = (value[k] / HBAR_C ** 2 for k in ('Ros', 'Rlo', 'Rsl'))
 
         lam = value['lam']
         norm = value['norm'] if norm is None else norm
