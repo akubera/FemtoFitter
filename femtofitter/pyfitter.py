@@ -81,6 +81,28 @@ class Data3D:
 
         self.gamma = gamma
 
+    def cowboy_subset(self):
+        qo, qs, ql = self.qspace
+        mask = (((qo > 0.0) & (qs > 0.0)) |
+                ((qo < 0.0) & (qs < 0.0)))
+        return self.create_subset(mask)
+
+    def sailor_subset(self):
+        qo, qs, ql = self.qspace
+        mask = (((qo < 0.0) & (qs > 0.0)) |
+                ((qo > 0.0) & (qs < 0.0)))
+        return self.create_subset(mask)
+
+    def create_subset(self, mask):
+        result = self.__class__.__new__(self.__class__)
+        result.num = self.num[mask]
+        result.den = self.den[mask]
+        result.ql, result.qs, result.qo = (q[mask] for q in self.qspace)
+        result.qinv = self.qinv[mask]
+        result.qspace = np.array([self.qo, self.qs, self.ql])
+        result.gamma = self.gamma
+        return result
+
     def lnlike_calculator(self):
         """
         Return function optimized to calculate log-like given model
