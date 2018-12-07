@@ -20,7 +20,7 @@ main()
 {
   std::cout << "hi\n";
 
-  auto tfile = TFile::Open("Data-smallbins.root");
+  auto tfile = TFile::Open("Data-varyphi.root");
   if (!tfile) {
     return 1;
   }
