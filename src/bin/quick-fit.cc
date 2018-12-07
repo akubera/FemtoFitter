@@ -3,7 +3,10 @@
 #include "FitterLevy.hpp"
 #include "FitterLevyFull.hpp"
 
+#include "Data3D.hpp"
+
 #include <TFile.h>
+
 
 template <typename Fitter_t>
 void runfit(TDirectory &tdir, double limit)
@@ -15,23 +18,26 @@ void runfit(TDirectory &tdir, double limit)
   res.print();
 }
 
+
 int
 main()
 {
-  std::cout << "hi\n";
+  auto path = "AnalysisQ3D/cfgB19FE5D669F43E46/pip/00_05/0.4_0.5/++",
+       filename = "Data-varyphi.root";
 
-  auto tfile = TFile::Open("Data-smallbins.root");
+  std::cout << " path: " << path << "\n";
+  std::cout << " filename: " << filename << "\n";
+
+  auto tfile = TFile::Open(filename);
   if (!tfile) {
     return 1;
   }
 
-
-  auto path = "AnalysisQ3D/cfgB19FE5D669F43E46/pip/00_05/0.4_0.5/++";
   auto tdir = dynamic_cast<TDirectory*>(tfile->Get(path));
 
   double limit = 0.14;
 
-  // runfit<FitterGaussOSL>(*tdir, limit);
+  runfit<FitterGaussOSL>(*tdir, limit);
   // runfit<FitterLevy>(*tdir, limit);
-  runfit<FitterLevyFull>(*tdir, limit);
+  // runfit<FitterLevyFull>(*tdir, limit);
 }
