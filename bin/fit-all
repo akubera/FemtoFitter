@@ -27,6 +27,9 @@ def arg_parser():
                         nargs='?',
                         default=False,
                         help="file to fit")
+    parser.add_argument("--fitter",
+                        default='FitterGaussOSL',
+                        help="Name of fitter class")
     return parser
 
 
@@ -38,10 +41,17 @@ def main(argv=None):
         sys.path.insert(0, '')
 
     from femtofitter.fit import parallel_fit_all
+    import ROOT
     from ROOT import gSystem, TFile
 
     if gSystem.Load("build/libFemtoFitter.so") < 0:
         print("Could not load libFemtoFitter")
+        return 1
+
+    try:
+        getattr(ROOT, args.fitter)
+    except AttributeError:
+        print(f"Could not load fitter class {args.fitter!r}", file=sys.stderr)
         return 1
 
     tfile = TFile.Open(args.input)

@@ -6,6 +6,7 @@
 Fitting routines
 """
 
+import sys
 from itertools import chain
 from multiprocessing import Pool, Process
 from statistics import mean
@@ -49,6 +50,12 @@ def run_fit_gauss_full(*args, **kwargs):
     from ROOT import FitterGaussFull
     return run_fit(FitterGaussFull, *args, **kwargs)
 
+def run_fitter(fitter, *args, **kwargs):
+    import ROOT
+    from ROOT import Data3D
+    Fitter = getattr(ROOT, fitter)
+
+    return run_fit(Fitter, *args, **kwargs)
 
 def run_fit(fitter_class,
             filename: str,
@@ -100,6 +107,7 @@ def run_fit(fitter_class,
 
 def parallel_fit_all(tfile,
                      ofilename=None,
+                     fitter_t='FitterGausOSL',
                      mrc=False,
                      fitrange=0.21,
                      chi2=False):
@@ -109,6 +117,13 @@ def parallel_fit_all(tfile,
     from stumpy.utils import walk_matching
     from datetime import datetime
     from pathlib import Path
+
+    import ROOT
+    try:
+        getattr(ROOT, fitter_t)
+    except AttributeError:
+        print(f"Could not load fitter {fitter_t!r}", file=sys.stderr)
+        return
 
     filename = Path(str(tfile.GetName()))
 
@@ -140,11 +155,11 @@ def parallel_fit_all(tfile,
     # results = pool.starmap(run_fit_gauss, ((filename, p, fitrange) for p in paths[:4]))
 
     work = chain(
-        ((filename, p, fitrange, chi2) for p in paths),
-        ((filename, p, fitrange, chi2, m) for p, m in mrc_paths),
+        ((fitter_t, filename, p, fitrange, chi2) for p in paths),
+        ((fitter_t, filename, p, fitrange, chi2, m) for p, m in mrc_paths),
     )
 
-    results = pool.starmap(run_fit_gauss_full, work)
+    results = pool.starmap(run_fitfitter, work)
     #results += pool.starmap(run_fit_gauss, ])
     #results += pool.starmap(run_fit_levy, [(filename, p, fitrange) for p in paths[:1]])
     df = pd.DataFrame(results)
@@ -181,7 +196,6 @@ def get_configuration_json(tfile, queries):
 
 
 if __name__ == "__main__":
-    import sys
     try:
         filename = sys.argv[1]
     except IndexError:
