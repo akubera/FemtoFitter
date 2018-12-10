@@ -99,7 +99,7 @@ class Data3D:
         result.den = self.den[mask]
         result.ql, result.qs, result.qo = (q[mask] for q in self.qspace)
         result.qinv = self.qinv[mask]
-        result.qspace = np.array([self.qo, self.qs, self.ql])
+        result.qspace = np.array([result.qo, result.qs, result.ql])
         result.gamma = self.gamma
         return result
 
