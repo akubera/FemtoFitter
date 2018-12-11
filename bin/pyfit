@@ -4,8 +4,12 @@
 #
 
 import sys
+import json
 from pathlib import Path
+from datetime import datetime
 from multiprocessing import Pool
+
+import pandas as pd
 
 
 def arg_parser():
@@ -22,12 +26,15 @@ def arg_parser():
                         help="file to fit")
     parser.add_argument("--fitrange",
                         type=float,
-                        default=0.21,
+                        default=0.19,
                         help="symmetric limit to fit")
     parser.add_argument("--mrc-path",
                         nargs='?',
                         default='False',
                         help="file to fit")
+    parser.add_argument("--fitter",
+                        default='FitterGauss6',
+                        help="Name of the fitter class to use")
     return parser
 
 
@@ -39,6 +46,7 @@ def main(argv=None):
         sys.path.insert(0, '')
 
     from femtofitter.fit import parallel_fit_all
+    from femtofitter import pyfitter
     from stumpy.utils import walk_matching
     from ROOT import gSystem, TFile
 
@@ -53,9 +61,9 @@ def main(argv=None):
     filename = Path(args.input).resolve()
 
     if args.output:
-        dest = args.output
+        dest = Path(args.output)
     else:
-        dest_filename = "fitres-%s.json" % tfile.GetName()
+        dest_filename = "pyfitres-%s.json" % tfile.GetName()
         dest_dir = Path("fit-results")
         dest_dir.mkdir(exist_ok=True, parents=True)
         dest = dest_dir / dest_filename
@@ -68,22 +76,72 @@ def main(argv=None):
 
     fit_range = args.fitrange
 
+    fitter = getattr(pyfitter, args.fitter)
+
+    paths = walk_matching(tfile, "AnalysisQ3D/cfg*/*/*/*/*")
+
+    work = ((fitter, str(filename), path, fit_range)
+             for path, _  in paths)
+
+
+    def process_fit_result(result):
+        from femtofitter import flatten_config
+        # print("processing: ", result)
+        tmp = {}
+        fit_results = result['fit_results']
+        params = fit_results.params
+        for key in params.keys():
+            p = params[key]
+            tmp[key] = p.value
+            tmp[key + "_err"] = p.stderr
+
+        df = pd.DataFrame([tmp])
+
+        configs = []
+        for k,v in result['config'].items():
+            cfg = k.partition('/')[2]
+            configs.append(flatten_config(v))
+            configs[-1]['cfg'] = cfg
+
+        config = pd.DataFrame(configs)
+        # print("CONFIG>>", config)
+
+        return dict(df=df, config=config)
+
     with Pool() as pool:
-        # for path, _  in walk_matching(tfile, "/AnalysisQ3D/cfg*"):
-        # (path for path, _  in walk_matching(tfile, "/AnalysisQ3D/cfg*"))
+        # results = pool.starmap_async(do_fit, work, callback=process_fit_result)
+        # results = pool.imap_unordered(lambda args: process_fit_result(do_fit(*args)), work)
+        # results = pool.map(lambda args: process_fit_result(do_fit(*args)), work)
 
-        paths = list(walk_matching(tfile, "AnalysisQ3D/cfg*/*/*/*/*"))
-        # paths = walk_matching(tfile, "Q3D/cfg*")
-        pool.starmap(do_fit, ((str(filename), path, fit_range) for path, _  in paths))
+        results = [process_fit_result(r) for r in pool.starmap(do_fit, work)]
 
-    # parallel_fit_all(tfile, str(dest), mrc_path, args.fitrange, args.chi2)
+    df = pd.concat([r['df'] for r in results])
+    config = pd.concat([r['config'] for r in results])
+    # reduce to unique
+    config = pd.DataFrame([val.iloc[0] for _, val in config.groupby('cfg')])
+
+    output_data = {
+        'filename': str(filename),
+        'timestamp': datetime.now().isoformat(timespec='milliseconds'),
+        'df': df.to_dict(orient='records'),
+        'config': config.to_dict(orient='records'),
+    }
+
+    print(f"writing output to {dest}")
+
+    with dest.open('w') as ofile:
+        json.dump(output_data, ofile, indent=1)
 
     return 0
 
+def do_fit_caller(args):
+    return do_fit(*args)
 
-def do_fit(filename, path, fit_range):
+def do_fit(fitter, filename, path, fit_range):
     from ROOT import gSystem, TFile
     from femtofitter import PathQuery
+    from femtofitter.fit import get_configuration_json
+
     if gSystem.Load("build/libFemtoFitter.so") < 0:
         return None
 
@@ -95,11 +153,28 @@ def do_fit(filename, path, fit_range):
     if not tdir:
         return None
 
-    results = PathQuery.from_path(path).as_dict()
+    query = PathQuery.from_path(path)
+    results = query.as_dict()
+    print("Fitting:", filename, path)
 
-    from femtofitter.pyfitter import Data3D,
+    config = get_configuration_json(tfile, [query])
+    from femtofitter.pyfitter import Data3D
+    # from femtofitter import pyfitter
 
-    return results
+    data = Data3D.From(tdir, fit_range)
+    data = data.cowboy_subset()
+
+    fitter = fitter(data)
+    mini = fitter.pml_minimizer()
+
+    results_0 = mini.minimize(method='nelder')
+    fit_results = mini.minimize(method='leastsq', params=results_0.params)
+
+    return {
+        'path': path,
+        'config': config,
+        'fit_results': fit_results,
+    }
 
 
 if __name__ == "__main__":
