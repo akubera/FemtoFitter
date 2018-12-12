@@ -503,25 +503,19 @@ class FitterGauss6(FemtoFitter3D):
 
     @classmethod
     def default_parameters(cls):
-        from lmfit import Parameters
-        q3d_params = Parameters()
-        q3d_params.add('Ro', value=2.0, min=0.0)
-        q3d_params.add('Rs', value=2.0, min=0.0)
-        q3d_params.add('Rl', value=2.0, min=0.0)
-        q3d_params.add('Ros', value=0.0)
-        q3d_params.add('Rsl', value=0.0)
-        q3d_params.add('Rlo', value=0.0)
-        q3d_params.add('lam', value=0.40, min=0.0)
-        q3d_params.add('norm', value=0.10, min=0.0)
+        q3d_params = FitterGauss.default_parameters(self)
+        q3d_params.add("Ros", value=0.0)
+        q3d_params.add("Rsl", value=0.0)
+        q3d_params.add("Rol", value=0.0)
         return q3d_params
 
     @staticmethod
     def func(params, qspace, fsi, gamma=1.0, norm=None):
         value = params.valuesdict()
-        pseudo_Rinv = np.sqrt((gamma * (value['Ro']) ** 2 + value['Rs'] ** 2 + value['Rl'] ** 2) / 3.0)
+        pseudo_Rinv = np.sqrt(((gamma * value['Ro']) ** 2 + value['Rs'] ** 2 + value['Rl'] ** 2) / 3.0)
 
         Ro, Rs, Rl = (value[k] / HBAR_C for k in ('Ro', 'Rs', 'Rl'))
-        Ros, Rol, Rsl = (value[k] / HBAR_C ** 2 for k in ('Ros', 'Rlo', 'Rsl'))
+        Ros2, Rol2, Rsl2 = (value[k] / HBAR_C ** 2 for k in ('Ros', 'Rlo', 'Rsl'))
 
         lam = value['lam']
         norm = value['norm'] if norm is None else norm
@@ -529,11 +523,12 @@ class FitterGauss6(FemtoFitter3D):
         k = fsi(pseudo_Rinv) if callable(fsi) else fsi
 
         e = ((np.array([[Ro, Rs, Rl]]).T * qspace) ** 2).sum(axis=0)
-        e += 2 * np.sum((qspace[0] * qspace[1] * Ros,
-                         qspace[0] * qspace[2] * Rol,
-                         qspace[1] * qspace[2] * Rsl))
+        e += 2 * np.sum((qspace[0] * qspace[1] * Ros2,
+                         qspace[0] * qspace[2] * Rol2,
+                         qspace[1] * qspace[2] * Rsl2))
 
         return norm * ((1.0 - lam) + lam * k * (1.0 + np.exp(-e)))
+
 
 class FitterLevy(Fitter):
 
