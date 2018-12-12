@@ -77,7 +77,7 @@ Data3D::Data3D(const TH3 &n, const TH3 &d, const TH3 &q, double limit_)
 Data3D::Data3D(std::vector<Datum> data_, double limit_, double true_limit_)
   : data(data_)
   , limit(limit_)
-  , true_limit_(true_limit_)
+  , true_limit(true_limit_)
 {
 }
 
