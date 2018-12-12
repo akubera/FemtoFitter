@@ -145,9 +145,17 @@ def find_analyses(file, pattern):
 class AnalysisResults:
 
     @classmethod
-    def FindIn(cls, obj):
-        return
-        yield
+    def FindIn(cls, obj) -> Generator[Optional['AnalysisTrueQ3D'], None, None]:
+        container = get_tobject(obj, cls.KT_CONTAINER_NAME)
+        if container == nullptr:
+            return
+
+        for kt_container in iter_tobject(container):
+            self = cls.From(kt_container)
+            if not self:
+                continue
+            kt_bin = kt_container.GetName()
+            yield kt_bin, self
 
     def write_config(self, dest):
         cfg_dest = re.match('.*cfg[A-F0-9]+', self.storage_key)
@@ -169,19 +177,7 @@ class AnalysisResults:
 
 class AnalysisQinv(AnalysisResults):
 
-    @classmethod
-    def FindIn(cls, obj) -> Generator[Optional['AnalysisFinderQinv'], None, None]:
-
-        container = get_tobject(obj, "KT_Qinv")
-        if container == nullptr:
-            return
-
-        for kt_container in iter_tobject(container):
-            self = cls.From(kt_container)
-            if not self:
-                continue
-            kt_bin = kt_container.GetName()
-            yield kt_bin, self
+    KT_CONTAINER_NAME = "KT_Qinv"
 
     @classmethod
     def From(cls, container) -> Optional['AnalysisFinderQ3D']:
@@ -212,19 +208,7 @@ class AnalysisQinv(AnalysisResults):
 
 class AnalysisQ3D(AnalysisResults):
 
-    @classmethod
-    def FindIn(cls, obj) -> Generator[Optional['AnalysisFinderQ3D'], None, None]:
-
-        container = get_tobject(obj, "KT_Q3D")
-        if container == nullptr:
-            return
-
-        for kt_container in iter_tobject(container):
-            self = cls.From(kt_container)
-            if not self:
-                continue
-            kt_bin = kt_container.GetName()
-            yield kt_bin, self
+    KT_CONTAINER_NAME = "KT_Q3D"
 
     @classmethod
     def From(cls, container) -> Optional['AnalysisFinderQ3D']:
@@ -269,18 +253,8 @@ class AnalysisTrueQ3D(AnalysisResults):
     Momentum resolution correction for Q3D
     """
 
-    @classmethod
-    def FindIn(cls, obj) -> Generator[Optional['AnalysisTrueQ3D'], None, None]:
-        container = get_tobject(obj, "KT_TrueQ3D")
-        if container == nullptr:
-            return
+    KT_CONTAINER_NAME = "KT_TrueQ3D"
 
-        for kt_container in iter_tobject(container):
-            self = cls.From(kt_container)
-            if not self:
-                continue
-            kt_bin = kt_container.GetName()
-            yield kt_bin, self
 
     @classmethod
     def From(cls, obj) -> Optional['AnalysisFinderQ3D']:
