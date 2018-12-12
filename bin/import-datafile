@@ -255,13 +255,13 @@ class AnalysisTrueQ3D(AnalysisResults):
 
     KT_CONTAINER_NAME = "KT_TrueQ3D"
 
-
     @classmethod
     def From(cls, obj) -> Optional['AnalysisFinderQ3D']:
         """
         """
 
-        keys = ("Trueq3D_NumRec", "Trueq3D_NumGen", "Trueq3D_DenRec", "Trueq3D_DenGen")
+        keys = ("Trueq3D_NumRec", "Trueq3D_NumGen",
+                "Trueq3D_DenRec", "Trueq3D_DenGen")
         nr, ng, dr, dg = (get_tobject(obj, k) for k in keys)
 
         if any(not x for x in (nr, ng, dr, dg)):
@@ -290,6 +290,50 @@ class AnalysisTrueQ3D(AnalysisResults):
 
         dest.cd(self.storage_key)
         self.mrc.Write("mrc")
+
+
+class DetaDphiSimple(AnalysisResults):
+
+    KT_CONTAINER_NAME = 'KT_DetaDphiSimple'
+
+    @classmethod
+    def From(cls, obj) -> Optional['AnalysisFinderQ3D']:
+        """
+        """
+        from itertools import product
+
+        valid = True
+
+        # generate hidden keys
+        keys = product(('Primary', 'SecWeak', 'SecMat'), ('', 'Data'))
+        keys = (''.join(('Hidden', *k)) for k in keys)
+
+        # loop through all keys
+        for suf in ('', 'Hidden', *keys):
+            for key in (f'{pre}DPhiDEta{suf}' for pre in ("Num", "Den")):
+                hists[key] = get_tobject(obj, key)
+                if not hists[keys]:
+                    print(f"Missing histogram {key}")
+                    valid = False
+
+        if not valid:
+            return
+
+        self = cls(**hists)
+        return self
+
+    def __init__(self, **hists):
+        self.hists = hists
+        # for key, val in hists.items():
+        #    setattr(self, key, val)
+
+    def write_to_file(self, dest):
+        dest.mkdir(self.storage_key)
+        self.write_config(dest)
+
+        dest.cd(self.storage_key)
+        for name, hist in self.hists.items():
+            hist.Write(name)
 
 
 class LazyTFile:
