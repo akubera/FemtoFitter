@@ -525,10 +525,10 @@ class FitterGauss6(FemtoFitter3D):
 
     @classmethod
     def default_parameters(cls):
-        q3d_params = FitterGauss.default_parameters(self)
+        q3d_params = FitterGauss.default_parameters()
         q3d_params.add("Ros", value=0.0)
         q3d_params.add("Rsl", value=0.0)
-        q3d_params.add("Rol", value=0.0)
+        q3d_params.add("Rlo", value=0.0)
         return q3d_params
 
     @staticmethod
