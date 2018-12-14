@@ -79,6 +79,7 @@ def main(argv=None):
     fitter = getattr(pyfitter, args.fitter)
 
     paths = walk_matching(tfile, "AnalysisQ3D/cfg*/*/*/*/*")
+    # paths = (next(paths), next(paths), next(paths))
 
     work = ((fitter, str(filename), path, fit_range)
              for path, _  in paths)
@@ -137,7 +138,7 @@ def main(argv=None):
 def do_fit_caller(args):
     return do_fit(*args)
 
-def do_fit(fitter, filename, path, fit_range):
+def do_fit(fitter, filename, path, fit_range, subset=None):
     from ROOT import gSystem, TFile
     from femtofitter import PathQuery
     from femtofitter.fit import get_configuration_json
@@ -161,8 +162,17 @@ def do_fit(fitter, filename, path, fit_range):
     from femtofitter.pyfitter import Data3D
     # from femtofitter import pyfitter
 
+
+    subset = 'cowboy'
+
+
     data = Data3D.From(tdir, fit_range)
-    data = data.cowboy_subset()
+    if subset == 'cowboy':
+        data = data.cowboy_subset()
+    elif subset == 'sailor':
+        data = data.cowboy_subset()
+    else:
+        pass
 
     fitter = fitter(data)
     mini = fitter.pml_minimizer()
@@ -174,6 +184,7 @@ def do_fit(fitter, filename, path, fit_range):
         'path': path,
         'config': config,
         'fit_results': fit_results,
+        'subset': subset,
     }
 
 
