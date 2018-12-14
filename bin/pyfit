@@ -35,6 +35,9 @@ def arg_parser():
     parser.add_argument("--fitter",
                         default='FitterGauss6',
                         help="Name of the fitter class to use")
+    parser.add_argument("--subset",
+                        default=None,
+                        help="Only fit a named subset of the data")
     return parser
 
 
@@ -81,7 +84,7 @@ def main(argv=None):
     paths = walk_matching(tfile, "AnalysisQ3D/cfg*/*/*/*/*")
     # paths = (next(paths), next(paths), next(paths))
 
-    work = ((fitter, str(filename), path, fit_range)
+    work = ((fitter, str(filename), path, fit_range, args.subset)
              for path, _  in paths)
 
 
