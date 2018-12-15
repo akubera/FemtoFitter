@@ -6,10 +6,21 @@
 import sys
 import json
 from pathlib import Path
+from dataclasses import dataclass
 from datetime import datetime
 from multiprocessing import Pool
 
 import pandas as pd
+from lmfit import Parameters
+
+
+@dataclass
+class PyFitterResults:
+    path: 'PathQuery'
+    config: dict
+    fit_results: Parameters
+    subset: str
+
 
 
 def arg_parser():
@@ -82,17 +93,17 @@ def main(argv=None):
     fitter = getattr(pyfitter, args.fitter)
 
     paths = walk_matching(tfile, "AnalysisQ3D/cfg*/*/*/*/*")
-    # paths = (next(paths), next(paths), next(paths))
+    paths = (next(paths), next(paths), next(paths))
 
     work = ((fitter, str(filename), path, fit_range, args.subset)
              for path, _  in paths)
 
 
-    def process_fit_result(result):
+    def process_fit_result(result: PyFitterResults):
         from femtofitter import flatten_config
         # print("processing: ", result)
-        tmp = {}
-        fit_results = result['fit_results']
+        tmp: dict = result.path.as_dict()
+        fit_results = result.fit_results
         params = fit_results.params
         for key in params.keys():
             p = params[key]
@@ -102,7 +113,7 @@ def main(argv=None):
         df = pd.DataFrame([tmp])
 
         configs = []
-        for k,v in result['config'].items():
+        for k,v in result.config.items():
             cfg = k.partition('/')[2]
             configs.append(flatten_config(v))
             configs[-1]['cfg'] = cfg
@@ -163,11 +174,6 @@ def do_fit(fitter, filename, path, fit_range, subset=None):
 
     config = get_configuration_json(tfile, [query])
     from femtofitter.pyfitter import Data3D
-    # from femtofitter import pyfitter
-
-
-    subset = 'cowboy'
-
 
     data = Data3D.From(tdir, fit_range)
     if subset == 'cowboy':
@@ -183,12 +189,7 @@ def do_fit(fitter, filename, path, fit_range, subset=None):
     results_0 = mini.minimize(method='nelder')
     fit_results = mini.minimize(method='leastsq', params=results_0.params)
 
-    return {
-        'path': path,
-        'config': config,
-        'fit_results': fit_results,
-        'subset': subset,
-    }
+    return PyFitterResults(query, config, fit_results, subset)
 
 
 if __name__ == "__main__":
