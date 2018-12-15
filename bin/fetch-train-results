@@ -162,8 +162,20 @@ def fetch_train_files(cnx, train, number):
         except KeyError:
             pass
         else:
-            # Warning: eval-ing returned data
-            env['RUN_CHUNKS'] = [list(map(int, x.split(','))) for x in eval(run_chunks)]
+            from ast import literal_eval
+            try:
+                # Warning: eval-ing returned data
+                #        : literal_eval *should* be safe
+                rc = literal_eval(run_chunks)
+            except SyntaxError:
+                print('Unexpected format of RUN_CHUNKS:', file=sys.stderr)
+                pprint(run_chunks, file=sys.stderr)
+            else:
+                if isinstance(rc, str):
+                    rc = [rc]
+
+                env['RUN_CHUNKS'] = [list(map(int, x.split(','))) for x in rc]
+
         return env
 
     def fetch_env_files(env_files):
