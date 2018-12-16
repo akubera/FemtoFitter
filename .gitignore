@@ -4,6 +4,8 @@ fit-results/
 *.dat
 *.json
 *.ipynb
+*.yaml
+*.txt
 
 # default build destination
 /build/
