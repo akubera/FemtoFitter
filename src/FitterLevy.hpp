@@ -171,7 +171,7 @@ struct FitterLevy : public Fitter3D<FitterLevy> {
     double PseudoRinv() const
       { return std::sqrt((Ro * Ro * gamma + Rs * Rs + Rl * Rl) / 3.0); }
 
-    double gauss(std::array<double, 3> q, double K) const
+    double gauss(const std::array<double, 3> &q, double K) const
       {
         std::array<double, 3> Rsq = {Ro*Ro, Rs*Rs, Rl*Rl};
         return FitterLevy::gauss(q, Rsq, lam, alpha, K, norm);
@@ -187,7 +187,7 @@ struct FitterLevy : public Fitter3D<FitterLevy> {
   }
 
   static double
-  gauss(std::array<double, 3> q, const FitParams &p, double K)
+  gauss(const std::array<double, 3> &q, const FitParams &p, double K)
     { return p.gauss(q, K); }
 
   int

@@ -185,7 +185,7 @@ struct Levy3D<N>::FitParams {
          Rl,
          alpha;
 
-  FitParams(double *param)
+  FitParams(const double *param)
     : norm(param+NORM_PARAMS_IDX, param+NORM_PARAMS_IDX+N)
     , lam(param[LAM_PARAM_IDX])
     , Ro(param[ROUT_PARAM_IDX])
