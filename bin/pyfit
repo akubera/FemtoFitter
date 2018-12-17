@@ -117,6 +117,7 @@ def main(argv=None):
             tmp[key] = p.value
             tmp[key + "_err"] = p.stderr
 
+        tmp['subset'] = result.subset
         df = pd.DataFrame([tmp])
 
         configs = []
