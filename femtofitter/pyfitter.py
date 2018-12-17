@@ -462,7 +462,7 @@ class Fitter:
         return params
 
 
-class FitterGauss(Fitter):
+class FitterGauss(FemtoFitter3D):
 
     @classmethod
     def default_parameters(cls):
@@ -476,13 +476,16 @@ class FitterGauss(Fitter):
         return q3d_params
 
     @staticmethod
-    def func(params, qo, qs, ql, fsi, norm=1.0, gamma=1.0):
+    def func(params, qspace, fsi, gamma=1.0, norm=None):
+        qo, qs, ql = qspace
         value = params.valuesdict()
         # print(value)
         pseudo_Rinv = np.sqrt((gamma * (value['Ro'] ** 2) + value['Rs'] ** 2 + value['Rl'] ** 2) / 3.0)
 
         Ro, Rs, Rl = (value[k] / HBAR_C for k in ('Ro', 'Rs', 'Rl'))
         lam = value['lam']
+        if norm is None:
+            norm = value['norm']
 
         k = fsi(pseudo_Rinv) if callable(fsi) else fsi
 
@@ -492,7 +495,7 @@ class FitterGauss(Fitter):
         return norm * ((1.0 - lam) + lam * k * (1.0 + np.exp(-e)))
 
 
-class FitterGauss4(FitterGauss):
+class FitterGauss4(FemtoFitter3D):
 
     @classmethod
     def default_parameters(cls):
@@ -501,12 +504,14 @@ class FitterGauss4(FitterGauss):
         return params
 
     @staticmethod
-    def func(params, qo, qs, ql, fsi, norm=1.0, gamma=1.0):
+    def func(params, qspace, fsi, gamma=1.0, norm=None):
+        qo, qs, ql = qspace
         value = params.valuesdict()
         pseudo_Rinv = np.sqrt((gamma * (value['Ro'] ** 2) + value['Rs'] ** 2 + value['Rl'] ** 2) / 3.0)
 
         Ro, Rs, Rl, Ros = (value[k] / HBAR_C for k in ('Ro', 'Rs', 'Rl', 'Ros'))
         lam = value['lam']
+        norm = norm or value['norm']
 
         k = fsi(pseudo_Rinv) if callable(fsi) else fsi
 
