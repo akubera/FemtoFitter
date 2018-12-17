@@ -184,12 +184,15 @@ def do_fit(fitter, filename, path, fit_range, subset=None):
     from femtofitter.pyfitter import Data3D
 
     data = Data3D.From(tdir, fit_range)
-    if subset == 'cowboy':
+    if subset is None:
+        pass
+    elif subset == 'cowboy':
         data = data.cowboy_subset()
     elif subset == 'sailor':
-        data = data.cowboy_subset()
+        data = data.sailor_subset()
     else:
-        pass
+        print(f"Unknown subset {subset!r}; ignoring.")
+        subset = None
 
     fitter = fitter(data)
     mini = fitter.pml_minimizer()
