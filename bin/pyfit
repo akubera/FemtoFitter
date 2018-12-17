@@ -5,10 +5,11 @@
 
 import sys
 import json
-from pathlib import Path
 from dataclasses import dataclass
-from datetime import datetime
 from multiprocessing import Pool
+from datetime import datetime
+from itertools import islice
+from pathlib import Path
 
 import pandas as pd
 from lmfit import Parameters
@@ -49,6 +50,10 @@ def arg_parser():
     parser.add_argument("--subset",
                         default=None,
                         help="Only fit a named subset of the data")
+    parser.add_argument("-c", "--count",
+                        type=int,
+                        default=None,
+                        help="Limit on number of plots to fit")
     return parser
 
 
@@ -93,11 +98,13 @@ def main(argv=None):
     fitter = getattr(pyfitter, args.fitter)
 
     paths = walk_matching(tfile, "AnalysisQ3D/cfg*/*/*/*/*")
-    paths = (next(paths), next(paths), next(paths))
 
     work = ((fitter, str(filename), path, fit_range, args.subset)
              for path, _  in paths)
 
+    # only take first few work units
+    if args.count:
+        work = islice(work, args.count)
 
     def process_fit_result(result: PyFitterResults):
         from femtofitter import flatten_config
