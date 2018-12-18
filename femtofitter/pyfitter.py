@@ -30,16 +30,50 @@ with open("coulomb-interpolation.dat", 'rb') as f:
     COULOMB_INTERP = interp2d(x, y, z)
     del x, y, z
 
-mrcmap_path = Path(environ.get("MRCMAP", "mrcmap.yaml"))
-if mrcmap_path.exists():
-    with mrcmap_path.open() as f:
-        import yaml
-        mrcmap = yaml.load(f)
 
-else:
-    print(f'Warning: MRC-Map not found (mrcmap: {mrcmap_path})',
-          file=sys.stderr)
-    mrcmap = None
+class MomentumResolutionCorrector:
+    """
+    Used to interpolate data in a momentum resolution correction
+    """
+
+    mrcmap_path = Path(environ.get("MRCMAP", "mrcmap.yaml"))
+    if mrcmap_path.exists():
+        with mrcmap_path.open() as f:
+            import yaml
+            mrcmap = yaml.load(f)
+    else:
+        print(f'Warning: MRC-Map not found (mrcmap: {mrcmap_path})',
+              file=sys.stderr)
+        mrcmap = None
+
+
+    def __init__(self,
+                 cfg='cfg3144288C76BAC926',
+                 filename='Data-MRC-2020.root'):
+        from ROOT import TFile
+
+        if isinstance(filename, TFile):
+            self.tfile = filename
+        else:
+            self.tfile = TFile.Open(str(filename))
+
+        if not self.tfile:
+            raise ValueError(f"Warning: Could not load tfile {filename}")
+
+        self.filename = self.tfile.GetName()
+        self.tdir = self.tfile.Get(f"AnalysisTrueQ3D/{cfg}")
+
+    def apply(self, data, pair, kt, field, cent='00_90'):
+        """
+        Apply appropriate momentum resolution correction to
+        the data
+        """
+        path = f"{pair}/{cent}/{kt}/{field}/mrc"
+        mrc = self.tdir.Get(path)
+        if not mrc:
+            raise ValueError("\nCould not find mrc histogram at:\n -> %s:%s/%s"
+                             % (self.filename, self.tdir.GetName(), path))
+        data.apply_mrc(mrc)
 
 
 class Data3D:
@@ -92,6 +126,10 @@ class Data3D:
         self.qspace = np.array([self.qo, self.qs, self.ql])
 
         self.gamma = gamma
+
+    def apply_mrc(self, mrc):
+        for i, (qo, qs, ql) in enumerate(self.qspace.T):
+            self.num[i] *= mrc.Interpolate(qo, qs, ql)
 
     def cowboy_subset(self):
         qo, qs, ql = self.qspace

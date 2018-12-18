@@ -1,5 +1,5 @@
 ---
-*:
+default:
   # delta-phi: 0.01
   # pt: 0.2:2.2
   # sigma: 3
