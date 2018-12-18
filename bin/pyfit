@@ -44,7 +44,7 @@ def arg_parser():
                         help="symmetric limit to fit")
     parser.add_argument("--mrc-path",
                         nargs='?',
-                        default='False',
+                        default=None,
                         help="file to fit")
     parser.add_argument("--fitter",
                         default='FitterGauss6',
@@ -90,10 +90,7 @@ def main(argv=None):
         dest = dest_dir / dest_filename
         # todo: Check if dest exists and warn user?
 
-    if args.mrc_path.lower() == 'true':
-        mrc_path = True
-    else:
-        mrc_path = args.mrc_path
+    mrc_path = args.mrc_path
 
     fit_range = args.fitrange
 
@@ -173,7 +170,7 @@ def do_fit(fitter,
     from ROOT import gSystem, TFile
     from femtofitter import PathQuery
     from femtofitter.fit import get_configuration_json
-    from femtofitter.pyfitter import mrc
+    from femtofitter.pyfitter import MomentumResolutionCorrector
 
     if gSystem.Load("build/libFemtoFitter.so") < 0:
         return None
@@ -192,7 +189,9 @@ def do_fit(fitter,
         else:
             mrc_tfile = TFile.Open(str(mrc_path))
 
-        mrc.find_stuff()
+        mrc = MomentumResolutionCorrector(filename=mrc_tfile)
+    else:
+        mrc = None
 
     query = PathQuery.from_path(path)
     results = query.as_dict()
@@ -212,13 +211,16 @@ def do_fit(fitter,
         print(f"Unknown subset {subset!r}; ignoring.")
         subset = None
 
+    if mrc_path:
+        mrc.apply(data, query.pair, query.kt, query.magfield)
+
     fitter = fitter(data)
     mini = fitter.pml_minimizer()
 
     results_0 = mini.minimize(method='nelder')
     fit_results = mini.minimize(method='leastsq', params=results_0.params)
 
-    return PyFitterResults(query, config, fit_results, subset)
+    return PyFitterResults(query, config, fit_results, subset, mrc_path)
 
 
 if __name__ == "__main__":
