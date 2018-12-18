@@ -1,0 +1,16 @@
+---
+default:
+  # delta-phi: 0.01
+  # pt: 0.2:2.2
+  # sigma: 3
+  - cfg745C7D5AE643A066
+
+  # delta-phi: 0.03
+  # pt: .2:2.2
+  # sigma: 0.5
+  - cfg8AD635C5387E48F6
+
+  # delta-phi: 0.04
+  # pt: 0.2:2.0
+  # sigma: 1.0
+  - cfg3144288C76BAC926
