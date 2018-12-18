@@ -56,6 +56,9 @@ def arg_parser():
                         type=int,
                         default=None,
                         help="Limit on number of plots to fit")
+    parser.add_argument("--limit",
+                        type=int,
+                        dest='count')
     return parser
 
 
