@@ -218,10 +218,11 @@ def do_fit(fitter,
         mrc.apply(data, query.pair, query.kt, query.magfield)
 
     fitter = fitter(data)
-    mini = fitter.pml_minimizer()
+    mini = fitter.pml_minimizer(nan_policy='omit')
 
     results_0 = mini.minimize(method='nelder')
     fit_results = mini.minimize(method='leastsq', params=results_0.params)
+    fit_results = mini.minimize(method='leastsq', params=fit_results.params)
 
     return PyFitterResults(query, config, fit_results, subset, mrc_path)
 
