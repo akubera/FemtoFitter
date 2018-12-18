@@ -15,10 +15,7 @@ from lmfit import Parameters, Minimizer
 from lmfit.minimizer import MinimizerResult
 from scipy.interpolate import interp2d
 
-from ROOT import gSystem
-assert gSystem.Load(environ.get("FEMTOFITTERLIB", 'build/libFemtoFitter.so')) >= 0
-
-from ROOT import CoulombHist  # noqa
+CoulombHist = None
 
 HBAR_C = 0.19732697
 
@@ -500,8 +497,17 @@ class Fitter:
         self._fit_range = float(value)
 
     def get_coulomb_factor(self, R):
-        # return COULOMB_INTERP(self.q, R)
-        # return COULOMB_INTERP(self.q.flatten(), R).reshape(self.q.shape)
+        nonlocal CoulombHist
+
+        if CoulombHist is None:
+            from ROOT import gSystem
+            try:
+                from ROOT import CoulombHist
+            except ImportError as e:
+                library = environ.get("FEMTOFITTERLIB", 'build/libFemtoFitter.so')
+                assert gSystem.Load(library) >= 0
+                from ROOT import CoulombHist
+
         hist = CoulombHist.GetHistWithRadius(R)
         return np.array([hist.Interpolate(q) for q in self.q])
 
