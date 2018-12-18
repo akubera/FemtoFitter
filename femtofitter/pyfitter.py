@@ -6,6 +6,7 @@ SciPy/LMFit-based femto correlation function fitter. No Minuit.
 """
 
 from os import environ
+from pathlib import Path
 from functools import partial
 from typing import Callable, Any
 
@@ -28,6 +29,17 @@ with open("coulomb-interpolation.dat", 'rb') as f:
     z = np.load(f)
     COULOMB_INTERP = interp2d(x, y, z)
     del x, y, z
+
+mrcmap_path = Path(environ.get("MRCMAP", "mrcmap.yaml"))
+if mrcmap_path.exists():
+    with mrcmap_path.open() as f:
+        import yaml
+        mrcmap = yaml.load(f)
+
+else:
+    print(f'Warning: MRC-Map not found (mrcmap: {mrcmap_path})',
+          file=sys.stderr)
+    mrcmap = None
 
 
 class Data3D:

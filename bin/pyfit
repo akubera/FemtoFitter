@@ -14,6 +14,8 @@ from pathlib import Path
 import pandas as pd
 from lmfit import Parameters
 
+from typing import Optional
+
 
 @dataclass
 class PyFitterResults:
@@ -21,7 +23,7 @@ class PyFitterResults:
     config: dict
     fit_results: Parameters
     subset: str
-
+    mrc: Optional[str]
 
 
 def arg_parser():
@@ -99,7 +101,7 @@ def main(argv=None):
 
     paths = walk_matching(tfile, "AnalysisQ3D/cfg*/*/*/*/*")
 
-    work = ((fitter, str(filename), path, fit_range, args.subset)
+    work = ((fitter, str(filename), path, fit_range, args.subset, mrc_path)
              for path, _  in paths)
 
     # only take first few work units
@@ -160,10 +162,18 @@ def main(argv=None):
 def do_fit_caller(args):
     return do_fit(*args)
 
-def do_fit(fitter, filename, path, fit_range, subset=None):
+def do_fit(fitter,
+           filename,
+           path,
+           fit_range,
+           subset=None,
+           mrc_path=None,
+    ) -> Optional[PyFitterResults]:
+
     from ROOT import gSystem, TFile
     from femtofitter import PathQuery
     from femtofitter.fit import get_configuration_json
+    from femtofitter.pyfitter import mrc
 
     if gSystem.Load("build/libFemtoFitter.so") < 0:
         return None
@@ -175,6 +185,14 @@ def do_fit(fitter, filename, path, fit_range, subset=None):
     tdir = tfile.Get(path)
     if not tdir:
         return None
+
+    if mrc_path:
+        if mrc_path == filename:
+            mrc_tfile = tfile
+        else:
+            mrc_tfile = TFile.Open(str(mrc_path))
+
+        mrc.find_stuff()
 
     query = PathQuery.from_path(path)
     results = query.as_dict()
