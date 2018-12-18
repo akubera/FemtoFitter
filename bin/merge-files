@@ -1,0 +1,76 @@
+#!/usr/bin/env python
+#
+# merge-files
+#
+
+import re
+import sys
+from pathlib import Path
+
+
+def arg_parser():
+    from argparse import ArgumentParser
+    parser = ArgumentParser()
+    parser.add_argument('-v', "--verbose",
+                        action='store_true',
+                        help="Print debug information")
+    parser.add_argument('-i', "--interactive",
+                        action='store_true',
+                        help="Check before merging files")
+    parser.add_argument('-f', "--overwrite",
+                        action='store_true',
+                        help="What ")
+    parser.add_argument("--train",
+                        default='',
+                        help='Search only one particular train')
+    parser.add_argument("train_id",
+                        type=int,
+                        help="The train id to search for")
+    return parser
+
+
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
+    args = arg_parser().parse_args(argv)
+    if args.verbose:
+        from pprint import pprint
+        pprint(args)
+
+    import subprocess
+    
+    #query = ' '.join(map(str, args.train_id)) 
+    query = str(args.train_id)
+    if args.train:
+       query = f'{args.train}-{query}'
+
+    cmd = ['fd', '-e root', query, '$HOME/alice/data/']
+    if args.verbose:
+        print(' -- cmd:', cmd)
+
+    a = subprocess.check_output(' '.join(cmd), shell=True)
+    filenames = a.decode().split('\n')
+
+    def merge_files(name):
+        sublist = [f for f in filenames if name in f]
+        dest = re.sub(r'\-child_\d+\-', '-combined-', sublist[0])
+        destpath = Path(dest)
+        if destpath.exists():
+            print(f"Merged file {destpath.name!r} already exists")
+            return
+
+        cmd = ['hadd', dest, ' '.join(sublist)]
+        print("Creating", dest)
+        if args.verbose:
+            print("Running:", cmd)
+        subprocess.run(' '.join(cmd), shell=True)
+
+
+    merge_files('negfield')
+    merge_files('posfield')
+
+
+
+if __name__ == "__main__":
+    exit(main())
+
