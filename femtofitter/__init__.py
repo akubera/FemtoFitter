@@ -126,6 +126,9 @@ class FitResults:
         config = json_data['config'] if 'config' in json_data else json_data
         result = []
 
+        if isinstance(config, list):
+            return pd.DataFrame(config)
+
         for v, c in config.items():
             flat = flatten_config(c)
             flat['cfg'] = v.partition("/")[2]
