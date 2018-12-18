@@ -198,7 +198,7 @@ class FemtoFitter3D:
     def get_fsi_factor(qinv, R):
         return COULOMB_INTERP(qinv, R)
 
-    def chi2_minimizer(self, data=None, gamma=None, fsi=None) -> Minimizer:
+    def chi2_minimizer(self, data=None, gamma=None, fsi=None, **kwds) -> Minimizer:
         """
         Create lmfit.Minimizer with default settings and bound to
         this class's chi2 evaluator method
@@ -206,10 +206,10 @@ class FemtoFitter3D:
         data = data or self.data
         args = self.func_args(data, gamma, fsi)
         func = self.chi2_evaluator(data)
-        mini = Minimizer(func, self.default_parameters(), args)
+        mini = Minimizer(func, self.default_parameters(), args, **kwds)
         return mini
 
-    def pml_minimizer(self, data=None, gamma=None, fsi=None) -> Minimizer:
+    def pml_minimizer(self, data=None, gamma=None, fsi=None, **kwds) -> Minimizer:
         """
         Create lmfit.Minimizer with default settings and bound to
         this class's chi2 evaluator method
@@ -221,7 +221,7 @@ class FemtoFitter3D:
 
         args = self.func_args(data, gamma, fsi)
         func = self.pml_evaluator(data)
-        mini = Minimizer(func, self.default_parameters(), args, reduce_fcn=np.sum)
+        mini = Minimizer(func, self.default_parameters(), args, reduce_fcn=np.sum, **kwds)
         return mini
 
     @classmethod
