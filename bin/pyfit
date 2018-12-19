@@ -108,29 +108,37 @@ def main(argv=None):
     if args.count:
         work = islice(work, args.count)
 
-    def process_fit_result(result: PyFitterResults):
+    def process_fit_result(results: PyFitterResults):
         from femtofitter import flatten_config
-        # print("processing: ", result)
-        tmp: dict = result.path.as_dict()
-        fit_results = result.fit_results
-        params = fit_results.params
-        for key in params.keys():
-            p = params[key]
-            tmp[key] = p.value
-            tmp[key + "_err"] = p.stderr
+        if not isinstance(results, list):
+            results = [results]
 
-        tmp['subset'] = result.subset
-        df = pd.DataFrame([tmp])
+        dfs = []
+        for result in results:
+            # print("processing: ", result)
+            tmp: dict = result.path.as_dict()
+            fit_results = result.fit_results
+            params = fit_results.params
+            for key in params.keys():
+                p = params[key]
+                tmp[key] = p.value
+                tmp[key + "_err"] = p.stderr
 
-        configs = []
-        for k,v in result.config.items():
-            cfg = k.partition('/')[2]
-            configs.append(flatten_config(v))
-            configs[-1]['cfg'] = cfg
+            tmp['subset'] = result.subset
+            df = pd.DataFrame([tmp])
 
-        config = pd.DataFrame(configs)
-        # print("CONFIG>>", config)
+            configs = []
+            for k,v in result.config.items():
+                cfg = k.partition('/')[2]
+                configs.append(flatten_config(v))
+                configs[-1]['cfg'] = cfg
 
+            config = pd.DataFrame(configs)
+            # print("CONFIG>>", config)
+
+            dfs.append(df)
+
+        df = pd.concat(dfs)
         return dict(df=df, config=config)
 
     with Pool() as pool:
