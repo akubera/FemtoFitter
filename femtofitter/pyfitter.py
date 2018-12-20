@@ -497,7 +497,7 @@ class Fitter:
         self._fit_range = float(value)
 
     def get_coulomb_factor(self, R):
-        nonlocal CoulombHist
+        global CoulombHist
 
         if CoulombHist is None:
             from ROOT import gSystem
