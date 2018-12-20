@@ -6,6 +6,9 @@ Fitting routines for 1D correlation functions
 """
 
 
+from .fit import parallel_fit_all, run_fit
+
+
 def run_fit_gauss1d(*args, **kwargs):
     from ROOT import Data3D, FitterGauss1D
     return run_fit(FitterGauss1D, *args, **kwargs)
@@ -38,6 +41,6 @@ def _main(argv=None):
 
     parallel_fit_all(tfile, dest)
 
-    
+
 if __name__ == "__main__":
     exit(_main())

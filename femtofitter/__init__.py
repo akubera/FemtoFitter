@@ -25,7 +25,7 @@ class PathQuery(NamedTuple):
     @classmethod
     def from_path(cls, path):
         if isinstance(path, str):
-             path = path.split('/')
+            path = path.split('/')
         return cls(*path)
 
     def as_dict(self):
@@ -83,7 +83,7 @@ def get_momentum_resolution_correction_map(path='mrcdata.yaml'):
     return result
 
 
-def flatten_config(cfg: dict, delim: str='.') -> dict:
+def flatten_config(cfg: dict, delim: str = '.') -> dict:
     result = {}
     for key, val in cfg.items():
         if isinstance(val, dict):
@@ -131,7 +131,6 @@ class FitResults:
         print(" |-------- ")
         for key in keys:
             print(f" | {key}: {dat[key]:.4g} ± {dat[key + '_err']:.4g}")
-
 
     def data_from_row(self, row):
         query = PathQuery.From(self.df.loc[row])
@@ -182,7 +181,9 @@ def unique_histnames():
         yield "hist_%d" % i
         i += 1
 
+
 histname = unique_histnames()
+
 
 def yield_projections(*hists, lim=0.2, scale=False):
     from ROOT import TH3
@@ -197,7 +198,7 @@ def yield_projections(*hists, lim=0.2, scale=False):
             ph = project(h, next(histname), *(lobin, hibin)*2)
             ph.SetStats(False)
             if scale:
-                ph.Scale(1.0 / (hibin - lowbin + 1) **2)
+                ph.Scale(1.0 / (hibin - lobin + 1) ** 2)
             results += (ph, )
         yield results
 

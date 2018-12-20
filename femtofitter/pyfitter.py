@@ -5,6 +5,7 @@
 SciPy/LMFit-based femto correlation function fitter. No Minuit.
 """
 
+import sys
 from os import environ
 from pathlib import Path
 from functools import partial
@@ -46,7 +47,6 @@ class MomentumResolutionCorrector:
         print(f'Warning: MRC-Map not found (mrcmap: {mrcmap_path})',
               file=sys.stderr)
         mrcmap = None
-
 
     def __init__(self,
                  cfg='cfg3144288C76BAC926',
@@ -375,7 +375,10 @@ class Fitter:
         self.qo, self.qs, self.ql = map(valarray_to_numpy, d.qspace)
 
         self._cached_sum = self.n + self.d
-        self._cached_a = np.divide(self._cached_sum, self.n, where=self.n!=0, out=np.zeros_like(self.n))
+        self._cached_a = np.divide(self._cached_sum,
+                                   self.n,
+                                   where=self.n > 0,
+                                   out=np.zeros_like(self.n))
         self._cached_b = self._cached_sum / self.d
 
         # make ratio and relative errors
@@ -402,11 +405,13 @@ class Fitter:
 
         # (num, den, qinv) are histograms, (n,d,q) are the (masked) data
         self.num, self.den, self.qinv = num, den, qinv
-        self.n, self.d, self.q = map(lambda h: h.data[mask], (num, den, qinv))
+        self.n, self.d, self.q = (h.data[mask] for h in (num, den, qinv))
 
         # ratios used in loglike [a = (n + d) / n, b = (n + d) / d]
         self._cached_sum = self.n + self.d
-        self._cached_a = np.divide(self._cached_sum, self.n, where=self._nonzero_n_mask, out=np.zeros_like(self.n))
+        self._cached_a = np.divide(self._cached_sum, self.n,
+                                   where=self._nonzero_n_mask,
+                                   out=np.zeros_like(self.n))
         self._cached_b = self._cached_sum / self.d
 
         # make ratio and relative errors
@@ -459,7 +464,9 @@ class Fitter:
         return self.r - self.evaluate(params)
 
     def x2(self, diff):
-        return np.divide(diff ** 2, self.e, where=self.e!=0, out=np.zeros_like(diff))
+        return np.divide(diff ** 2, self.e,
+                         where=self.e != 0,
+                         out=np.zeros_like(diff))
 
     @staticmethod
     def get_qspace_mask(qspace, fit_bound):
@@ -507,7 +514,7 @@ class Fitter:
             from ROOT import gSystem
             try:
                 from ROOT import CoulombHist
-            except ImportError as e:
+            except ImportError:
                 library = environ.get("FEMTOFITTERLIB", 'build/libFemtoFitter.so')
                 assert gSystem.Load(library) >= 0
                 from ROOT import CoulombHist
@@ -642,6 +649,7 @@ class FitterLevy(FemtoFitter3D):
                     np.power((ql * Rl) ** 2, alpha/2)))
 
         return norm * ((1.0 - lam) + lam * k * (1.0 + np.exp(-e)))
+
 
 class FitterLevy2(FemtoFitter3D):
 

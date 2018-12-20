@@ -159,9 +159,9 @@ def parallel_fit_all(tfile,
         ((fitter_t, filename, p, fitrange, chi2, m) for p, m in mrc_paths),
     )
 
-    results = pool.starmap(run_fitfitter, work)
-    #results += pool.starmap(run_fit_gauss, ])
-    #results += pool.starmap(run_fit_levy, [(filename, p, fitrange) for p in paths[:1]])
+    results = pool.starmap(run_fit, work)
+    # results += pool.starmap(run_fit_gauss, ])
+    # results += pool.starmap(run_fit_levy, [(filename, p, fitrange) for p in paths[:1]])
     df = pd.DataFrame(results)
     output_data = {
         'filename': filename,

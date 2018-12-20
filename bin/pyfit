@@ -14,6 +14,11 @@ from pathlib import Path
 import pandas as pd
 from lmfit import Parameters
 
+if sys.path[0] != '':
+    sys.path.insert(0, '')
+
+from femtofitter import PathQuery
+
 from typing import Optional
 
 
@@ -66,8 +71,6 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
     args = arg_parser().parse_args(argv)
-    if sys.path[0] != '':
-        sys.path.insert(0, '')
 
     from femtofitter import pyfitter
     from stumpy.utils import walk_matching
@@ -101,7 +104,7 @@ def main(argv=None):
     paths = walk_matching(tfile, "AnalysisQ3D/cfg*/*/*/*/*")
 
     work = ((fitter, str(filename), path, fit_range, args.subset, mrc_path)
-             for path, _  in paths)
+            for path, _ in paths)
 
     # only take first few work units
     if args.count:
@@ -127,7 +130,7 @@ def main(argv=None):
             df = pd.DataFrame([tmp])
 
             configs = []
-            for k,v in result.config.items():
+            for k, v in result.config.items():
                 cfg = k.partition('/')[2]
                 configs.append(flatten_config(v))
                 configs[-1]['cfg'] = cfg
@@ -166,8 +169,10 @@ def main(argv=None):
 
     return 0
 
+
 def do_fit_caller(args):
     return do_fit(*args)
+
 
 def do_fit(fitter,
            filename,
@@ -175,10 +180,9 @@ def do_fit(fitter,
            fit_range,
            subset=None,
            mrc_path=None,
-    ) -> Optional[PyFitterResults]:
+           ) -> Optional[PyFitterResults]:
 
     from ROOT import gSystem, TFile
-    from femtofitter import PathQuery
     from femtofitter.fit import get_configuration_json
     from femtofitter.pyfitter import MomentumResolutionCorrector
 
@@ -204,7 +208,6 @@ def do_fit(fitter,
         mrc = None
 
     query = PathQuery.from_path(path)
-    results = query.as_dict()
     print("Fitting:", filename, path)
 
     config = get_configuration_json(tfile, [query])
