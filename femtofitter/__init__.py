@@ -19,6 +19,17 @@ class PathQuery(NamedTuple):
         from statistics import mean
         return mean(map(float, self.kt.split("_")))
 
+    def estimate_gamma(self):
+        """
+        Return the estimated gamma in the transverse (out) direction
+
+        $\\gamma_T^2
+            = \\frac{p_T^2 + m^2}{m^2}
+            = \\frac{4k_T^2 + m^2}{m^2}$
+        """
+        kt = self.mean_kt()
+        return pd.np.sqrt(1.0 + (2 * kt / 0.13957) ** 2)
+
     def as_path(self):
         return '/'.join(self)
 
