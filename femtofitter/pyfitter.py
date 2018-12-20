@@ -28,6 +28,10 @@ with open("coulomb-interpolation.dat", 'rb') as f:
     del x, y, z
 
 
+def estimate_Rinv(gamma, Ro, Rs, Rl):
+    return np.hypot(gamma * Ro, Rs, Rl) / np.sqrt(3)
+
+
 class MomentumResolutionCorrector:
     """
     Used to interpolate data in a momentum resolution correction
@@ -535,8 +539,7 @@ class FitterGauss(FemtoFitter3D):
     def func(params, qspace, fsi, gamma=1.0, norm=None):
         qo, qs, ql = qspace
         value = params.valuesdict()
-        # print(value)
-        pseudo_Rinv = np.sqrt((gamma * (value['Ro'] ** 2) + value['Rs'] ** 2 + value['Rl'] ** 2) / 3.0)
+        pseudo_Rinv = estimate_Rinv(gamma, value['Ro'], value['Rs'], value['Rl'])
 
         Ro, Rs, Rl = (value[k] / HBAR_C for k in ('Ro', 'Rs', 'Rl'))
         lam = value['lam']
@@ -563,7 +566,7 @@ class FitterGauss4(FemtoFitter3D):
     def func(params, qspace, fsi, gamma=1.0, norm=None):
         qo, qs, ql = qspace
         value = params.valuesdict()
-        pseudo_Rinv = np.sqrt((gamma * (value['Ro'] ** 2) + value['Rs'] ** 2 + value['Rl'] ** 2) / 3.0)
+        pseudo_Rinv = estimate_Rinv(gamma, value['Ro'], value['Rs'], value['Rl'])
 
         Ro, Rs, Rl, Ros = (value[k] / HBAR_C for k in ('Ro', 'Rs', 'Rl', 'Ros'))
         lam = value['lam']
@@ -595,7 +598,7 @@ class FitterGauss6(FemtoFitter3D):
     @staticmethod
     def func(params, qspace, fsi, gamma=1.0, norm=None):
         value = params.valuesdict()
-        pseudo_Rinv = np.sqrt(((gamma * value['Ro']) ** 2 + value['Rs'] ** 2 + value['Rl'] ** 2) / 3.0)
+        pseudo_Rinv = estimate_Rinv(gamma, value['Ro'], value['Rs'], value['Rl'])
 
         Ro, Rs, Rl = (value[k] / HBAR_C for k in ('Ro', 'Rs', 'Rl'))
         Ros2, Rol2, Rsl2 = (value[k] / HBAR_C ** 2 for k in ('Ros', 'Rlo', 'Rsl'))
@@ -626,7 +629,7 @@ class FitterLevy(FemtoFitter3D):
         qo, qs, ql = qspace
 
         value = params.valuesdict()
-        pseudo_Rinv = np.sqrt((gamma * (value['Ro'] ** 2) + value['Rs'] ** 2 + value['Rl'] ** 2) / 3.0)
+        pseudo_Rinv = estimate_Rinv(gamma, value['Ro'], value['Rs'], value['Rl'])
 
         Ro, Rs, Rl = map(lambda k: value[k] / HBAR_C, ('Ro', 'Rs', 'Rl'))
         lam = value['lam']
@@ -654,7 +657,7 @@ class FitterLevy2(FemtoFitter3D):
         qo, qs, ql = qspace
 
         value = params.valuesdict()
-        pseudo_Rinv = np.sqrt((gamma * (value['Ro'] ** 2) + value['Rs'] ** 2 + value['Rl'] ** 2) / 3.0)
+        pseudo_Rinv = estimate_Rinv(gamma, value['Ro'], value['Rs'], value['Rl'])
 
         Ro, Rs, Rl = map(lambda k: value[k] / HBAR_C, ('Ro', 'Rs', 'Rl'))
         lam = value['lam']
@@ -685,9 +688,7 @@ class FitterLevy3(FemtoFitter3D):
         qo, qs, ql = qspace
 
         value = params.valuesdict()
-        pseudo_Rinv = np.sqrt(((gamma * value['Ro'] ** 2)
-                               + value['Rs'] ** 2
-                               + value['Rl'] ** 2) / 3.0)
+        pseudo_Rinv = estimate_Rinv(gamma, value['Ro'], value['Rs'], value['Rl'])
 
         Ro, Rs, Rl = map(lambda k: value[k] / HBAR_C, ('Ro', 'Rs', 'Rl'))
         lam = value['lam']
