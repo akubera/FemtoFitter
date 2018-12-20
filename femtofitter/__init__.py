@@ -104,6 +104,9 @@ def fitresult_config_df(json_data):
 
 class FitResults:
 
+    # tfile cache
+    _opened_files = {}
+
     def __init__(self, path):
 
         with open(path) as f:
@@ -115,6 +118,42 @@ class FitResults:
 
     def get_merged_df(self):
         return pd.merge(self.df, self.config, on='cfg')
+
+    def print_row_summary(self, row):
+        dat = self.df.loc[row]
+
+        fitter = 'FitterGauss6'
+        keys = {
+            'FitterGauss6': ("Ro", "Rs", "Rl", "lam", "Ros"),
+        }[fitter]
+        print(f" | kT: {dat.kt} cent: {dat.cent}  pair: {dat.pair} ")
+        print(f" | subset: {dat.subset or None}")
+        print(" |-------- ")
+        for key in keys:
+            print(f" | {key}: {dat[key]:.4g} ± {dat[key + '_err']:.4g}")
+
+
+    def data_from_row(self, row):
+        query = PathQuery.From(self.df.loc[row])
+
+        tfile = self.get_file(self._data['filename'])
+        tdir = tfile.Get(query.as_path())
+        return tdir
+
+    @classmethod
+    def get_file(cls, filename):
+        from ROOT import TFile
+
+        try:
+            return cls._opened_files[filename]
+        except KeyError:
+            pass
+
+        tfile = TFile.Open(filename)
+        if not tfile:
+            raise FileNotFoundError(f'Requested file {filename}')
+        cls._opened_files[filename] = tfile
+        return tfile
 
     @staticmethod
     def extract_data_df(json_data):
