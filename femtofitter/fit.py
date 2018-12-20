@@ -17,38 +17,6 @@ import pandas as pd
 from femtofitter import PathQuery
 
 
-def find_and_fit(filename: str, query: PathQuery, fit_range: float, mrc_path=None):
-    query = PathQuery.From(query)
-
-    path = query.as_path()
-
-    results = run_fit(filename, path, fit_range, mrc_path)
-    results.update(query.as_dict())
-    results['kt'] = mean(map(float, query['kt'].split("_")))
-
-    return results
-
-
-# def run_fit_gauss(*args, **kwargs):
-#     from ROOT import FitterGaussOSL
-#     return run_fit(FitterGaussOSL, *args, **kwargs)
-
-def run_fit_gauss(*args, **kwargs):
-    from ROOT import Data3D
-    from ROOT import FitterGaussOSL
-    return run_fit(FitterGaussOSL, *args, **kwargs)
-
-
-def run_fit_levy(*args, **kwargs):
-    from ROOT import Data3D
-    from ROOT import FitterLevy
-    return run_fit(FitterLevy, *args, **kwargs)
-
-
-def run_fit_gauss_full(*args, **kwargs):
-    from ROOT import Data3D
-    from ROOT import FitterGaussFull
-    return run_fit(FitterGaussFull, *args, **kwargs)
 
 def run_fitter(fitter, *args, **kwargs):
     import ROOT
