@@ -60,7 +60,9 @@ def main(argv=None):
 
     input_path = Path(args.input)
 
-    if args.output:
+    if args.output == '-':
+        dest = None
+    elif args.output:
         dest = args.output
     else:
         dest_filename = "fitres-%s.json" % input_path.name
@@ -74,7 +76,12 @@ def main(argv=None):
     else:
         mrc_path = args.mrc_path
 
-    parallel_fit_all(tfile, str(dest), mrc_path, args.fitrange, args.chi2)
+    parallel_fit_all(tfile,
+                     dest,
+                     args.fitter,
+                     mrc_path,
+                     args.fitrange,
+                     args.chi2)
 
     return 0
 
