@@ -69,7 +69,6 @@ def main(argv=None):
     if sys.path[0] != '':
         sys.path.insert(0, '')
 
-    from femtofitter.fit import parallel_fit_all
     from femtofitter import pyfitter
     from stumpy.utils import walk_matching
     from ROOT import gSystem, TFile

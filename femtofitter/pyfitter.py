@@ -613,7 +613,7 @@ class FitterGauss6(FemtoFitter3D):
         return norm * ((1.0 - lam) + lam * k * (1.0 + np.exp(-e)))
 
 
-class FitterLevy(Fitter):
+class FitterLevy(FemtoFitter3D):
 
     @classmethod
     def default_parameters(cls):
@@ -622,7 +622,9 @@ class FitterLevy(Fitter):
         return q3d_params
 
     @staticmethod
-    def func(params, qo, qs, ql, fsi, norm=1.0, gamma=1.0):
+    def func(params, qspace, fsi, gamma=1.0, norm=None):
+        qo, qs, ql = qspace
+
         value = params.valuesdict()
         pseudo_Rinv = np.sqrt((gamma * (value['Ro'] ** 2) + value['Rs'] ** 2 + value['Rl'] ** 2) / 3.0)
 
@@ -638,7 +640,7 @@ class FitterLevy(Fitter):
 
         return norm * ((1.0 - lam) + lam * k * (1.0 + np.exp(-e)))
 
-class FitterLevy2(Fitter):
+class FitterLevy2(FemtoFitter3D):
 
     @classmethod
     def default_parameters(cls):
@@ -648,7 +650,9 @@ class FitterLevy2(Fitter):
         return q3d_params
 
     @staticmethod
-    def func(params, qo, qs, ql, fsi, norm=1.0, gamma=1.0):
+    def func(params, qspace, fsi, gamma=1.0, norm=None):
+        qo, qs, ql = qspace
+
         value = params.valuesdict()
         pseudo_Rinv = np.sqrt((gamma * (value['Ro'] ** 2) + value['Rs'] ** 2 + value['Rl'] ** 2) / 3.0)
 
@@ -666,7 +670,7 @@ class FitterLevy2(Fitter):
         return norm * ((1.0 - lam) + lam * k * (1.0 + np.exp(-e)))
 
 
-class FitterLevy3(Fitter):
+class FitterLevy3(FemtoFitter3D):
 
     @classmethod
     def default_parameters(cls):
@@ -677,7 +681,9 @@ class FitterLevy3(Fitter):
         return q3d_params
 
     @staticmethod
-    def func(params, qo, qs, ql, fsi, norm=1.0, gamma=1.0):
+    def func(params, qspace, fsi, gamma=1.0, norm=None):
+        qo, qs, ql = qspace
+
         value = params.valuesdict()
         pseudo_Rinv = np.sqrt(((gamma * value['Ro'] ** 2)
                                + value['Rs'] ** 2
