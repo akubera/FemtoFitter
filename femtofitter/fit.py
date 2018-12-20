@@ -25,12 +25,19 @@ def run_fitter(fitter, *args, **kwargs):
 
     return run_fit(Fitter, *args, **kwargs)
 
-def run_fit(fitter_class,
+
+def run_fit(fitter_class: str,
             filename: str,
             query: PathQuery,
             fit_range: float,
             fit_chi2: bool = False,
-            mrc_path: str = None):
+            mrc_path: str = None,
+            subset: str = None,
+            ) -> dict:
+    """
+    Finds data at (filename, query), and fits using the
+    remaining parameters
+    """
 
     from ROOT import TFile
     from ROOT import Data3D
@@ -41,7 +48,16 @@ def run_fit(fitter_class,
     tdir = tfile.Get(path)
     assert tdir
 
-    fitter = fitter_class.From(tfile, path, fit_range)
+    data = Data3D.FromDirectory(tdir, fit_range)
+
+    if subset == 'sailor':
+        data = data.cowboy_subset()
+    elif subset == 'cowboy':
+        data = data.sailor_subset()
+
+    # fitter = fitter_class.From(tfile, path, fit_range)
+    gamma = query.estimate_gamma()
+    fitter = fitter_class(data, gamma)
 
     if mrc_path is not None:
         from ROOT import apply_momentum_resolution_correction
@@ -63,6 +79,7 @@ def run_fit(fitter_class,
     results.update(query.as_dict())
 
     results['fit_range'] = fit_range
+    results['subset'] = subset
 
     results['kT'] = mean(map(float, query.kt.split("_")))
     results['chi2'] = fitter.resid_chi2(fit_results)
