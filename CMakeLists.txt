@@ -67,13 +67,19 @@ set(SRCS
 #   ${CMAKE_CURRENT_SOURCE_DIR}/femtofitter/MomentumResolutionCorrector.cxx
 )
 
-ROOT_GENERATE_DICTIONARY(femfit_dict ${INCS} LINKDEF Linkdef.h)
+ROOT_GENERATE_DICTIONARY(femfit_dict ${INCS}
+                         LINKDEF Linkdef.h
+                         MODULE FemtoFitter)
 # set_target_properties(femfit_dict PROPERTIES)
 
 set(ROOT_LIBS
   ROOT::Hist
   ROOT::Minuit
 )
+
+find_library(LIB_FEMTO
+             PWGCFfemtoscopy
+             HINTS $ENV{ALICE_PHYSICS}/lib)
 
 add_library(FemtoFitter	SHARED femfit_dict ${SRCS})
 target_link_libraries(FemtoFitter ${ROOT_LIBS})
@@ -84,4 +90,4 @@ target_link_libraries(run-fit-spec ROOT::Minuit)
 
 add_executable(quick-fit src/bin/quick-fit.cc)
 target_include_directories(quick-fit PRIVATE src)
-target_link_libraries(quick-fit FemtoFitter)
+target_link_libraries(quick-fit FemtoFitter ${LIB_FEMTO})
