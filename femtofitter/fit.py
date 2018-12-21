@@ -26,7 +26,7 @@ def run_fitter(fitter, *args, **kwargs):
     return run_fit(Fitter, *args, **kwargs)
 
 
-def run_fit(fitter_class: str,
+def run_fit(fitter_classname: str,
             filename: str,
             query: PathQuery,
             fit_range: float,
@@ -41,8 +41,18 @@ def run_fit(fitter_class: str,
 
     from ROOT import TFile
     from ROOT import Data3D
+
+    # load fitter-classname
+    if isinstance(fitter_classname, str):
+        fitter_class = getattr(ROOT, fitter_classname)
+    elif isinstance(fitter_classname, type):
+        fitter_class = fitter_classname
+    else:
+        raise TypeError(f"Unexpected type {type(fitter_classname)}")
+
     tfile = TFile.Open(filename)
-    assert tfile
+    if not tfile:
+        raise FileNotFoundError()
 
     path = query.as_path()
     tdir = tfile.Get(path)
@@ -55,7 +65,6 @@ def run_fit(fitter_class: str,
     elif subset == 'cowboy':
         data = data.sailor_subset()
 
-    # fitter = fitter_class.From(tfile, path, fit_range)
     gamma = query.estimate_gamma()
     fitter = fitter_class(data, gamma)
 
@@ -91,7 +100,7 @@ def run_fit(fitter_class: str,
 
 
 def parallel_fit_all(tfile,
-                     ofilename=None,
+                     output_path=None,
                      fitter_t='FitterGausOSL',
                      mrc=False,
                      fitrange=0.21,
@@ -105,8 +114,8 @@ def parallel_fit_all(tfile,
 
     import ROOT
     try:
-        getattr(ROOT, fitter_t)
-    except AttributeError:
+        fitter_t = getattr(ROOT, fitter_t)
+    except (AttributeError, TypeError):
         print(f"Could not load fitter {fitter_t!r}", file=sys.stderr)
         return
 
@@ -145,8 +154,7 @@ def parallel_fit_all(tfile,
     )
 
     results = pool.starmap(run_fit, work)
-    # results += pool.starmap(run_fit_gauss, ])
-    # results += pool.starmap(run_fit_levy, [(filename, p, fitrange) for p in paths[:1]])
+
     df = pd.DataFrame(results)
     output_data = {
         'filename': filename,
@@ -155,8 +163,8 @@ def parallel_fit_all(tfile,
         'config': configuration_information,
     }
 
-    if ofilename:
-        with Path(ofilename).open('w') as outfile:
+    if output_path:
+        with Path(output_path).open('w') as outfile:
             json.dump(output_data, outfile, indent=True)
     else:
         from pprint import pprint
