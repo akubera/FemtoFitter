@@ -11,10 +11,11 @@
 template <typename Fitter_t>
 void runfit(TDirectory &tdir, double limit)
 {
-  auto fitter = Fitter_t::From(tdir, limit);
+  auto data = Data3D::FromDirectory(tdir, limit);
+  auto fitter = std::make_unique<Fitter_t>(std::move(data));
   std::cout << "fitter: " << fitter.get() << "\n";
 
-  auto res = fitter->fit_chi2();
+  auto res = fitter->fit_pml();
   res.print();
 }
 
@@ -22,7 +23,7 @@ void runfit(TDirectory &tdir, double limit)
 int
 main()
 {
-  auto path = "AnalysisQ3D/cfgB19FE5D669F43E46/pip/00_05/0.4_0.5/++",
+  auto path = "AnalysisQ3D/cfgD3F0AFA546B3D616/pip/10_20/0.4_0.5/++",
        filename = "Data-varyphi.root";
 
   std::cout << " path: " << path << "\n";
@@ -34,8 +35,12 @@ main()
   }
 
   auto tdir = dynamic_cast<TDirectory*>(tfile->Get(path));
+  if (!tdir) {
+    std::cerr << "No such dir " << path << "\n";
+    return 1;
+  }
 
-  double limit = 0.14;
+  double limit = 0.19;
 
   runfit<FitterGaussOSL>(*tdir, limit);
   // runfit<FitterLevy>(*tdir, limit);

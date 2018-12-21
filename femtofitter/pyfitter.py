@@ -30,7 +30,7 @@ with open("coulomb-interpolation.dat", 'rb') as f:
 
 
 def estimate_Rinv(gamma, Ro, Rs, Rl):
-    return np.hypot(gamma * Ro, Rs, Rl) / np.sqrt(3)
+    return np.sqrt(((gamma * Ro)**2 + Rs**2 + Rl**2) / 3.0)
 
 
 class MomentumResolutionCorrector:
