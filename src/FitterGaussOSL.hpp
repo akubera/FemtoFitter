@@ -188,6 +188,11 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
   {
   }
 
+  FitterGaussOSL(std::unique_ptr<Data3D> data, double gamma=1.0)
+    : Fitter3D(std::move(data), gamma)
+  {
+  }
+
   static double
   gauss(const std::array<double, 3>& q, const FitParams &p, double K)
     { return p.gauss(q, K); }

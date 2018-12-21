@@ -8,6 +8,7 @@
 #include <array>
 #include <vector>
 #include <valarray>
+#include <memory>
 
 #include <TH3.h>
 
@@ -51,6 +52,20 @@ struct Data3D {
 
   /// Data limit
   Data3D(std::vector<Datum> data, double limit, double true_limit);
+
+
+  Data3D(Data3D && ptr)
+    : data(std::move(ptr.data))
+    , limit(ptr.limit)
+    , true_limit(ptr.true_limit)
+  {}
+
+  /// Data limit
+  Data3D(std::unique_ptr<Data3D> ptr)
+    : data(std::move(ptr->data))
+    , limit(ptr->limit)
+    , true_limit(ptr->true_limit)
+  {}
 
   size_t size() const
     { return data.size(); }
