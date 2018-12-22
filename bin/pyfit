@@ -26,6 +26,7 @@ from typing import Optional
 class PyFitterResults:
     path: 'PathQuery'
     config: dict
+    fitrange: float
     fit_results: Parameters
     subset: str
     mrc: Optional[str]
@@ -103,7 +104,7 @@ def main(argv=None):
 
     paths = walk_matching(tfile, "AnalysisQ3D/cfg*/*/*/*/*")
 
-    work = ((fitter, str(filename), path, fit_range, args.subset, mrc_path)
+    work = ((fitter, filename, path, fit_range, args.subset, mrc_path)
             for path, _ in paths)
 
     # only take first few work units
@@ -189,6 +190,7 @@ def do_fit(fitter,
     if gSystem.Load("build/libFemtoFitter.so") < 0:
         return None
 
+    filename = str(filename)
     tfile = TFile.Open(filename)
     if not tfile:
         return None
@@ -234,7 +236,13 @@ def do_fit(fitter,
     fit_results = mini.minimize(method='leastsq', params=results_0.params)
     fit_results = mini.minimize(method='leastsq', params=fit_results.params)
 
-    return PyFitterResults(query, config, fit_results, subset, mrc_path)
+    result = PyFitterResults(query,
+                             config,
+                             fit_range,
+                             fit_results,
+                             subset,
+                             mrc_path)
+    return result
 
 
 if __name__ == "__main__":
