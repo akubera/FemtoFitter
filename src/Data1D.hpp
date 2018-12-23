@@ -5,6 +5,9 @@
 
 #pragma once
 
+#ifndef DATA1D_HPP
+#define DATA1D_HPP
+
 #include <array>
 #include <memory>
 #include <vector>
@@ -29,7 +32,8 @@ struct Data1D {
   std::vector<Datum> data;
 
   double limit,
-         true_limit;
+         true_limit,
+         gamma;
 
   /// Build out of standard tdirectory;
   static std::unique_ptr<Data1D> FromDirectory(TDirectory &, double limit=0.0);
@@ -41,7 +45,13 @@ struct Data1D {
   ///
   Data1D(const TH1& num, const TH1& den, double limit=0.0);
 
+  /// Build from TDirectory
+  Data1D(TDirectory &tdir, double limit);
+
   size_t size() const
     { return data.size(); }
 
 };
+
+
+#endif
