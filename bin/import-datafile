@@ -181,6 +181,7 @@ class AnalysisResults:
     def storage_key(self, value: str):
         self._storage_key = self.__class__.__name__ + "/" + value
 
+
 @register_analysis_class
 class AnalysisQinv(AnalysisResults):
 
@@ -380,6 +381,8 @@ class DetaDphiSimple(AnalysisResults):
         # generate hidden keys
         keys = product(('Primary', 'SecWeak', 'SecMat'), ('', 'Data'))
         keys = (''.join(('Hidden', *k)) for k in keys)
+
+        hists = {}
 
         # loop through all keys
         for suf in ('', 'Hidden', *keys):
