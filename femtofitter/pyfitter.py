@@ -21,12 +21,22 @@ CoulombHist = None
 HBAR_C = 0.19732697
 
 
-with open("coulomb-interpolation.dat", 'rb') as f:
+try:
+    f = open(environ['COULOMB_DATA'], 'rb')
+except KeyError:
+    try:
+        from importlib import resources
+    except ImportError:
+        import importlib_resources as resources
+    f = resources.open_binary('femtofitter.data', "coulomb-interpolation.dat")
+finally:
     x = np.load(f)
     y = np.load(f)
     z = np.load(f)
     COULOMB_INTERP = interp2d(x, y, z)
     del x, y, z
+    f.close()
+    del f
 
 
 def estimate_Rinv(gamma, Ro, Rs, Rl):
