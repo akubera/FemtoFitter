@@ -36,40 +36,39 @@ double calculate_gauss1d(double qinv, double RinvSq, double lam, double K=1.0, d
 }
 
 
-template <typename T>
-struct GenericInputData {
-  int SetupMinuit(TMinuit &minuit)
-  {
-    for (int i = 0; i < minuit.GetNumPars(); ++i) {
-      minuit.Release(i);
+template <typename Impl>
+struct Fitter1D {
+  using CalcLoglike = ResidCalculatorPML<Impl>;
+  using CalcChi2 = ResidCalculatorChi2<Impl>;
+
+  Data1D data;
+
+  double gamma;
+
+  Fitter1D(const TH1 &n, const TH1 &d, double limit, double gamma_=1.0)
+    : data(n, d, limit)
+    , gamma(gamma_)
+    { }
+
+  Fitter1D(TDirectory &tdir, double limit=0.0)
+    : data(tdir.Get("num"), tdir.Get("den"), limit)
+    , gamma(1.0)
+    {
     }
-    int errflag = 0;
-    const double this_dbl = static_cast<double>((intptr_t)this);
-    minuit.mnparm(T::DATAPTR_PARAM_IDX, "DATA_PTR", this_dbl, 0, 0, INTPTR_MAX, errflag);
-    minuit.FixParameter(DATAPTR_PARAM_IDX);
-    return errflag;
-  }
 
 };
-
 
 /// \class Gauss1D
 /// \brief Gaussian 1D fit
 ///
 ///
-template <size_t N>
-struct Gauss1DT {
+struct Gauss1D {
 
   struct FitParams;
   struct FitInput;
-  struct FitResult;
-  struct FitData;
 
   static std::string GetName()
     { return "Gauss1D"; }
-
-  static size_t GetNparams()
-    { return N + 3; }
 
   enum {
     DATAPTR_PARAM_IDX = 0,
@@ -79,16 +78,61 @@ struct Gauss1DT {
     NORM_PARAMS_IDX = 3,
   };
 
-};
+  /// \class FitResult
+  /// \brief Result of the fit
+  struct FitResult {
+    Value norm,
+          lam,
+          radius;
+  };
 
+  struct FitParams {
+    double norm,
+           lam,
+           Rinv;
 
-/// \class Gauss1D::FitResult
-/// \brief Result of the fit
-template <typename T>
-struct Gauss1DT<T>::FitResult {
-  Value lam,
-        radius;
-  std::array<Value, N> norms;
+    FitParams(const double *par)
+      : norm(par[NORM_PARAM_IDX])
+      , lam(par[LAM_PARAM_IDX])
+      , Rinv(par[R_PARAM_IDX])
+      { }
+
+    FitParams(const FitParams &) = default;
+
+    FitParams(const FitResult &res)
+      : norm(res.norm)
+      , lam(res.lam)
+      , Rinv(res.radius)
+      { }
+
+    bool is_invlaid() const
+      {
+        #define INVALID(__X) (__X <= 0) || std::isnan(__X)
+        return  INVALID(res.norm)
+                || INVALID(res.lam)
+                || INVALID(res.Rinv);
+        #undef INVALID
+      }
+
+    double gauss(const double q, const double K) const
+      { return calculate_gauss1d(q, Rinv * Rinv, lam, K, norm); }
+  };
+
+  int
+  setup_minuit(TMinuit &minuit)
+    {
+      int errflag = Super::SetupMinuit(minuit);
+      minuit.mnparam(NORM_PARAM_IDX, "Norm", 0.2, 0.02, 0.0, 0.0, errflag);
+      minuit.mnparm(LAM_PARAM_IDX, "Lam", 0.5, 0.01, 0.0, 0.0, errflag);
+      minuit.mnparm(R_PARAM_IDX, "Radius", 5, 0.2, 0.0, 0.0, errflag);
+
+      if (errflag != 0) {
+        std::cerr << "Error setting paramters: " << errflag << "\n";
+        throw std::runtime_error("Could not set Minuit parameters.");
+      }
+    }
+
+  int fit
 
 };
 
@@ -125,18 +169,6 @@ struct FitData : GenericInputData<FitData> {
   void
   SetupMinuit(TMinuit &minuit)
   {
-    int errflag = Super::SetupMinuit(minuit);
-    minuit.mnparm(LAM_PARAM_IDX, "Lam", 0.5, 0.01, 0.0, 0.0, errflag);
-    minuit.mnparm(R_PARAM_IDX, "Radius", 5, 0.2, 0.0, 0.0, errflag);
-
-    for (int i = NORM_PARAMS_IDX, STOP=i+N; i < STOP; ++i) {
-      minuit.mnparam(i, Form("Norm%d", i-R_PARAM_IDX), 0.2, 0.02, 0.0, 0.0, errflag);
-    }
-
-    if (errflag != 0) {
-      std::cerr << "Error setting paramters: " << errflag << "\n";
-      throw std::runtime_error("Could not set Minuit parameters.");
-    }
   }
 
   FitResult
@@ -146,12 +178,6 @@ struct FitData : GenericInputData<FitData> {
     minuit.SetFCN(fit_sans_coulomb);
     minuit.Migrad();
     return FitResult(minuit);
-  }
-
-  double
-  SetFitBound(double fit)
-  {
-
   }
 
   static double
@@ -202,31 +228,5 @@ struct FitData : GenericInputData<FitData> {
   }
 };
 
-
-/// \class FitParams
-/// \brief
-///
-template <typename T>
-struct Gauss1DT<T>::FitParams {
-  double lam,
-         radius;
-  std::array<double N> norm;
-
-  FitParams(double *par)
-    : norm(par+NORM_PARAMS_IDX, par+NORM_PARAMS_IDX+N)
-    , lam(par[LAM_PARAM_IDX])
-    , radius(par[R_PARAM_IDX])
-  {
-  }
-
-  bool
-  is_invalid() const
-  {
-    return radius < 0
-        || lam < 0
-        || std::isnan(radius)
-        || std::isnan(lam);
-  }
-};
 
 #endif
