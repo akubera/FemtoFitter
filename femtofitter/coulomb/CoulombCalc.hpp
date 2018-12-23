@@ -8,12 +8,12 @@
 #define COULOMBCALC_HPP_
 
 #include "../femtomath.h"
+#include "math/constants.hh"
 #include <array>
 #include <cmath>
 
-static const HBAR_C = 0.19732697;
-static const ETA = 1.0 / 388;
 
+inline
 double
 gamow(const double q)
 {
