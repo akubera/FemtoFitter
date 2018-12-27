@@ -53,6 +53,10 @@ def main(argv=None):
 
     def merge_files(name):
         sublist = [f for f in filenames if name in f]
+        if not sublist:
+            print("No files matching %r" % name)
+            return
+
         dest = re.sub(r'\-child_\d+\-', '-combined-', sublist[0])
         destpath = Path(dest)
         if destpath.exists():
