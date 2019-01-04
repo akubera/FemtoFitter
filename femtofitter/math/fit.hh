@@ -2,6 +2,10 @@
 /// \file femtofitter/math/fit.hh
 ///
 
+
+#include <cmath>
+
+
 /// \brief chi2 of ratio - assuming stderr is sqrt of values
 ///
 inline
