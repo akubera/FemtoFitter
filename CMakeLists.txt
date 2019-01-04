@@ -50,6 +50,8 @@ include_directories(${FEMTOFITTER_INCLUDE_DIR})
 # )
 
 set(INCS
+  src/Data1D.hpp
+  src/Data3D.hpp
   src/FitterGaussOSL.hpp
   src/FitterGaussFull.hpp
   src/FitterLevy.hpp
