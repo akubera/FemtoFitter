@@ -7,7 +7,14 @@
 #ifndef FITTER3D_HPP
 #define FITTER3D_HPP
 
+#include "./Fitter.hpp"
+
 #include <typeinfo>
+#include <TMinuit.h>
+#include <TFile.h>
+#include <iostream>
+#include "CoulombHist.hpp"
+
 
 template <typename Impl>
 class Fitter3D {
