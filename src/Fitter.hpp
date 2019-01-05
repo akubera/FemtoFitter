@@ -90,7 +90,6 @@ public:
     auto diff = ratio() - evaluate(p);
     auto e = fRatio * (1.0 + fRatio) / den / den;
     return (diff * diff / e).sum();
-    // chi2_calc()
   }
 
   const std::valarray<double>&
