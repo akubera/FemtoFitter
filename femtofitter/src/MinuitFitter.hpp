@@ -35,7 +35,7 @@ MinuitFitter::MinuitFitter()
 
 
 
-#include "../../src/FitterLevy.hpp"
+#include "FitterLevy.hpp"
 
 template <>
 MinuitFitter::MinuitFitter<FitterLevy>();

@@ -13,7 +13,10 @@ config: $(BUILD_DIR)/Makefile
 	ccmake $(BUILD_DIR)
 
 clean:
-	make -C $(BUILD_DIR) clean
+	+make -C $(BUILD_DIR) clean
+
+cleanall:
+	rm -r $(BUILD_DIR)/*
 
 help:
 	@echo
@@ -31,9 +34,8 @@ help:
 	@echo
 
 
-$(BUILD_DIR)/Makefile: CMakeLists.txt
-	@mkdir -p $(BUILD_DIR)
-	cd $(BUILD_DIR) && cmake ..
+$(BUILD_DIR)/Makefile: femtofitter/CMakeLists.txt
+	cmake -S femtofitter -B $(BUILD_DIR)
 
 docs-html:
 	+make -C docs html
