@@ -76,13 +76,14 @@ def main(argv=None):
     else:
         mrc_path = args.mrc_path
 
+    print(f"Using MRC {mrc_path!r}" if mrc_path else "No Momentum Resolution Correction")
+    print(f"Output will be written to {dest}")
     parallel_fit_all(tfile,
                      dest,
                      args.fitter,
                      mrc_path,
                      args.fitrange,
                      args.chi2)
-
     return 0
 
 
