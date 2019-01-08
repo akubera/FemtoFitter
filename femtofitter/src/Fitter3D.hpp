@@ -39,6 +39,11 @@ public:
     , gamma(gamma_)
   { }
 
+  Fitter3D(const Data3D &data_, double gamma_=1.0)
+    : data(data_)
+    , gamma(gamma_)
+  { }
+
   /// Utility function for building fitter with tdirectory in file
   /// at specified path
   static std::unique_ptr<Impl>
