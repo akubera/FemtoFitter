@@ -53,14 +53,21 @@ struct Data3D {
   /// Data limit
   Data3D(std::vector<Datum> data, double limit, double true_limit);
 
+  /// Copy Constructor
+  Data3D(const Data3D &orig)
+    : data(orig.data)
+    , limit(orig.limit)
+    , true_limit(orig.true_limit)
+  {}
 
-  Data3D(Data3D && ptr)
+  /// Move Constructor
+  Data3D(Data3D &&ptr)
     : data(std::move(ptr.data))
     , limit(ptr.limit)
     , true_limit(ptr.true_limit)
   {}
 
-  /// Data limit
+  /// Move value from unique ptr
   Data3D(std::unique_ptr<Data3D> ptr)
     : data(std::move(ptr->data))
     , limit(ptr->limit)
