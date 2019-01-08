@@ -178,7 +178,7 @@ if __name__ == "__main__":
         filename = 'data.root'
 
     from ROOT import gSystem, TFile
-    assert 0 == gSystem.Load('build/libFemtoFitter.so')
+    assert 0 <= gSystem.Load('build/libFemtoFitter.so')
 
     data = TFile.Open(filename)
     parallel_fit_all(data, "fitres-%s.json" % filename.rpartition('.')[0])
