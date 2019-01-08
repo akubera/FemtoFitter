@@ -41,9 +41,13 @@ include(${ROOT_USE_FILE})
 message(STATUS "Found ROOT v${ROOT_VERSION} at ${ROOT_DIR}")
 set(ROOTCLING "${ROOT_rootcling_CMD}")
 
-# Build Headers
-include_directories(${FEMTOFITTER_INCLUDE_DIR})
 
+# include_directories(${FEMTOFITTER_INCLUDE_DIR})
+include_directories(${CMAKE_SOURCE_DIR})
+include_directories(src)
+
+
+# Build Headers
 # set(INCS
 #   ${CMAKE_CURRENT_SOURCE_DIR}/femtofitter/inc/fitter.h
 #   ${CMAKE_CURRENT_SOURCE_DIR}/femtofitter/MomentumResolutionCorrector.hpp
@@ -53,7 +57,7 @@ set(INCS
   src/Data1D.hpp
   src/Data3D.hpp
   src/Fitter.hpp
-  src/FitterGaussOSL.hpp
+  fitter/FitterGaussOSL.hpp
   src/FitterGaussFull.hpp
   src/FitterLevy.hpp
 )

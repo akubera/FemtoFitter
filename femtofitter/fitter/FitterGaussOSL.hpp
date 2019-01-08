@@ -1,5 +1,5 @@
 ///
-/// \file fitter-gauss-osl.hpp
+/// \file fitter/FitterGaussOSL.hpp
 ///
 
 #pragma once
@@ -188,10 +188,25 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
   {
   }
 
+  static std::unique_ptr<FitterGaussOSL> FromDirectory(TDirectory &dir,
+                                                       double limit=0.0,
+                                                       double gamma=1.0)
+  {
+    auto data = Data3D::FromDirectory(dir, limit);
+    return std::make_unique<FitterGaussOSL>(std::move(data), gamma);
+  }
+
+  FitterGaussOSL(const Data3D &data, double gamma=1.0)
+    : Fitter3D(data, gamma)
+  {
+  }
+
+  /*
   FitterGaussOSL(std::unique_ptr<Data3D> data, double gamma=1.0)
     : Fitter3D(std::move(data), gamma)
   {
   }
+  */
 
   static double
   gauss(const std::array<double, 3>& q, const FitParams &p, double K)

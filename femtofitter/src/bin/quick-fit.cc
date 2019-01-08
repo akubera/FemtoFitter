@@ -1,5 +1,5 @@
 
-#include "FitterGaussOSL.hpp"
+#include "fitter/FitterGaussOSL.hpp"
 #include "FitterLevy.hpp"
 #include "FitterLevyFull.hpp"
 
