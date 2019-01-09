@@ -145,7 +145,7 @@ def find_analyses(file, pattern):
 class AnalysisResults:
 
     @classmethod
-    def FindIn(cls, obj) -> Generator[Optional['AnalysisTrueQ3D'], None, None]:
+    def FindIn(cls, obj) -> Generator[Optional['AnalysisResults'], None, None]:
         container = get_tobject(obj, cls.KT_CONTAINER_NAME)
         if container == nullptr:
             return
@@ -260,13 +260,28 @@ class AnalysisTrueQ3D(AnalysisResults):
         """
         """
 
-        keys = ("Trueq3D_NumRec", "Trueq3D_NumGen",
-                "Trueq3D_DenRec", "Trueq3D_DenGen")
-        nr, ng, dr, dg = (get_tobject(obj, k) for k in keys)
+        def _load_hists(names):
+            hists = [get_tobject(obj, k) for k in names]
+            if not all(x for x in hists):
+                return None
+            return hists
 
-        if any(not x for x in (nr, ng, dr, dg)):
+        keyslist = [
+            ("Trueq3D_NumRec", "Trueq3D_NumGen",
+             "Trueq3D_DenRec", "Trueq3D_DenGen"),
+            ("Trueq3DNumRec", "Trueq3DNumGen",
+             "Trueq3DDenRec", "Trueq3DDenGen")
+        ]
+
+        for keys in keyslist:
+            hists = _load_hists(keys)
+            if hists:
+                break
+        else:
             print("Could not find files in", obj)
             return
+
+        nr, ng, dr, dg = hists
 
         mrc = ng.Clone("mrc")
         mrc.SetStats(False)
