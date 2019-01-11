@@ -29,14 +29,13 @@ except KeyError:
     except ImportError:
         import importlib_resources as resources
     f = resources.open_binary('femtofitter.data', "coulomb-interpolation.dat")
-finally:
-    x = np.load(f)
-    y = np.load(f)
-    z = np.load(f)
-    COULOMB_INTERP = interp2d(x, y, z)
-    del x, y, z
-    f.close()
-    del f
+
+x = np.load(f)
+y = np.load(f)
+z = np.load(f)
+COULOMB_INTERP = interp2d(x, y, z)
+f.close()
+del x, y, z, f
 
 
 def estimate_Rinv(gamma, Ro, Rs, Rl):
