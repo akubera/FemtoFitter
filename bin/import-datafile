@@ -83,14 +83,17 @@ def process_file(path, output, pattern=None):
     print("Finished processing %s" % file.GetName())
 
 
+ANALYSIS_FINDERS = []
+
+
+def register_analysis_class(cls):
+    function = cls.FindIn
+    ANALYSIS_FINDERS.append(function)
+    return cls
+
+
 def find_analyses(file, pattern):
     from ROOT import AliFemtoConfigObject, std
-
-    ANALYSIS_FINDERS = (
-        AnalysisQinv.FindIn,
-        AnalysisQ3D.FindIn,
-        AnalysisTrueQ3D.FindIn,
-    )
 
     if not file:
         return
@@ -174,7 +177,7 @@ class AnalysisResults:
     def storage_key(self, value: str):
         self._storage_key = self.__class__.__name__ + "/" + value
 
-
+@register_analysis_class
 class AnalysisQinv(AnalysisResults):
 
     KT_CONTAINER_NAME = "KT_Qinv"
@@ -206,6 +209,7 @@ class AnalysisQinv(AnalysisResults):
             self.kt.Write("kt_dist")
 
 
+@register_analysis_class
 class AnalysisQ3D(AnalysisResults):
 
     KT_CONTAINER_NAME = "KT_Q3D"
@@ -248,6 +252,7 @@ class AnalysisQ3D(AnalysisResults):
         self.qinv.Write("qinv")
 
 
+@register_analysis_class
 class AnalysisTrueQ3D(AnalysisResults):
     """
     Momentum resolution correction for Q3D
@@ -307,6 +312,7 @@ class AnalysisTrueQ3D(AnalysisResults):
         self.mrc.Write("mrc")
 
 
+@register_analysis_class
 class DetaDphiSimple(AnalysisResults):
 
     KT_CONTAINER_NAME = 'KT_DetaDphiSimple'
