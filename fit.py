@@ -28,28 +28,6 @@ def find_and_fit(filename: str, query: PathQuery, fit_range: float, mrc_path=Non
     return results
 
 
-# def run_fit_gauss(*args, **kwargs):
-#     from ROOT import FitterGaussOSL
-#     return run_fit(FitterGaussOSL, *args, **kwargs)
-
-def run_fit_gauss(*args, **kwargs):
-    from ROOT import Data3D
-    from ROOT import FitterGaussOSL
-    return run_fit(FitterGaussOSL, *args, **kwargs)
-
-
-def run_fit_levy(*args, **kwargs):
-    from ROOT import Data3D
-    from ROOT import FitterLevy
-    return run_fit(FitterLevy, *args, **kwargs)
-
-
-def run_fit_gauss_full(*args, **kwargs):
-    from ROOT import Data3D
-    from ROOT import FitterGaussFull
-    return run_fit(FitterGaussFull, *args, **kwargs)
-
-
 def run_fit(fitter_class,
             filename: str,
             query: PathQuery,
@@ -127,7 +105,6 @@ def parallel_fit_all(tfile,
 
     filename = str(filename.absolute())
     pool = Pool()
-    # results = pool.starmap(run_fit_gauss, ((filename, p, fitrange) for p in paths[:4]))
 
     work = chain(
         ((filename, p, fitrange, chi2) for p in paths),
