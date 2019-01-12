@@ -253,6 +253,53 @@ class AnalysisQ3D(AnalysisResults):
 
 
 @register_analysis_class
+class Q3DLCMS(AnalysisResults):
+
+    KT_CONTAINER_NAME = "KT_Q3D_LCMS"
+
+    @classmethod
+    def From(cls, container) -> Optional['Q3DLCMS']:
+        """
+        """
+
+        keys = ("Num", "Den", "QinvW")
+        objs = [get_tobject(container, k) for k in keys]
+
+        if not all(objs):
+            missing_keys = [name for name, obj in zip(keys, objs) if not obj]
+            print("Missing required objects:", ' '.join(missing_keys))
+            return
+
+        num, den, qinv = objs
+
+        qinv.SetTitle("q_{inv}")
+        if qinv.GetSumw2N() == 0:
+            print("Warning: Weighted qinv histogram not weighted")
+            qinv.Sumw2()
+        sum_ = num.Clone("sum_")
+        sum_.Add(den)
+        qinv.Divide(sum_)
+        del sum_
+
+        self = cls(num, den, qinv)
+        return self
+
+    def __init__(self, num, den, qinv):
+        self.num = num
+        self.den = den
+        self.qinv = qinv
+
+    def write_to_file(self, dest):
+        dest.mkdir(self.storage_key)
+        self.write_config(dest)
+
+        dest.cd(self.storage_key)
+        self.num.Write("num")
+        self.den.Write("den")
+        self.qinv.Write("qinv")
+
+
+@register_analysis_class
 class AnalysisTrueQ3D(AnalysisResults):
     """
     Momentum resolution correction for Q3D
@@ -272,6 +319,7 @@ class AnalysisTrueQ3D(AnalysisResults):
             return hists
 
         keyslist = [
+            ("NumRec", "NumGen", "DenRec", "DenGen"),
             ("Trueq3D_NumRec", "Trueq3D_NumGen",
              "Trueq3D_DenRec", "Trueq3D_DenGen"),
             ("Trueq3DNumRec", "Trueq3DNumGen",
