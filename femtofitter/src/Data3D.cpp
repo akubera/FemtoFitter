@@ -95,3 +95,19 @@ Data3D::FromDirectory(TDirectory &tdir, double limit)
 
   return std::unique_ptr<Data3D>(new Data3D(*n, *d, *q, limit));
 }
+
+std::unique_ptr<Data3D>
+Data3D::FromDirectory(TDirectory &tdir, const TH3 &mrc, double limit)
+{
+  const auto n = std::unique_ptr<TH3>((TH3*)tdir.Get("num")),
+             d = std::unique_ptr<TH3>((TH3*)tdir.Get("den")),
+             q = std::unique_ptr<TH3>((TH3*)tdir.Get("qinv"));
+
+  if (!n or !d or !q) {
+    return nullptr;
+  }
+
+  n->Multiply(&mrc);
+
+  return std::unique_ptr<Data3D>(new Data3D(*n, *d, *q, limit));
+}
