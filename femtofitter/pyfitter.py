@@ -94,12 +94,15 @@ class Data3D:
         return self
 
     def __init__(self, num, den, qinv, fit_range, gamma=3.0):
-        from ROOT import TH3, TH3F
+        from ROOT import TH3, TH3F, TH3I, TH3S
         from itertools import starmap
 
         def histogram_data_to_numpy(h):
-            dtype = np.float32 if isinstance(h, TH3F) else np.float64
-            buffer = np.frombuffer(h.GetArray(), count=h.GetNcells(), dtype=dtype)
+            dtype = (np.float32 if isinstance(h, TH3F) else
+                     np.int32 if isinstance(h, TH3I) else
+                     np.int16 if isinstance(h, TH3S) else
+                     np.float64)
+            buffer = np.frombuffer(h.GetArray(), count=h.GetNcells(), dtype=dtype).astype(np.float32)
             return buffer.reshape(h.GetNbinsZ()+2, h.GetNbinsY()+2, h.GetNbinsX()+2)
 
         def get_bin_centers(axis):
@@ -166,6 +169,9 @@ class Data3D:
     def lnlike_calculator(self):
         """
         Return function optimized to calculate log-like given model
+
+        >>> return -2 * (N * log((N+D)C / (N(C+1)) + D * log((N+D) / (B(C+1))))
+
         """
         a, b = self.num, self.den
 
@@ -185,9 +191,22 @@ class Data3D:
     def chi2_calculator(self):  # -> Callable[[Parameters], float]:
         """
         Optimized chi2 calculator
+
+        Returns a function which takes the model, or hypothesis
+        to which the data is tested against.
+
+        >>> ratio = N / D
+        >>> variance = N/D² + N²/D³
+        >>> #        = R (R + 1) / D
+        >>> return ratio / variance
+
         """
         ratio = self.num / self.den
-        variance = ratio * np.sqrt((1.0 + ratio) / self.num)
+        zero_mask = self.num != 0
+#         variance = ratio * np.sqrt((1.0 + ratio) / self.den)
+        variance = ratio + 1.0
+        variance *= ratio
+        variance /= self.den
 
         # ratio = data.num / data.den
         # variance = ratio * np.sqrt((1.0 + ratio) / data.num)
@@ -196,7 +215,10 @@ class Data3D:
 
         def _calc_chi2(hypothesis):
             " Curried chi2 function "
-            return (ratio - hypothesis) / variance
+            return np.divide(ratio - hypothesis,
+                             variance,
+                             where=zero_mask,
+                             out=np.zeros_like(hypothesis))
 
         return _calc_chi2
 
