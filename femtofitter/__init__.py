@@ -3,11 +3,14 @@
 #
 
 import json
-from typing import NamedTuple
+# from typing import NamedTuple
+from dataclasses import dataclass
 import pandas as pd
 
 
-class PathQuery(NamedTuple):
+@dataclass
+class PathQuery:
+# class PathQuery(NamedTuple):
     analysis: str
     cfg: str
     pair: str
@@ -72,6 +75,18 @@ class PathQuery(NamedTuple):
             return cls.from_path(path)
 
         raise TypeError(f"Cannot build pathquery from {obj.__class__}")
+
+    def __iter__(self):
+        yield from self.values()
+
+    def keys(self):
+        yield from self.__dataclass_fields__.keys()
+
+    def values(self):
+        yield from (getattr(self, f) for f in self.__dataclass_fields__.keys())
+
+    def items(self):
+        yield from zip(self.keys(), self.values())
 
 
 def get_momentum_resolution_correction_map(path='mrcdata.yaml'):
