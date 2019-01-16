@@ -66,6 +66,16 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
           Rs,
           Rl;
 
+    FitResult()
+      : lam({0, 0})
+      , norm({0, 0})
+      , Ro({0, 0})
+      , Rs({0, 0})
+      , Rl({0, 0})
+      {}
+
+    FitResult(const FitResult &orig) = default;
+
     FitResult(TMinuit &minuit)
       : lam(minuit, LAM_PARAM_IDX)
       , norm(minuit, NORM_PARAM_IDX)
