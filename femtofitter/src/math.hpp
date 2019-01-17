@@ -19,11 +19,7 @@ double chi2_calc(double N, double D, double C)
 {
   const double
     R = N / D,
-    // variance = (N * N * D + D * D * N) / (D * D * D * D)
-    // variance = (1.0 + R) * R * R / N;
-    variance = R * (N + D) / (D*D);
-    // variance = R * std::sqrt((1.0/N  + 1.0/D));
-    // variance = R * std::sqrt((1.0 + R) / N);
+    variance = R * (1.0 + R) / D;
 
   return IF_NOT_ZERO(variance, (R-C) * (R-C) / variance);
 }
