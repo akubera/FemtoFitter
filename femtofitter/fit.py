@@ -58,7 +58,26 @@ def run_fit(fitter_classname: str,
     tdir = tfile.Get(path)
     assert tdir
 
-    data = Data3D.FromDirectory(tdir, fit_range)
+    if mrc_path is not None:
+        #from ROOT import apply_momentum_resolution_correction
+        if mrc_path is True:
+            mrc_filename = filename
+        elif mrc_path is ...:
+            mrc_filename = "Data-MRC-1987.root"
+        else:
+            #mrc_filename = 'Data-sbin.root'
+            mrc_filename, mrc_path = mrc_path.split(':')
+
+        mrc_file = TFile.Open(mrc_filename)
+        mrc = mrc_file.Get(mrc_path)
+        mrc_file.Close()
+        if not mrc:
+            print("missing mrc path %r" % mrc_path)
+            return {}
+        data = Data3D.FromDirectory(tdir, mrc, fit_range)
+        # apply_momentum_resolution_correction(fitter.data, mrc)
+    else:
+        data = Data3D.FromDirectory(tdir, fit_range)
 
     if subset == 'sailor':
         data = data.cowboy_subset()
@@ -67,17 +86,6 @@ def run_fit(fitter_classname: str,
 
     gamma = query.estimate_gamma()
     fitter = fitter_class(data, gamma)
-
-    if mrc_path is not None:
-        from ROOT import apply_momentum_resolution_correction
-        mrc_file = TFile.Open("Data-MRC-1987.root")
-        mrc = mrc_file.Get(mrc_path)
-        mrc_file.Close()
-        # print("MRC:",mrc)
-        if mrc == None:
-            print("missing mrc path %r" % mrc_path)
-            return {}
-        apply_momentum_resolution_correction(fitter.data, mrc)
 
     fit_results = fitter.fit_chi2() if fit_chi2 else fitter.fit_pml()
     if not fit_results:
@@ -123,12 +131,13 @@ def parallel_fit_all(tfile,
 
     cfg = 'cfg*'
     pair = cent = kt = mfield = '*'
-    search = f"AnalysisQ3D/{cfg}/{pair}/{cent}/{kt}/{mfield}"
+    #search = f"AnalysisQ3D/{cfg}/{pair}/{cent}/{kt}/{mfield}"
+    search = f"Q3DLCMS/{cfg}/{pair}/{cent}/{kt}/{mfield}"
     if mrc:
         if isinstance(mrc, PathQuery):
             mrc_path = mrc.as_path()
         else:
-            mrc_cfg = mrc if isinstance(mrc, str) else "cfg5348379EA4DD77C6"
+            mrc_cfg = mrc if isinstance(mrc, str) else "cfgBDC0F09B1F286D46"
             mrc_path = "AnalysisTrueQ3D/%s/{pair}/00_90/{kt}/{magfield}/mrc" % mrc_cfg
     else:
         mrc_path = None
