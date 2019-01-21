@@ -50,6 +50,9 @@ struct Data3D {
   /// Data3D with applied momentum resolution correction
   static std::unique_ptr<Data3D> FromDirectory(TDirectory &, const TH3 &mrc, double limit=0.0);
 
+  /// Default empty constructor - use is discouraged
+  Data3D();
+
   /// Construct from histograms
   ///
   /// The q-space is taken from the numerator.

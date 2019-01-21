@@ -15,6 +15,12 @@ void store_into(std::vector<double> &v, std::vector<double> &dest)
 void store_into(std::vector<double> &v, std::valarray<double> &dest)
   { dest = std::valarray<double>(v.data(), v.size()); }
 
+Data3D::Data3D()
+  : data()
+  , limit(0.0)
+  , true_limit(0.0)
+{
+}
 
 Data3D::Data3D(const TH3 &n, const TH3 &d, const TH3 &q, double limit_)
   : data()
