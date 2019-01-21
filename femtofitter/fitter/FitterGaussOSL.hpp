@@ -243,6 +243,27 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
     return errflag;
   }
 
+  void
+  set_and_fix_variable(TMinuit &minuit, std::string name, double val)
+  {
+    int idx = (name == "Ro") ? ROUT_PARAM_IDX
+            : (name == "Rs") ? RSIDE_PARAM_IDX
+            : (name == "Rl") ? RLONG_PARAM_IDX
+            : (name == "lam" || name == "Lam") ? LAM_PARAM_IDX
+            : -1;
+
+    if (idx < 0) {
+      std::cerr << "Unknown parameter '" << name << "'\n";
+      return;
+    }
+
+
+    double stepsize = (idx == LAM_PARAM_IDX) ? 0.1 : 1.0;
+
+    int errflag = 0;
+    minuit.mnparm(idx, name, val, stepsize, 0.0, 0.0, errflag);
+    minuit.FixParameter(idx);
+  }
 
   FitResult fit_chi2()
     { return Fitter3D::fit_chi2(); }
