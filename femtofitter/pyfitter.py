@@ -346,11 +346,17 @@ class FemtoFitter3D:
     def lnlike(a, b, c):
         """ 'Raw' log-likelihood function """
 
-        a_plus_b_over_a = (a + b) / a
-        a_plus_b_over_b = (a + b) / b
+        valid_a_mask = a > 0
+
+        a_plus_b = a + b
+        a_plus_b_over_a = np.divide(a_plus_b, a, where=valid_a_mask)
+        a_plus_b_over_b = a_plus_b / b
         c_plus_1 = c + 1.0
 
-        tmp = a * np.log(a_plus_b_over_a * c / c_plus_1, where=a > 0, out=np.zeros_like(c))
+        tmp = a * np.log(a_plus_b_over_a * c / c_plus_1,
+                         where=valid_a_mask,
+                         out=np.zeros_like(c))
+
         tmp += b * np.log(a_plus_b_over_b / c_plus_1)
 
         return -2 * tmp
