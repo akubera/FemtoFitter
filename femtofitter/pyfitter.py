@@ -89,11 +89,18 @@ class MomentumResolutionCorrector:
 class Data3D:
 
     @classmethod
-    def From(cls, tdir, fit_range):
-        self = cls(*map(tdir.Get, ('num', 'den', 'qinv')), fit_range)
+    def From(cls, tdir, mrc=None, fit_range=None):
+        from ROOT import TDirectory, TH3
+        num, den, qinv = map(tdir.Get, ('num', 'den', 'qinv'))
+        if isinstance(mrc, TDirectory):
+            mrc = mrc.Get("mrc")
+        if isinstance(mrc, TH3):
+            num.Multiply(mrc)
+
+        self = cls(num, den, qinv, fit_range)
         return self
 
-    def __init__(self, num, den, qinv, fit_range, gamma=3.0):
+    def __init__(self, num, den, qinv, fit_range=None, gamma=3.0):
         from ROOT import TH3, TH3F, TH3I, TH3S
         from itertools import starmap
 
@@ -113,7 +120,10 @@ class Data3D:
             return np.linspace(start, stop, num=nbins+2)
 
         def get_fitrange_bins(axis):
-            return (axis.FindBin(-fit_range), axis.FindBin(fit_range) + 1)
+            if fit_range is None:
+                return (0, axis.GetNbins())
+            else:
+                return (axis.FindBin(-fit_range), axis.FindBin(fit_range) + 1)
 
         def axes_of(hist):
             # iter_axes = (TH3.GetXaxis, TH3.GetYaxis, TH3.GetZaxis)
@@ -592,7 +602,6 @@ class FitterGauss(FemtoFitter3D):
 
         k = fsi(pseudo_Rinv) if callable(fsi) else fsi
 
-        # e = (qo * Ro) ** 2 + (qs * Rs) ** 2 + (ql * Rl) ** 2
         e = (qo * Ro) ** 2 + (qs * Rs) ** 2 + (ql * Rl) ** 2
 
         return norm * ((1.0 - lam) + lam * k * (1.0 + np.exp(-e)))
