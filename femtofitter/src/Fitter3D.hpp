@@ -155,7 +155,7 @@ public:
       TMinuit minuit;
       minuit.SetPrintLevel(-1);
       setup_pml_fitter(minuit);
-      return do_fit_minuit(minuit, 0.5);
+      return do_fit_minuit(minuit, 5.88);
     }
 
   auto fit_chi2()
@@ -163,7 +163,7 @@ public:
       TMinuit minuit;
       minuit.SetPrintLevel(-1);
       setup_chi2_fitter(minuit);
-      return do_fit_minuit(minuit, 1.0);
+      return do_fit_minuit(minuit, 5.88);
     }
 
   auto fit()
