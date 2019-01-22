@@ -149,11 +149,15 @@ class AnalysisResults:
 
     @classmethod
     def FindIn(cls, obj) -> Generator[Optional['AnalysisResults'], None, None]:
+        from ROOT import TH1
         container = get_tobject(obj, cls.KT_CONTAINER_NAME)
         if container == nullptr:
             return
 
         for kt_container in iter_tobject(container):
+            if isinstance(kt_container, TH1):
+                # print('skipping histogram %r' % kt_container.GetName())
+                continue
             self = cls.From(kt_container)
             if not self:
                 continue
