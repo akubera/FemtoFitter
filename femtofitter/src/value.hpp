@@ -16,10 +16,9 @@ struct Value {
   double error;
 
   operator double() const
-    { return first; }
+    { return value; }
 
-  Value(const TMinuit &m, size_t idx)
-    { m.GetParameter(idx, value, error); }
+  Value(const TMinuit &m, size_t idx);
 };
 
 

@@ -93,17 +93,17 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
              "  Rl=%0.4f ± %0.4f\n"
              "  lam=%0.4f ± %0.4f (%g, %g)\n"
              "  norm=%0.4f ± %0.4f\n"
-             " -------------\n", Ro.first, Ro.second,
-                                 Rs.first, Rs.second,
-                                 Rl.first, Rl.second,
-                                 lam.first, lam.second, lam.first - lam.second, lam.first + lam.second,
-                                 norm.first, norm.second);
+             " -------------\n", Ro.value, Ro.error,
+                                 Rs.value, Rs.error,
+                                 Rl.value, Rl.error,
+                                 lam.value, lam.error, lam.value - lam.error, lam.value + lam.error,
+                                 norm.value, norm.error);
     }
 
     std::map<std::string, double>
     as_map() const
     {
-      #define OUT(__name) {#__name, __name.first}, { # __name "_err", __name.second}
+      #define OUT(__name) {#__name, __name.value}, { # __name "_err", __name.error}
 
       return {
         OUT(Ro), OUT(Rs), OUT(Rl), OUT(lam), OUT(norm)

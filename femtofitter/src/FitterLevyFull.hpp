@@ -111,21 +111,21 @@ struct FitterLevyFull : public Fitter3D<FitterLevyFull> {
              "  alpha_side=%0.4f ± %0.4f (%g, %g)\n"
              "  alpha_long=%0.4f ± %0.4f (%g, %g)\n"
              "  norm=%0.4f ± %0.4f\n"
-             " -------------\n", Ro.first, Ro.second,
-                                 Rs.first, Rs.second,
-                                 Rl.first, Rl.second,
-                                 lam.first, lam.second, lam.first - lam.second, lam.first + lam.second,
-                                 alphao.first, alphao.second, alphao.first - alphao.second, alphao.first + alphao.second,
-                                 alphas.first, alphas.second, alphas.first - alphas.second, alphas.first + alphas.second,
-                                 alphal.first, alphal.second, alphal.first - alphal.second, alphal.first + alphal.second,
-                                 norm.first, norm.second);
+             " -------------\n", Ro.value, Ro.error,
+                                 Rs.value, Rs.error,
+                                 Rl.value, Rl.error,
+                                 lam.value, lam.error, lam.value - lam.error, lam.value + lam.error,
+                                 alphao.value, alphao.error, alphao.value - alphao.error, alphao.value + alphao.error,
+                                 alphas.value, alphas.error, alphas.value - alphas.error, alphas.value + alphas.error,
+                                 alphal.value, alphal.error, alphal.value - alphal.error, alphal.value + alphal.error,
+                                 norm.value, norm.error);
       return buff.data();
     }
 
     std::map<std::string, double>
     as_map() const
     {
-      #define OUT(__name) {#__name, __name.first}, { # __name "_err", __name.second}
+      #define OUT(__name) {#__name, __name.value}, { # __name "_err", __name.error}
 
       return {
         OUT(Ro), OUT(Rs), OUT(Rl), OUT(lam), OUT(alphao), OUT(alphas), OUT(alphal), OUT(norm)

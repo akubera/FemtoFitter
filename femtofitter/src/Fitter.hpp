@@ -12,18 +12,8 @@
 
 #include <valarray>
 
-class TMinuit;
+#include "value.hpp"
 
-/// \class Value
-/// \brief Fit-Result value, number paired with error
-struct Value {
-  double first, second;
-
-  operator double() const
-    { return first; }
-
-  Value(const TMinuit &m, size_t idx);
-};
 
 /// \brief static minuit function, forwards paramters to
 ///        ResidCalc_t::resid static method

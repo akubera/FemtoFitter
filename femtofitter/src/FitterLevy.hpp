@@ -101,19 +101,19 @@ struct FitterLevy : public Fitter3D<FitterLevy> {
              "  lam=%0.4f ± %0.4f (%g, %g)\n"
              "  alpha=%0.4f ± %0.4f (%g, %g)\n"
              "  norm=%0.4f ± %0.4f\n"
-             " -------------\n", Ro.first, Ro.second,
-                                 Rs.first, Rs.second,
-                                 Rl.first, Rl.second,
-                                 lam.first, lam.second, lam.first - lam.second, lam.first + lam.second,
-                                 alpha.first, alpha.second, alpha.first - alpha.second, alpha.first + alpha.second,
-                                 norm.first, norm.second);
+             " -------------\n", Ro.value, Ro.error,
+                                 Rs.value, Rs.error,
+                                 Rl.value, Rl.error,
+                                 lam.value, lam.error, lam.value - lam.error, lam.value + lam.error,
+                                 alpha.value, alpha.error, alpha.value - alpha.error, alpha.value + alpha.error,
+                                 norm.value, norm.error);
       return buff.data();
     }
 
     std::map<std::string, double>
     as_map() const
     {
-      #define OUT(__name) {#__name, __name.first}, { # __name "_err", __name.second}
+      #define OUT(__name) {#__name, __name.value}, { # __name "_err", __name.error}
 
       return {
         OUT(Ro), OUT(Rs), OUT(Rl), OUT(lam), OUT(alpha), OUT(norm)
