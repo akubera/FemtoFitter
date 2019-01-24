@@ -205,13 +205,17 @@ class Data3D:
         """
         a, b = self.num, self.den
 
-        a_plus_b_over_a = np.divide(a + b, a, where=a > 0.0, out=np.zeros_like(a))
+        zero_mask = a > 0.0
+
+        a_plus_b_over_a = np.divide(a + b, a, where=zero_mask, out=np.zeros_like(a))
         a_plus_b_over_b = (a + b) / b
 
         def _calc(c):
             c_plus_1 = c + 1.0
 
-            tmp = a * np.log(a_plus_b_over_a * c / c_plus_1)
+            tmp = a * np.log(a_plus_b_over_a * c / c_plus_1,
+                             where=zero_mask,
+                             out=np.zeros_like(a))
             tmp += b * np.log(a_plus_b_over_b / c_plus_1)
 
             return -2 * tmp
@@ -237,12 +241,12 @@ class Data3D:
         variance = ratio + 1.0
         variance *= ratio
         variance /= self.den
-        stderr = np.sqrt(variance)
+        stdev = np.sqrt(variance)
 
         def _calc_chi2(hypothesis):
             " Curried chi2 function "
             return np.divide(ratio - hypothesis,
-                             stderr,
+                             stdev,
                              where=zero_mask,
                              out=np.zeros_like(hypothesis))
 
