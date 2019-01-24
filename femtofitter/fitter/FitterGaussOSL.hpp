@@ -227,10 +227,10 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
   {
     int errflag = 0;
     minuit.mnparm(NORM_PARAM_IDX, "Norm", 0.25, 0.02, 0.0, 0.0, errflag);
-    minuit.mnparm(LAM_PARAM_IDX, "Lam", 0.2, 0.1, 0.0, 1.0, errflag);
-    minuit.mnparm(ROUT_PARAM_IDX, "Ro", 2.0, 1.0, 0.0, 0.0, errflag);
-    minuit.mnparm(RSIDE_PARAM_IDX, "Rs", 2.0, 1.0, 0.0, 0.0, errflag);
-    minuit.mnparm(RLONG_PARAM_IDX, "Rl", 2.0, 1.0, 0.0, 0.0, errflag);
+    minuit.mnparm(LAM_PARAM_IDX, "Lam", 0.2, 0.05, 0.0, 1.0, errflag);
+    minuit.mnparm(ROUT_PARAM_IDX, "Ro", 2.0, 0.5, 0.0, 0.0, errflag);
+    minuit.mnparm(RSIDE_PARAM_IDX, "Rs", 2.0, 0.5, 0.0, 0.0, errflag);
+    minuit.mnparm(RLONG_PARAM_IDX, "Rl", 2.0, 0.5, 0.0, 0.0, errflag);
 
     const double this_dbl = static_cast<double>((intptr_t)this);
     minuit.mnparm(DATA_PARAM_IDX, "DATA_PTR", this_dbl, 0, 0, INTPTR_MAX, errflag);
