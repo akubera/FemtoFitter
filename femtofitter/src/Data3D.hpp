@@ -101,6 +101,9 @@ struct Data3D {
   auto end() const
     { return data.cend(); }
 
+  const Datum& operator[](size_t idx) const
+    { return data[idx]; }
+
   /// get out-side datapoints from quadrants I-III
   std::unique_ptr<Data3D> cowboy_subset() const
     {
