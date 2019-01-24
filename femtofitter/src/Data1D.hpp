@@ -24,9 +24,9 @@ struct Data1D {
 
   /// Unit of data (qinv, numerator, denominator)
   struct Datum {
-    double q,
-           n,
-           d;
+    double qinv,
+           num,
+           den;
   };
 
   std::vector<Datum> data;
@@ -50,6 +50,21 @@ struct Data1D {
 
   size_t size() const
     { return data.size(); }
+
+  const Datum& operator[](size_t idx) const
+    { return data[idx]; }
+
+  auto begin()
+    { return data.begin(); }
+
+  auto end()
+    { return data.end(); }
+
+  auto begin() const
+    { return data.begin(); }
+
+  auto end() const
+    { return data.end(); }
 
 };
 
