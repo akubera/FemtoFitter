@@ -39,6 +39,7 @@ def run_fit(fitter_classname: str,
     remaining parameters
     """
 
+    from copy import copy
     from ROOT import TFile
     from ROOT import Data3D
 
@@ -66,11 +67,23 @@ def run_fit(fitter_classname: str,
             mrc_filename = "Data-MRC-1987.root"
         else:
             #mrc_filename = 'Data-sbin.root'
-            mrc_filename, mrc_path = mrc_path.split(':')
+            mrc_filename, cfg = mrc_path.split(':')
+            mrc_query = copy(query)
+            mrc_query.analysis = 'AnalysisTrueQ3D'
+            mrc_query.cent = '00_90'
+            mrc_query.cfg = cfg
+            mrc_rootpath = mrc_query.as_path()
+            print(f"Loading MRC from file {mrc_filename} {mrc_rootpath}", )
+            if mrc_filename != filename:
+                mrc_tfile = TFile.Open(mrc_filename)
+            else:
+                mrc_tfile = tfile
 
-        mrc_file = TFile.Open(mrc_filename)
-        mrc = mrc_file.Get(mrc_path)
-        mrc_file.Close()
+        mrc_path = mrc_rootpath + "/mrc"
+        mrc = mrc_tfile.Get(mrc_path)
+        if mrc_tfile is not tfile:
+            mrc_tfile.Close()
+
         if not mrc:
             print("missing mrc path %r" % mrc_path)
             return {}
@@ -137,8 +150,9 @@ def parallel_fit_all(tfile,
         if isinstance(mrc, PathQuery):
             mrc_path = mrc.as_path()
         else:
-            mrc_cfg = mrc if isinstance(mrc, str) else "cfgBDC0F09B1F286D46"
-            mrc_path = "AnalysisTrueQ3D/%s/{pair}/00_90/{kt}/{magfield}/mrc" % mrc_cfg
+            #mrc_cfg = mrc if isinstance(mrc, str) else "cfgBDC0F09B1F286D46"
+            #mrc_path = "AnalysisTrueQ3D/%s/{pair}/00_90/{kt}/{magfield}/mrc" % mrc_cfg
+            mrc_path = mrc
     else:
         mrc_path = None
 
@@ -149,7 +163,7 @@ def parallel_fit_all(tfile,
         assert path == query.as_path()
         paths.append(query)
         if mrc_path:
-            mrc_paths.append((query, mrc_path.format(**query.as_dict())))
+            mrc_paths.append((query, mrc_path))
 
     configuration_information = get_configuration_json(tfile, paths)
 
@@ -158,7 +172,7 @@ def parallel_fit_all(tfile,
     # results = pool.starmap(run_fit_gauss, ((filename, p, fitrange) for p in paths[:4]))
 
     work = chain(
-        ((fitter_t, filename, p, fitrange, chi2) for p in paths),
+        #((fitter_t, filename, p, fitrange, chi2) for p in paths),
         ((fitter_t, filename, p, fitrange, chi2, m) for p, m in mrc_paths),
     )
 
