@@ -150,6 +150,26 @@ class Data3D:
 
         self.gamma = gamma
 
+        self._ratio = None
+        self._stderr = None
+
+    @property
+    def ratio(self):
+        if self._ratio is None:
+            self._ratio = self.num / self.den
+        return self._ratio
+
+    @property
+    def stderr(self):
+        if self._stderr is None:
+            variance = self.ratio + 1.0
+            variance *= self.ratio
+            variance /= self.den
+            variance = np.sqrt(variance)
+            self._stderr = variance
+
+        return self._stderr
+
     def apply_mrc(self, mrc):
         for i, (qo, qs, ql) in enumerate(self.qspace.T):
             self.num[i] *= mrc.Interpolate(qo, qs, ql)
@@ -176,7 +196,7 @@ class Data3D:
         result.gamma = self.gamma
         return result
 
-    def lnlike_calculator(self):
+    def lnlike_calculator(self) -> Callable[[np.ndarray], np.ndarray]:
         """
         Return function optimized to calculate log-like given model
 
@@ -198,7 +218,7 @@ class Data3D:
 
         return _calc
 
-    def chi2_calculator(self):  # -> Callable[[Parameters], float]:
+    def chi2_calculator(self) -> Callable[[np.ndarray], np.ndarray]:
         """
         Optimized chi2 calculator
 
@@ -207,26 +227,22 @@ class Data3D:
 
         >>> ratio = N / D
         >>> variance = N/D² + N²/D³
-        >>> #        = R (R + 1) / D
-        >>> return ratio / variance
-
+        >>> #        = N/D (1/D + N/D²)
+        >>> #        = R (1 + R) / D
+        >>> χ² = Σ (ratio - model)² / variance
         """
+
         ratio = self.num / self.den
         zero_mask = self.num != 0
-#         variance = ratio * np.sqrt((1.0 + ratio) / self.den)
         variance = ratio + 1.0
         variance *= ratio
         variance /= self.den
-
-        # ratio = data.num / data.den
-        # variance = ratio * np.sqrt((1.0 + ratio) / data.num)
-        # variance = ratio * (data.num + data.den) / data.den ** 2
-        # variance = ratio * np.sqrt((1.0/N  + 1.0/D))
+        stderr = np.sqrt(variance)
 
         def _calc_chi2(hypothesis):
             " Curried chi2 function "
             return np.divide(ratio - hypothesis,
-                             variance,
+                             stderr,
                              where=zero_mask,
                              out=np.zeros_like(hypothesis))
 
