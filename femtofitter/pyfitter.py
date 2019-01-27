@@ -282,13 +282,22 @@ class FemtoFitter3D:
 
         args = self.func_args(data, gamma, fsi)
         func = self.pml_evaluator(data)
-        mini = Minimizer(func, self.default_parameters(), args, reduce_fcn=np.sum, **kwds)
+        mini = Minimizer(func,
+                         self.default_parameters(),
+                         args,
+                         reduce_fcn=np.sum,
+                         **kwds)
         return mini
 
     @classmethod
     def chi2_evaluator(cls, data: Data3D) -> Callable[[Parameters, Any], float]:
         """
-        Return a function that evaluates chisquared from parameters to cls.func
+        Return a function that evaluates chisquared from parameters
+        to cls.func.
+
+        The function returned returns the array expected by lmfit;
+        the array is reduced by summing the square of the elements:
+         $(a*a).sum()$
         """
 
         chi2_calc = data.chi2_calculator()
@@ -302,7 +311,11 @@ class FemtoFitter3D:
     @classmethod
     def pml_evaluator(cls, data: Data3D) -> Callable[[Parameters, Any], float]:
         """
-        Return a function that evaluates loglikelihood from parameters to cls.func
+        Return a function that evaluates loglikelihood from parameters
+        to cls.func.
+
+        The returned array should be reduced by simply summing the
+        elements.
         """
         loglike_calc = data.lnlike_calculator()
 
@@ -346,7 +359,26 @@ class FemtoFitter3D:
             params = params.params
 
         calc_chi2 = self.chi2_evaluator(data)
-        return calc_chi2(params, *self.func_args(data, gamma))
+        r = calc_chi2(params, *self.func_args(data, gamma))
+        return (r*r).sum()
+
+    def loglike_of(self, params, data=None):
+        """
+        Get likelihood value of the parameters.
+
+        If evaluating multiple times, it's recommended to use the
+        pml_evaluator method to return a more efficient method
+        """
+        if data is None:
+            data = self.data
+
+        if isinstance(params, MinimizerResult):
+            params = params.params
+
+        loglike_eval = self.pml_evaluator(data)
+        args = self.func_args(data)
+        r = loglike_eval(params, *args)
+        return r.sum()
 
     @classmethod
     def func_args(cls, data: Data3D, gamma=None, fsi=None) -> (np.array, float, float):
@@ -387,172 +419,15 @@ class FemtoFitter3D:
 
         return -2 * tmp
 
-
-class Fitter:
-    """
-    Base fitter - sets up numerator, denominator & masks
-    """
-
-    @classmethod
-    def name(cls):
-        return cls.__name__
-
-    @classmethod
-    def FromDirectory(cls, tdir, fit_range=None):
-        from stumpy import Histogram
-
-        hists = map(tdir.Get, ("num", "den", "qinv"))
-        num, den, qinv = map(Histogram.BuildFromRootHist, hists)
-
-        return cls(num, den, qinv, fit_range)
-
-    @classmethod
-    def FromHists(cls, num, den, qinv, fit_range=None):
-        """
-        Build from histogarms
-        """
-        raise NotImplementedError
-
-    @classmethod
-    def FromFitter(cls, fitter):
-        clsname = fitter.__class__.__name__
-
-        def load_from_FitterGaussOSL():
-            pass
-
-        loader_fn_name = 'load_from_%s' % clsname
-
-        try:
-            loader_fn = locals()[loader_fn_name]
-        except KeyError:
-            raise TypeError(f"Unknown Fitter class {clsname}")
-
-        def valarray_to_numpy(val):
-            buff, size = fitter.to_tuple(val)
-            return np.frombuffer(buff, np.double, size)
-
-        d = fitter.data
-
-        self = cls.__new__(cls)
-        self.n, self.d, self.q = map(valarray_to_numpy, (d.num, d.den, d.qinv, ))
-        self.qo, self.qs, self.ql = map(valarray_to_numpy, d.qspace)
-
-        self._cached_sum = self.n + self.d
-        self._cached_a = np.divide(self._cached_sum,
-                                   self.n,
-                                   where=self.n > 0,
-                                   out=np.zeros_like(self.n))
-        self._cached_b = self._cached_sum / self.d
-
-        # make ratio and relative errors
-        self.r = self.n / self.d
-        self.e = self.n * self._cached_sum / self.d ** 3
-
-        return self
-
-    def __init__(self, num, den, qinv, fit_range=None):
-        " Build Fitter out of numerators, denominators, q_{inv} "
-
-        self.fit_range = fit_range
-        qspace = self.qspace = np.array(num.axes.meshgrid())
-
-        # build mask filtering out fit-range and zero elements
-        mask = self.get_qspace_mask(qspace, self.fit_range)
-        # mask &= num.data != 0
-        mask &= den.data != 0
-        self._nonzero_n_mask = num.data[mask] > 0.0
-
-        self.qo = qspace[0][mask]
-        self.qs = qspace[1][mask]
-        self.ql = qspace[2][mask]
-
-        # (num, den, qinv) are histograms, (n,d,q) are the (masked) data
-        self.num, self.den, self.qinv = num, den, qinv
-        self.n, self.d, self.q = (h.data[mask] for h in (num, den, qinv))
-
-        # ratios used in loglike [a = (n + d) / n, b = (n + d) / d]
-        self._cached_sum = self.n + self.d
-        self._cached_a = np.divide(self._cached_sum, self.n,
-                                   where=self._nonzero_n_mask,
-                                   out=np.zeros_like(self.n))
-        self._cached_b = self._cached_sum / self.d
-
-        # make ratio and relative errors
-        self.r, self.e = self.calculate_ratio_and_variance(self.n, self.d)
-
-    def evaluate(self, pars):
-        """ Forwards parameters to self.func """
-        parvals = pars.valuesdict()
-
-        gamma = 1.0
-        fsi = self.get_coulomb_factor
-        # norm = self.norm_array(parvals)
-        norm = parvals['norm']
-
-        result = self.func(pars, self.qo, self.qs, self.ql, fsi, norm, gamma)
-
-        return result
-
-    def loglike(self, c):
-        c_plus_1 = c + 1.0
-        tmp = np.zeros_like(c)
-
-        # cached_a = (n + d)/n
-        # where = (self.n > 0) & (c_plus_1 > 0.0) & (self._cached_a > 0) & (c > 0)
-        where = self._nonzero_n_mask & (c > 0.0)
-        result = self.n * np.log(self._cached_a * c / c_plus_1, where=where, out=tmp)
-
-        # cached_b = (n + d)/d (d guaranteed to be non-zero) - skip 'where' term
-        # result += self.d * np.log(self._cached_b / c_plus_1, out=tmp)
-        result += np.multiply(self.d, np.log(self._cached_b / c_plus_1, out=tmp), out=tmp)
-        return -2 * result
-
-    @staticmethod
-    def calculate_ratio_and_variance(num, den):
-        ratio = num / den
-        error = ratio * (num + den) / den ** 2
-        return ratio, error
-
-    def chi2(self, theory, pair=None):
-        if pair is None:
-            ratio = self.r
-            error = self.e
-        else:
-            ratio, error = self.calculate_ratio_and_variance(*pair)
-
-        # return np.divide((ratio - theory), error, where=error!=0, out=np.zeros_like(ratio))
-        return (ratio - theory) / error
-
-    def resid(self, params):
-        return self.r - self.evaluate(params)
-
-    def x2(self, diff):
-        return np.divide(diff ** 2, self.e,
-                         where=self.e != 0,
-                         out=np.zeros_like(diff))
-
-    @staticmethod
-    def get_qspace_mask(qspace, fit_bound):
-        result = np.ones_like(qspace[0], dtype=bool)
-
-        if fit_bound is not None:
-            for qval in qspace:
-                result &= (-fit_bound < qval) & (qval < fit_bound)
-
-        return result
-
     def resid_chi2(self, params):
-        theory = self.evaluate(params)
-        return self.chi2(theory)
+        return self.chi2_of(params)
 
     def resid_loglike(self, params):
-        theory = self.evaluate(params)
-        res = self.loglike(theory)
-        return res
+        return self.loglike_of(params)
 
     @property
     def ndof(self):
-        return self.n.size
+        return self.num.size - self.NPARAMS
 
     def reduced_chi2(self, params):
         chi2 = self.resid_chi2(params).sum()
@@ -562,37 +437,10 @@ class Fitter:
         chi2 = self.resid_loglike(params).sum()
         return chi2 / self.ndof
 
-    @property
-    def fit_range(self):
-        return self._fit_range
-
-    @fit_range.setter
-    def fit_range(self, value):
-        self._fit_range = float(value)
-
-    def get_coulomb_factor(self, R):
-        global CoulombHist
-
-        if CoulombHist is None:
-            from ROOT import gSystem
-            try:
-                from ROOT import CoulombHist
-            except ImportError:
-                library = environ.get("FEMTOFITTERLIB", 'build/libFemtoFitter.so')
-                assert gSystem.Load(library) >= 0
-                from ROOT import CoulombHist
-
-        hist = CoulombHist.GetHistWithRadius(R)
-        return np.array([hist.Interpolate(q) for q in self.q])
-
-    def params_from_series(self, series):
-        params = self.default_parameters()
-        for key in params:
-            params[key].value = float(series[key])
-        return params
-
 
 class FitterGauss(FemtoFitter3D):
+
+    NPARAMS = 5
 
     @classmethod
     def default_parameters(cls):
@@ -625,6 +473,8 @@ class FitterGauss(FemtoFitter3D):
 
 class FitterGauss4(FemtoFitter3D):
 
+    NPARAMS = 6
+
     @classmethod
     def default_parameters(cls):
         params = FitterGauss.default_parameters()
@@ -655,6 +505,8 @@ class FitterGauss4(FemtoFitter3D):
 
 
 class FitterGauss6(FemtoFitter3D):
+
+    NPARAMS = 8
 
     @classmethod
     def default_parameters(cls):
@@ -687,6 +539,8 @@ class FitterGauss6(FemtoFitter3D):
 
 class FitterLevy(FemtoFitter3D):
 
+    NPARAMS = 6
+
     @classmethod
     def default_parameters(cls):
         q3d_params = FitterGauss.default_parameters()
@@ -714,6 +568,8 @@ class FitterLevy(FemtoFitter3D):
 
 
 class FitterLevy2(FemtoFitter3D):
+
+    NPARAMS = 7
 
     @classmethod
     def default_parameters(cls):
@@ -744,6 +600,8 @@ class FitterLevy2(FemtoFitter3D):
 
 
 class FitterLevy3(FemtoFitter3D):
+
+    NPARAMS = 8
 
     @classmethod
     def default_parameters(cls):
