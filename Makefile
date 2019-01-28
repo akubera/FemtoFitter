@@ -39,3 +39,7 @@ $(BUILD_DIR)/Makefile: femtofitter/CMakeLists.txt
 
 docs-html:
 	+make -C docs html
+
+bwalk: macros/BayesianWalk.cpp
+	#g++ -I. -Ifemtofitter/src $(shell root-config --cflags) -O3 -funroll-loops -ffast-math -march=native -fopenmp -o $@ $<  build/libFemtoFitter.so $(shell root-config --libs)  -lMinuit
+	g++ -I. -Ifemtofitter/src $(shell root-config --cflags) -O3 -ffast-math -march=native -fopenmp -o $@ $< build/libFemtoFitter.so -L${ROOTSYS}/lib -lMinuit -lCore -lHist -lRIO -lGpad
