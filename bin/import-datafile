@@ -130,15 +130,17 @@ def find_analyses(file, pattern):
             hashkey = f'cfg{key.Hash():016X}'
 
             def get_storage_key(kt_bin):
-                kt_dir = '_'.join(('%0.1f' if kt.is_integer() else '%g') % kt
-                                  for kt in map(float, kt_bin.split("_")))
+                def _fmt(f):
+                    return ('%0.1f' if f.is_integer() else '%g') % f
+
+                kt_dir = '_'.join(map(_fmt, kt_bin.split('_')))
                 return f'{hashkey}/{pion_type}/{cent}/{kt_dir}/{magfield}'
 
-            # iterator yielding AnalysisResults
-            found_results = (data for finder in ANALYSIS_FINDERS
-                             for data in finder(analysis))
+            def _find_subanalyses():
+                for finder in ANALYSIS_FINDERS:
+                    yield from finder(analysis)
 
-            for kt_bin, analysis_results in found_results:
+            for kt_bin, analysis_results in _find_subanalyses():
                 analysis_results.storage_key = get_storage_key(kt_bin)
                 analysis_results.config = key
                 print(" -> ", analysis_results.storage_key)
@@ -180,6 +182,7 @@ class AnalysisResults:
     @storage_key.setter
     def storage_key(self, value: str):
         self._storage_key = self.__class__.__name__ + "/" + value
+
 
 @register_analysis_class
 class AnalysisQinv(AnalysisResults):
@@ -224,7 +227,7 @@ class AnalysisQ3D(AnalysisResults):
         """
 
         keys = ("Num_q3d", "Den_q3d", "NumWqinv_q3d", "DenWqinv_q3d")
-        num, den, nqinv, dqinv = map(lambda k: get_tobject(container, k), keys)
+        num, den, nqinv, dqinv = (get_tobject(container, k) for k in keys)
 
         if any(x == nullptr for x in (num, den, nqinv, dqinv)):
             return
