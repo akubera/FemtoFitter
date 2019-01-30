@@ -126,7 +126,6 @@ struct FitterGaussOSL3 : public Fitter3D<FitterGaussOSL3> {
   struct FitParams {
     double norm, lam;
     double Ro, Rs, Rl, Ros;
-    double gamma {1.0};
 
     FitParams(double *par)
       : norm(par[NORM_PARAM_IDX])
@@ -165,20 +164,20 @@ struct FitterGaussOSL3 : public Fitter3D<FitterGaussOSL3> {
     }
 
     /// Return calculated Rinv: $\sqrt{Ro^2 \gamma + Rs^2 + Rl^2}$
-    double PseudoRinv() const
+    double PseudoRinv(double gamma) const
       { return std::sqrt((Ro * Ro * gamma + Rs * Rs + Rl * Rl) / 3.0); }
 
     double gauss(const std::array<double, 3> &q, double K) const
       { return FitterGaussOSL3::gauss(q, {Ro*Ro, Rs*Rs, Rl*Rl, Ros}, lam, K, norm); }
 
     void
-    apply_to(TH3 &hist, TH3& qinv)
+    apply_to(TH3 &hist, TH3& qinv, double gamma)
     {
       const int I = hist.GetNbinsX(),
                 J = hist.GetNbinsY(),
                 K = hist.GetNbinsZ();
 
-      const double phony_r = PseudoRinv();
+      const double phony_r = PseudoRinv(gamma);
       auto coulomb_factor = CoulombHist::GetHistWithRadius(phony_r);
 
       const TAxis &qout = *hist.GetXaxis(),
@@ -210,21 +209,22 @@ struct FitterGaussOSL3 : public Fitter3D<FitterGaussOSL3> {
   }
 
   static std::unique_ptr<FitterGaussOSL3>
-  FromDirectory(TDirectory &dir,
-                double limit=0.0,
-                double gamma=1.0)
-  {
-    auto data = Data3D::FromDirectory(dir, limit);
-    return std::make_unique<FitterGaussOSL3>(std::move(data), gamma);
-  }
+  FromDirectory(TDirectory &dir, double limit=0.0)
+    {
+      auto data = Data3D::FromDirectory(dir, limit);
+      if (!data) {
+        return nullptr;
+      }
+      return std::make_unique<FitterGaussOSL3>(std::move(data));
+    }
 
   FitterGaussOSL3(const Data3D &data)
     : Fitter3D(data)
   {
   }
 
-  FitterGaussOSL3(std::unique_ptr<Data3D> data, double gamma)
-    : Fitter3D(std::move(data), gamma)
+  FitterGaussOSL3(std::unique_ptr<Data3D> data)
+    : Fitter3D(std::move(data))
   {
   }
 

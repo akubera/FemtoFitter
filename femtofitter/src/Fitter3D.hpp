@@ -26,22 +26,20 @@ public:
   /// The Associated fit data
   Data3D data;
 
-  /// Approximate gamma factor of pairs
-  double gamma;
-
   Fitter3D(TH3 &n, TH3 &d, TH3 &q, double limit)
     : data(n, d, q, limit)
-    , gamma(1.0)
   { }
 
-  Fitter3D(std::unique_ptr<Data3D> data_, double gamma_=1.0)
+  Fitter3D(std::unique_ptr<Data3D> data_)
     : data(std::move(data_))
-    , gamma(gamma_)
   { }
 
-  Fitter3D(const Data3D &data_, double gamma_=1.0)
+  Fitter3D(std::shared_ptr<const Data3D> data_)
+    : data(*data_)
+  { }
+
+  Fitter3D(const Data3D &data_)
     : data(data_)
-    , gamma(gamma_)
   { }
 
   /// Utility function for building fitter with tdirectory in file
@@ -80,7 +78,7 @@ public:
   {
     double retval = 0;
 
-    double phony_r = p.PseudoRinv();
+    double phony_r = p.PseudoRinv(data.gamma);
     auto coulomb_factor = CoulombHist::GetHistWithRadius(phony_r);
 
     auto Kfsi = [&coulomb_factor] (double q) {

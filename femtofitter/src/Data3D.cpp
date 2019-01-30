@@ -102,6 +102,57 @@ Data3D::FromDirectory(TDirectory &tdir, double limit)
   return std::unique_ptr<Data3D>(new Data3D(*n, *d, *q, limit));
 }
 
+
+double
+calc_gamma_from_dir(TDirectory *kt_dir)
+{
+  // default
+  double gamma = 3.0;
+
+  if (!kt_dir) {
+    return gamma;
+  }
+
+  TString ktname = kt_dir->GetName();
+
+  Ssiz_t underscore = ktname.First('_');
+
+  const double
+    pion_mass_sqr = 0.13957 * 0.13957,
+    kt_lo = TString(ktname(0, underscore)).Atof(),
+    kt_hi = TString(ktname(underscore, ktname.Length())).Atof(),
+    est_mean_kt = (kt_hi - kt_lo) / 2.0,
+    est_mean_kt_sqr = est_mean_kt * est_mean_kt;
+
+  // estimated gamma
+  gamma = std::sqrt(1.0 + 4 * est_mean_kt_sqr / pion_mass_sqr);
+
+  // load histogram ../kTDist
+  if (auto *cent_dir = kt_dir->GetMotherDir()) {
+    if (auto *tobject = cent_dir->Get("kTDist")) {
+      std::unique_ptr<TH1> kthist { dynamic_cast<TH1*>(tobject) };
+      if (!kthist) {
+        delete tobject;
+      } else {
+        Int_t binlo = kthist->FindBin(kt_lo),
+              binhi = kthist->FindBin(kt_hi);
+
+        TAxis &xaxis = *kthist->GetXaxis();
+        xaxis.SetRangeUser(binlo, binhi);
+
+        const double
+          mean_kt = kthist->GetMean(),
+          kt_mass_ratio_sqr = mean_kt * mean_kt / pion_mass_sqr;
+
+        gamma = std::sqrt(1.0 + 4 * kt_mass_ratio_sqr);
+      }
+    }
+  }
+
+  return gamma;
+}
+
+
 std::unique_ptr<Data3D>
 Data3D::FromDirectory(TDirectory &tdir, const TH3 &mrc, double limit)
 {
@@ -115,5 +166,8 @@ Data3D::FromDirectory(TDirectory &tdir, const TH3 &mrc, double limit)
 
   n->Multiply(&mrc);
 
-  return std::unique_ptr<Data3D>(new Data3D(*n, *d, *q, limit));
+  auto *data = new Data3D(*n, *d, *q, limit);
+  data->gamma = calc_gamma_from_dir(tdir.GetMotherDir());
+
+  return std::unique_ptr<Data3D>(data);
 }

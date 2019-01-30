@@ -40,6 +40,8 @@ struct Data3D {
   double limit,
          true_limit;
 
+  double gamma;
+
   /// Build out of standard tdirectory;
   static std::unique_ptr<Data3D> FromDirectory(TDirectory &, double limit=0.0);
 

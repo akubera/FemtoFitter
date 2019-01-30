@@ -178,7 +178,7 @@ struct FitterGaussFull : public Fitter3D<FitterGaussFull>{
     }
 
     /// Return calculated Rinv: $\sqrt{Ro^2 \gamma + Rs^2 + Rl^2}$
-    double PseudoRinv() const
+    double PseudoRinv(double gamma) const
       { return std::sqrt((Ro * Ro * gamma + Rs * Rs + Rl * Rl) / 3.0); }
 
     double gauss(std::array<double, 3> q, double K) const
@@ -190,13 +190,13 @@ struct FitterGaussFull : public Fitter3D<FitterGaussFull>{
 
     /// Multiply histogram with values from this correlation function
     void
-    apply_to(TH3 &hist, TH3 &qinv)
+    apply_to(TH3 &hist, TH3 &qinv, double gamma)
       {
         const int I = hist.GetNbinsX(),
                   J = hist.GetNbinsY(),
                   K = hist.GetNbinsZ();
 
-        const double phony_r = PseudoRinv();
+        const double phony_r = PseudoRinv(gamma);
         auto coulomb_factor = CoulombHist::GetHistWithRadius(phony_r);
 
         const TAxis &qout = *hist.GetXaxis(),
