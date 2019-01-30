@@ -51,7 +51,7 @@ struct FitterGaussOSL3 : public Fitter3D<FitterGaussOSL3> {
       Eo = q[0] * q[0] * RSq[0],
       Es = q[1] * q[1] * RSq[1],
       El = q[2] * q[2] * RSq[2],
-      Eos = q[0] * q[1] * RSq[4],
+      Eos = q[0] * q[1] * RSq[3],
       gauss = 1.0 + std::exp(-(Eo + Es + El + Eos) / HBAR_C_SQ),
       result = (1.0 - lam) + lam * K * gauss;
 
