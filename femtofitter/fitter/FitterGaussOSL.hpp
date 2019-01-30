@@ -160,6 +160,45 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
       { return FitterGaussOSL::gauss(q, {Ro*Ro, Rs*Rs, Rl*Rl}, lam, K, norm); }
 
     void
+    apply_to(TH3 &hist, const Data3D &data)
+      {
+        const int I = hist.GetNbinsX(),
+                  J = hist.GetNbinsY(),
+                  K = hist.GetNbinsZ();
+
+        const TAxis
+          &qout_ax = *hist.GetXaxis(),
+          &qside_ax = *hist.GetYaxis(),
+          &qlong_ax = *hist.GetZaxis();
+
+        std::unique_ptr<TH3> qinv { (TH3*)hist.Clone("__qinv") };
+
+        for (const auto &datum : data) {
+          int i = qout_ax.FindBin(datum.qo),
+              j = qside_ax.FindBin(datum.qs),
+              k = qlong_ax.FindBin(datum.ql);
+
+          qinv->SetBinContent(i, j, k, datum.qinv);
+        }
+
+        for (int k=1; k<=K; ++k)
+        for (int j=1; j<=J; ++j)
+        for (int i=1; i<=I; ++i) {
+          if (qinv->GetBinContent(i, j, k) == 0.0) {
+            double q = qinv->GetBinContent(i-1, j, k)
+                     + qinv->GetBinContent(i+1, j, k)
+                     + qinv->GetBinContent(i, j, k-1)
+                     + qinv->GetBinContent(i, j, k+1)
+                     + qinv->GetBinContent(i, j-1, k)
+                     + qinv->GetBinContent(i, j+1, k);
+            qinv->SetBinContent(i, j, k, q / 6.0);
+          }
+        }
+
+        return apply_to(hist, *qinv, data.gamma);
+      }
+
+    void
     apply_to(TH3 &hist, TH3& qinv, double gamma)
     {
       const int I = hist.GetNbinsX(),
@@ -181,7 +220,6 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
           qs = qside.GetBinCenter(j),
           ql = qlong.GetBinCenter(k),
           q = qinv.GetBinContent(i, j, k),
-          // q = qinv.Interpolate(qo, qs, ql),
           K = coulomb_factor.Interpolate(q);
 
         hist.SetBinContent(i,j,k, hist.GetBinContent(i,j,k) * gauss({qo, qs, ql}, K));
