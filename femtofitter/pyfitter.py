@@ -216,6 +216,12 @@ class Data3D:
         a_plus_b_over_b = (a + b) / b
 
         def _calc(c):
+            # if ne:
+            #     return ne.evaluate("""(-2 * (where(a == 0.0, 0.0, a * log((a+b)*c/(a*(c+1)))
+            #                                + where(b == 0.0, 0.0, b * log((a+b)/(b*(c+1))))""")
+            if ne:
+                return ne.evaluate("""-2 * ( where(a == 0.0, 0.0, a * log(a_plus_b_over_a * c / (c+1)))
+                                           + where(b == 0.0, 0.0, b * log(a_plus_b_over_b / (c+1))) )""")
             c_plus_1 = c + 1.0
 
             tmp = a * np.log(a_plus_b_over_a * c / c_plus_1,
