@@ -384,6 +384,8 @@ class DetaDphiSimple(AnalysisResults):
         keys = product(('Primary', 'SecWeak', 'SecMat'), ('', 'Data'))
         keys = (''.join(('Hidden', *k)) for k in keys)
 
+        hists = {}
+
         # loop through all keys
         for suf in ('', 'Hidden', *keys):
             for key in (f'{pre}DPhiDEta{suf}' for pre in ("Num", "Den")):
