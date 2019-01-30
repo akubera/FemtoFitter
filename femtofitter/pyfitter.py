@@ -12,6 +12,11 @@ from functools import partial
 from typing import Callable, Any
 
 import numpy as np
+try:
+    import numexpr as ne
+except ImportError:
+    ne = None
+
 from lmfit import Parameters, Minimizer
 from lmfit.minimizer import MinimizerResult
 from scipy.interpolate import interp2d
@@ -470,9 +475,32 @@ class FitterGauss(FemtoFitter3D):
 
         k = fsi(pseudo_Rinv) if callable(fsi) else fsi
 
-        e = (qo * Ro) ** 2 + (qs * Rs) ** 2 + (ql * Rl) ** 2
+        if ne:
+            return ne.evaluate("""(norm
+                                   * ((1.0 - lam)
+                                      + lam * k * (1.0 + exp(-(Ro * qo) ** 2
+                                                             -(Rs * qs) ** 2
+                                                             -(Rl * ql) ** 2))))""")
 
-        return norm * ((1.0 - lam) + lam * k * (1.0 + np.exp(-e)))
+        # e = (qo * Ro) ** 2 + (qs * Rs) ** 2 + (ql * Rl) ** 2
+        # return norm * ((1.0 - lam) + lam * k * (1.0 + np.exp(-e)))
+
+        tmp = np.empty_like(qo)
+        np.multiply(Ro, qo, out=tmp)
+        e = -np.power(tmp, 2, out=tmp)
+
+        np.multiply(Rs, qs, out=tmp)
+        e -= np.power(tmp, 2, out=tmp)
+
+        np.multiply(Rl, ql, out=tmp)
+        e -= np.power(tmp, 2, out=tmp)
+
+        np.exp(e, out=tmp)
+        np.add(tmp, 1.0, out=tmp)
+        np.multiply(tmp, k, out=tmp)
+        tmp *= lam
+        tmp += (1.0 - lam)
+        return np.multiply(norm, tmp, out=tmp)
 
 
 class FitterGauss4(FemtoFitter3D):
@@ -492,18 +520,33 @@ class FitterGauss4(FemtoFitter3D):
         pseudo_Rinv = estimate_Rinv(gamma, value['Ro'], value['Rs'], value['Rl'])
 
         Ro, Rs, Rl, Ros = (value[k] / HBAR_C for k in ('Ro', 'Rs', 'Rl', 'Ros'))
+        Ros /= HBAR_C
         lam = value['lam']
         norm = norm or value['norm']
 
         k = fsi(pseudo_Rinv) if callable(fsi) else fsi
 
-        e = (qo * Ro) ** 2
-        e += (qs * Rs) ** 2
-        e += (ql * Rl) ** 2
-        e += (qo * Ro) ** 2
-        e += (qs * Rs) ** 2
-        e += (ql * Rl) ** 2
-        e += (qo * qs * Ros ** 2)
+        if ne:
+            return ne.evaluate("""(norm
+                                   * ((1.0 - lam)
+                                      + lam * k * (1.0 + exp(-(Ro * qo) ** 2
+                                                             -(Rs * qs) ** 2
+                                                             -(Rl * ql) ** 2
+                                                             - 2 * qo * qs * Ros))))""")
+
+        tmp = np.empty_like(qo)
+        np.multiply(qo, Ro, out=tmp)
+        e = np.power(tmp, 2)
+
+        np.multiply(qs, Rs, out=tmp)
+        e += np.power(tmp, 2, out=tmp)
+
+        np.multiply(ql, Rl, out=tmp)
+        e += np.power(tmp, 2, out=tmp)
+
+        np.multiply(qo, qs, out=tmp)
+        tmp *= 2 * Ros
+        e += tmp
 
         return norm * ((1.0 - lam) + lam * k * (1.0 + np.exp(-e)))
 
@@ -533,26 +576,49 @@ class FitterGauss6(FemtoFitter3D):
 
         k = fsi(pseudo_Rinv) if callable(fsi) else fsi
 
-        e = ((np.array([[Ro, Rs, Rl]]).T * qspace) ** 2).sum(axis=0)
-        e += 2 * np.sum((qspace[0] * qspace[1] * Ros2,
-                         qspace[0] * qspace[2] * Rol2,
-                         qspace[1] * qspace[2] * Rsl2))
+        if ne:
+            return ne.evaluate("""(norm
+                                   * ((1.0 - lam)
+                                      + lam * k * (1.0 + exp(-(Ro * qo) ** 2
+                                                             -(Rs * qs) ** 2
+                                                             -(Rl * ql) ** 2
+                                                             - 2 * qo * qs * Ros2
+                                                             - 2 * qs * ql * Rsl2
+                                                             - 2 * qo * ql * Rol2))))""")
 
-        return norm * ((1.0 - lam) + lam * k * (1.0 + np.exp(-e)))
+        e = 0.5 * ((np.array([[Ro, Rs, Rl]]).T * qspace) ** 2).sum(axis=0)
+        # e += 2 * np.sum((qspace[0] * qspace[1] * Ros2,
+        #                  qspace[0] * qspace[2] * Rol2,
+        #                  qspace[1] * qspace[2] * Rsl2), axis=0)
 
+        tmp = -e
+        np.exp(tmp, out=tmp)
+        np.add(tmp, 1.0, out=tmp)
+        np.multiply(tmp, k, out=tmp)
+        tmp *= lam
+        tmp += (1.0 - lam)
+        return np.multiply(norm, tmp, out=tmp)
+
+        # return norm * ((1.0 - lam) + lam * k * (1.0 + np.exp(-e)))
 
 class FitterLevy(FemtoFitter3D):
 
     NPARAMS = 6
 
     @classmethod
-    def default_parameters(cls):
+    def default_parameters(cls, limit_alpha=False):
+
+        settings = {"value": 1.90}
+        if limit_alpha:
+            settings['min'] = 1.0
+            settings['max'] = 2.0
+
         q3d_params = FitterGauss.default_parameters()
-        q3d_params.add('alpha', value=1.90, min=1.0, max=2.0)
+        q3d_params.add('alpha', **settings)
         return q3d_params
 
-    @staticmethod
-    def func(params, qspace, fsi, gamma=1.0, norm=None):
+    @classmethod
+    def func(cls, params, qspace, fsi, gamma=1.0, norm=None):
         qo, qs, ql = qspace
 
         value = params.valuesdict()
@@ -566,9 +632,23 @@ class FitterLevy(FemtoFitter3D):
 
         k = fsi(pseudo_Rinv) if callable(fsi) else fsi
 
-        e = np.sum((np.power((qo * Ro) ** 2, alpha/2),
-                    np.power((qs * Rs) ** 2, alpha/2),
-                    np.power((ql * Rl) ** 2, alpha/2)))
+        if ne:
+            return ne.evaluate("""(norm
+                                   * ((1.0 - lam)
+                                      + lam * k * (1.0 + exp(-abs(Ro * qo) ** alpha
+                                                             -abs(Rs * qs) ** alpha
+                                                             -abs(Rl * ql) ** alpha))))""")
+
+        tmp = np.empty_like(qo)
+        np.multiply(qo, Ro, out=tmp)
+        np.power(tmp, 2, out=tmp)
+        e = np.power(tmp, alpha/2)
+
+        np.power(qs * Rs, 2, out=tmp)
+        e += np.power(tmp, alpha/2, out=tmp)
+
+        np.power(ql * Rl, 2, out=tmp)
+        e += np.power(tmp, alpha/2, out=tmp)
 
         return norm * ((1.0 - lam) + lam * k * (1.0 + np.exp(-e)))
 
@@ -578,10 +658,16 @@ class FitterLevy2(FemtoFitter3D):
     NPARAMS = 7
 
     @classmethod
-    def default_parameters(cls):
+    def default_parameters(cls, limit_alpha=False):
+
+        settings = {"value": 1.90}
+        if limit_alpha:
+            settings['min'] = 1.0
+            settings['max'] = 2.0
+
         q3d_params = FitterGauss.default_parameters()
-        q3d_params.add('alpha_ol', value=1.90, min=1.0, max=2.0)
-        q3d_params.add('alpha_s', value=1.90, min=1.0, max=2.0)
+        q3d_params.add('alpha_ol', **settings)
+        q3d_params.add('alpha_s', **settings)
         return q3d_params
 
     @staticmethod
@@ -600,9 +686,25 @@ class FitterLevy2(FemtoFitter3D):
 
         k = fsi(pseudo_Rinv) if callable(fsi) else fsi
 
-        e = np.sum((np.power((qo * Ro) ** 2, alpha_ol/2),
-                    np.power((qs * Rs) ** 2, alpha_s/2),
-                    np.power((ql * Rl) ** 2, alpha_ol/2)))
+        if ne:
+            return ne.evaluate("""(norm
+                                   * ((1.0 - lam)
+                                      + lam * k * (1.0 + exp(-abs(Ro * qo) ** alpha_ol
+                                                             -abs(Rs * qs) ** alpha_s
+                                                             -abs(Rl * ql) ** alpha_ol))))""")
+
+        tmp = np.empty_like(qo)
+        np.multiply(qo, Ro, out=tmp)
+        np.power(tmp, 2, out=tmp)
+        e = np.power(tmp, alpha_ol/2)
+
+        np.multiply(qs, Rs, out=tmp)
+        np.power(tmp, 2, out=tmp)
+        e += np.power(tmp, alpha_s/2, out=tmp)
+
+        np.multiply(ql, Rl, out=tmp)
+        np.power(tmp, 2, out=tmp)
+        e += np.power(tmp, alpha_ol/2, out=tmp)
 
         return norm * ((1.0 - lam) + lam * k * (1.0 + np.exp(-e)))
 
@@ -612,11 +714,17 @@ class FitterLevy3(FemtoFitter3D):
     NPARAMS = 8
 
     @classmethod
-    def default_parameters(cls):
+    def default_parameters(cls, limit_alpha=False):
+
+        settings = {"value": 1.90}
+        if limit_alpha:
+            settings['min'] = 1.0
+            settings['max'] = 2.0
+
         q3d_params = FitterGauss.default_parameters()
-        q3d_params.add('alpha_o', value=1.90, min=1.0, max=2.0)
-        q3d_params.add('alpha_s', value=1.90, min=1.0, max=2.0)
-        q3d_params.add('alpha_l', value=1.90, min=1.0, max=2.0)
+        q3d_params.add('alpha_o', **settings)
+        q3d_params.add('alpha_s', **settings)
+        q3d_params.add('alpha_l', **settings)
         return q3d_params
 
     @staticmethod
@@ -636,8 +744,21 @@ class FitterLevy3(FemtoFitter3D):
 
         k = fsi(pseudo_Rinv) if callable(fsi) else fsi
 
-        e = np.sum((np.power((qo * Ro) ** 2, alpha_o/2),
-                    np.power((qs * Rs) ** 2, alpha_s/2),
-                    np.power((ql * Rl) ** 2, alpha_l/2)))
+        if ne:
+            return ne.evaluate("""(norm
+                                   * ((1.0 - lam)
+                                      + lam * k * (1.0 + exp(-abs(Ro * qo) ** alpha_o
+                                                             -abs(Rs * qs) ** alpha_s
+                                                             -abs(Rl * ql) ** alpha_l))))""")
+
+        tmp = np.empty_like(qo)
+        np.power(qo * Ro, 2, out=tmp)
+        e = np.power(tmp, alpha_o/2)
+
+        np.power(qs * Rs, 2, out=tmp)
+        e += np.power(tmp, alpha_s/2, out=tmp)
+
+        np.power(ql * Rl, 2, out=tmp)
+        e += np.power(tmp, alpha_l/2, out=tmp)
 
         return norm * ((1.0 - lam) + lam * k * (1.0 + np.exp(-e)))
