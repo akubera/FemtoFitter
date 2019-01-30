@@ -561,6 +561,8 @@ class FitterLevy(FemtoFitter3D):
         Ro, Rs, Rl = (value[k] / HBAR_C for k in ('Ro', 'Rs', 'Rl'))
         lam = value['lam']
         alpha = value['alpha']
+        if norm is None:
+            norm = value['norm']
 
         k = fsi(pseudo_Rinv) if callable(fsi) else fsi
 
@@ -593,6 +595,8 @@ class FitterLevy2(FemtoFitter3D):
         lam = value['lam']
         alpha_ol = value['alpha_ol']
         alpha_s = value['alpha_s']
+        if norm is None:
+            norm = value['norm']
 
         k = fsi(pseudo_Rinv) if callable(fsi) else fsi
 
@@ -627,6 +631,8 @@ class FitterLevy3(FemtoFitter3D):
         alpha_o = value['alpha_o']
         alpha_s = value['alpha_s']
         alpha_l = value['alpha_l']
+        if norm is None:
+            norm = value['norm']
 
         k = fsi(pseudo_Rinv) if callable(fsi) else fsi
 
