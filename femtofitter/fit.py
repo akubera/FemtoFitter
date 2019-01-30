@@ -84,8 +84,7 @@ def run_fit(fitter_classname: str,
     elif subset == 'cowboy':
         data = data.sailor_subset()
 
-    gamma = query.estimate_gamma()
-    fitter = fitter_class(data, gamma)
+    fitter = fitter_class(data)
 
     fit_results = fitter.fit_chi2() if fit_chi2 else fitter.fit_pml()
     if not fit_results:
@@ -103,6 +102,7 @@ def run_fit(fitter_classname: str,
     results['ndof'] = fitter.size()
     results['rchi2'] = results['chi2'] / results['ndof']
     results['mrc'] = mrc_path
+    results['gamma'] = fitter.data.gamma
 
     return results
 
