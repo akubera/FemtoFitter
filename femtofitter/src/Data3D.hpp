@@ -48,6 +48,10 @@ struct Data3D {
       return variance == 0.0 ? 0.0 : diff * diff / variance;
     }
 
+    std::array<double, 3>
+    qspace() const
+      { return {qo, qs, ql}; }
+
   };
 
   std::vector<Datum> data;
