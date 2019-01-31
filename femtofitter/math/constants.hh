@@ -2,6 +2,7 @@
 /// \file femtofitter/math/constants.hh
 ///
 
+#pragma once
 
 static const double
   HBAR_C = 0.19732697,
