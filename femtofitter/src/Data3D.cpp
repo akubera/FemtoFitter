@@ -60,8 +60,10 @@ Data3D::Data3D(const TH3 &n, const TH3 &d, const TH3 &q, double limit_)
     for (size_t j = lo_bin; j <= hi_bin; ++j) {
       for (size_t i = lo_bin; i <= hi_bin; ++i) {
 
-        const double den = d.GetBinContent(i, j, k);
-        if (den == 0.0) {
+        const double
+          den = d.GetBinContent(i, j, k);
+
+        if (__builtin_expect(den == 0.0, 0)) {
           continue;
         }
 
@@ -69,11 +71,11 @@ Data3D::Data3D(const TH3 &n, const TH3 &d, const TH3 &q, double limit_)
           qo = axisX[i],
           qs = axisY[j],
           ql = axisZ[k],
-
           num = n.GetBinContent(i, j, k),
+          num_err = n.GetBinError(i, j, k),
           qinv = q.GetBinContent(i, j, k);
 
-        data.push_back({qo, qs, ql, num, den, qinv});
+        data.push_back({qo, qs, ql, num, num_err, den, qinv});
       }
     }
   }

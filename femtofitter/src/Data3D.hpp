@@ -31,8 +31,21 @@ struct Data3D {
            qs,
            ql,
            num,
+           num_err,
            den,
            qinv;
+
+    const double
+    calc_chi2(const double model) const
+    {
+      const double
+        ratio = num / den,
+        diff = ratio - model,
+        variance = num_err * num_err / den / den + ratio * ratio / den;
+
+      return variance == 0.0 ? 0.0 : diff * diff / variance;
+    }
+
   };
 
   std::vector<Datum> data;
