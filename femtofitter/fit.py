@@ -143,10 +143,6 @@ def parallel_fit_all(tfile,
 
     filename = Path(str(tfile.GetName()))
 
-    cfg = 'cfg*'
-    pair = cent = kt = mfield = '*'
-    #search = f"AnalysisQ3D/{cfg}/{pair}/{cent}/{kt}/{mfield}"
-    search = f"Q3DLCMS/{cfg}/{pair}/{cent}/{kt}/{mfield}"
     if mrc:
         if isinstance(mrc, PathQuery):
             mrc_path = mrc.as_path()
@@ -157,14 +153,21 @@ def parallel_fit_all(tfile,
     else:
         mrc_path = None
 
+    cfg = 'cfg*'
+    pair = cent = kt = mfield = '*'
+
     paths = []
     mrc_paths = []
-    for path, _ in walk_matching(tfile, search):
-        query = PathQuery.from_path(path)
-        assert path == query.as_path()
-        paths.append(query)
-        if mrc_path:
-            mrc_paths.append((query, mrc_path))
+
+    valid_analysis_keys = {'AnalysisQ3D', 'Q3DLCMS'}
+    for analysis in valid_analysis_keys:
+        search = f"{analysis}/{cfg}/{pair}/{cent}/{kt}/{mfield}"
+        for path, _ in walk_matching(tfile, search):
+            query = PathQuery.from_path(path)
+            assert path == query.as_path()
+            paths.append(query)
+            if mrc_path:
+                mrc_paths.append((query, mrc_path))
 
     configuration_information = get_configuration_json(tfile, paths)
 
