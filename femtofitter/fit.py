@@ -67,14 +67,15 @@ def run_fit(fitter_classname: str,
             mrc_filename = "Data-MRC-1987.root"
         else:
             #mrc_filename = 'Data-sbin.root'
-            mrc_filename, cfg = mrc_path.split(':')
+            mrc_filename, _, cfg = mrc_path.partition(':')
             mrc_query = copy(query)
             mrc_query.analysis = 'AnalysisTrueQ3D'
             mrc_query.cent = '00_90'
-            mrc_query.cfg = cfg
+            if cfg:
+                mrc_query.cfg = cfg
             mrc_rootpath = mrc_query.as_path()
             print(f"Loading MRC from file {mrc_filename} {mrc_rootpath}", )
-            if mrc_filename != filename:
+            if mrc_filename and mrc_filename != filename:
                 mrc_tfile = TFile.Open(mrc_filename)
             else:
                 mrc_tfile = tfile
@@ -172,7 +173,7 @@ def parallel_fit_all(tfile,
     # results = pool.starmap(run_fit_gauss, ((filename, p, fitrange) for p in paths[:4]))
 
     work = chain(
-        #((fitter_t, filename, p, fitrange, chi2) for p in paths),
+        ((fitter_t, filename, p, fitrange, chi2) for p in paths),
         ((fitter_t, filename, p, fitrange, chi2, m) for p, m in mrc_paths),
     )
 
