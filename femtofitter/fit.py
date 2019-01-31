@@ -186,6 +186,7 @@ def parallel_fit_all(tfile,
     output_data = {
         'filename': filename,
         'timestamp': datetime.now().isoformat(timespec='milliseconds'),
+        'command': sys.argv,
         'df': df.to_dict(orient='records'),
         'config': configuration_information,
     }
