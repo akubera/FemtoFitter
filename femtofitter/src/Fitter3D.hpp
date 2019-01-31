@@ -186,27 +186,6 @@ public:
     return typename Impl::FitResult(minuit);
   }
 
-  static
-  void
-  fit_func(Int_t &,
-           Double_t *,
-           Double_t &retval,
-           Double_t *par,
-           Int_t)
-  {
-    // returned when invalid input or output occurs
-    static const double BAD_VALUE = 3e99;
-    const auto &data = *(const Impl*)(intptr_t)(par[Impl::DATA_PARAM_IDX]);
-
-    typename Impl::FitParams params(par);
-    if (params.is_invalid()) {
-      retval = BAD_VALUE;
-      return;
-    }
-
-    retval = data.resid_chi2(params);
-  }
-
   std::size_t size() const
     { return data.size(); }
 
