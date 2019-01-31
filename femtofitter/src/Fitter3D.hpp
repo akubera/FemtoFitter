@@ -10,6 +10,7 @@
 #include "CalculatorResid.hpp"
 #include "CoulombHist.hpp"
 #include "Data3D.hpp"
+#include "math/fit.hh"
 
 #include <TMinuit.h>
 #include <TFile.h>
