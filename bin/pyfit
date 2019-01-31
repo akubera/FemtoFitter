@@ -10,6 +10,7 @@ from multiprocessing import Pool
 from datetime import datetime
 from itertools import islice
 from pathlib import Path
+from copy import copy
 
 import pandas as pd
 from lmfit import Parameters
@@ -102,7 +103,8 @@ def main(argv=None):
 
     fitter = getattr(pyfitter, args.fitter)
 
-    paths = walk_matching(tfile, "AnalysisQ3D/cfg*/*/*/*/*")
+    #paths = walk_matching(tfile, "AnalysisQ3D/cfg*/*/*/*/*")
+    paths = walk_matching(tfile, "Q3DLCMS/cfg*/*/*/*/*")
 
     work = ((fitter, filename, path, fit_range, args.subset, mrc_path)
             for path, _ in paths)
@@ -200,7 +202,7 @@ def do_fit(fitter,
     if not tdir:
         return None
 
-    if mrc_path:
+    if False and mrc_path:
         if mrc_path == filename:
             mrc_tfile = tfile
         else:
@@ -216,7 +218,27 @@ def do_fit(fitter,
     config = get_configuration_json(tfile, [query])
     from femtofitter.pyfitter import Data3D
 
-    data = Data3D.From(tdir, fit_range)
+    if mrc_path:
+        mrcfile, _, mrc_cfg = mrc_path.partition(':')
+
+        if mrcfile == '' or mrcfile == filename:
+            mrc_tfile = tfile
+        else:
+            mrc_tfile = TFile.Open(mrcfile)
+        mrc_query = copy(query)
+        mrc_query.cent = '00_90'
+        mrc_query.analysis = 'AnalysisTrueQ3D'
+        if mrc_cfg:
+            mrc_query.cfg = mrc_cfg
+        mrchist = mrc_tfile.Get(mrc_query.as_path() + "/mrc")
+        if not mrchist:
+            print("Could not load MRC at %r" % mrc_query.as_path())
+            return None
+
+        data = Data3D.From(tdir, mrchist, fit_range)
+    else:
+        data = Data3D.From(tdir, fit_range)
+
     if subset is None:
         pass
     elif subset == 'cowboy':
@@ -227,11 +249,11 @@ def do_fit(fitter,
         print(f"Unknown subset {subset!r}; ignoring.")
         subset = None
 
-    if mrc_path:
-        mrc.apply(data, query.pair, query.kt, query.magfield)
+    #if mrc_path:
+    #    mrc.apply(data, query.pair, query.kt, query.magfield)
 
     fitter = fitter(data)
-    mini = fitter.pml_minimizer(nan_policy='omit')
+    mini = fitter.pml_minimizer()
 
     results_0 = mini.minimize(method='nelder')
     fit_results = mini.minimize(method='leastsq', params=results_0.params)
