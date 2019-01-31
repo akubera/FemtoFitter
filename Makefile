@@ -4,7 +4,8 @@
 
 BUILD_DIR ?= build
 
-.PHONY: all config
+.PHONY: all config clean cleanup cleanall
+
 
 all: $(BUILD_DIR)/Makefile
 	+make -C $(BUILD_DIR)
@@ -14,6 +15,9 @@ config: $(BUILD_DIR)/Makefile
 
 clean:
 	+make -C $(BUILD_DIR) clean
+
+cleanup: clean
+	rm -rf $(BUILD_DIR)/CMakeCache.txt $(BUILD_DIR)/CMakeFiles
 
 cleanall:
 	rm -r $(BUILD_DIR)/*
