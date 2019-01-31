@@ -5,6 +5,7 @@
 
 #pragma once
 
+
 #include <array>
 #include <vector>
 #include <valarray>
@@ -17,6 +18,7 @@ class TDirectory;
 
 
 template <typename T> struct data_traits;
+
 
 /// \class Data3D
 /// \brief 3D Correlation function
@@ -83,13 +85,15 @@ struct Data3D {
     : data(orig.data)
     , limit(orig.limit)
     , true_limit(orig.true_limit)
+    , gamma(orig.gamma)
   {}
 
   /// Move Constructor
-  Data3D(Data3D &&ptr)
-    : data(std::move(ptr.data))
-    , limit(ptr.limit)
-    , true_limit(ptr.true_limit)
+  Data3D(Data3D &&orig)
+    : data(std::move(orig.data))
+    , limit(orig.limit)
+    , true_limit(orig.true_limit)
+    , gamma(orig.gamma)
   {}
 
   /// Move value from unique ptr
@@ -97,6 +101,7 @@ struct Data3D {
     : data(std::move(ptr->data))
     , limit(ptr->limit)
     , true_limit(ptr->true_limit)
+    , gamma(ptr->gamma)
   {}
 
   size_t size() const

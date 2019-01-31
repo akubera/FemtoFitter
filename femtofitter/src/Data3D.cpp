@@ -69,6 +69,7 @@ Data3D::Data3D()
   : data()
   , limit(0.0)
   , true_limit(0.0)
+  , gamma(3.0)
 {
 }
 
@@ -76,6 +77,7 @@ Data3D::Data3D(const TH3 &n, const TH3 &d, const TH3 &q, double limit_)
   : data()
   , limit(limit_)
   , true_limit(limit_)
+  , gamma(3.0)
 {
   const TAxis
     *xaxis = n.GetXaxis(),
@@ -138,6 +140,7 @@ Data3D::Data3D(std::vector<Datum> data_, double limit_, double true_limit_)
   : data(data_)
   , limit(limit_)
   , true_limit(true_limit_)
+  , gamma(3.0)
 {
 }
 
