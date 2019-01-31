@@ -56,7 +56,6 @@ include_directories(src)
 set(INCS
   src/Data1D.hpp
   src/Data3D.hpp
-  src/Fitter.hpp
   fitter/FitterGaussOSL.hpp
   fitter/FitterGaussOSL3.hpp
   fitter/Levy1D.hh
@@ -71,7 +70,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -pedantic -fopenmp"
 set(SRCS
   src/Data3D.cpp
   src/Data1D.cpp
-  src/Fitter.cpp
+  src/Value.cpp
   src/CoulombHist.cpp
   src/MinuitFitter.cpp
 #   ${CMAKE_CURRENT_SOURCE_DIR}/femtofitter/MomentumResolutionCorrector.cxx
