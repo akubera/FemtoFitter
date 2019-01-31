@@ -76,6 +76,27 @@ public:
     return std::make_unique<Impl>(*num, *den, *qinv, limit);
   }
 
+  template <typename FitParams>
+  double
+  resid_chi2_calc(const FitParams &p) const
+  {
+    double result = 0;
+
+    double phony_r = p.PseudoRinv(data.gamma);
+    auto coulomb_factor = CoulombHist::GetHistWithRadius(phony_r);
+    auto Kfsi = [&coulomb_factor] (double q) {
+      return coulomb_factor.Interpolate(q);
+    };
+
+    for (size_t i=0; i < data.size(); ++i) {
+      const auto &datum = data[i];
+      double CF = p.gauss(datum.qspace(), Kfsi(datum.qinv));
+      result += datum.calc_chi2(CF);
+    }
+
+    return result;
+  }
+
   template <typename ResidFunc, typename FitParams>
   double resid_calc(const FitParams &p, ResidFunc resid_calc) const
   {
@@ -109,15 +130,16 @@ public:
   double
   resid_chi2(const FitResult &r) const
   {
-    auto params = static_cast<const typename Impl::FitParams&>(r);
-    return resid_calc(params, chi2_calc);
+    const typename Impl::FitParams &params = r;
+    return resid_chi2_calc(params);
   }
 
   template <typename FitResult>
   double
   resid_pml(const FitResult &r) const
   {
-    auto params = static_cast<const typename Impl::FitParams&>(r);
+    // auto params = static_cast<const typename Impl::FitParams&>(r);
+    const typename Impl::FitParams &params = r;
     return resid_calc(params, loglikelihood_calc);
   }
 
