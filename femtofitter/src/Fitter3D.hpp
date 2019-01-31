@@ -127,7 +127,8 @@ public:
   /// ResidualCalculation template parameter
   ///
   template <typename ResidCalc_t>
-  auto fit(double fit_factor) // -> Impl::FitResult
+  auto
+  fit(double sigma=1.0)  // -> Impl::FitResult
   {
     TMinuit minuit;
     minuit.SetPrintLevel(-1);
@@ -135,7 +136,7 @@ public:
 
     minuit.SetFCN(minuit_f<ResidCalc_t>);
 
-    return do_fit_minuit(minuit, fit_factor);
+    return do_fit_minuit(minuit, sigma);
   }
 
   void setup_pml_fitter(TMinuit &minuit)
@@ -155,7 +156,7 @@ public:
       TMinuit minuit;
       minuit.SetPrintLevel(-1);
       setup_pml_fitter(minuit);
-      return do_fit_minuit(minuit, 5.88);
+      return do_fit_minuit(minuit, 1.0);
     }
 
   auto fit_chi2()
@@ -163,16 +164,17 @@ public:
       TMinuit minuit;
       minuit.SetPrintLevel(-1);
       setup_chi2_fitter(minuit);
-      return do_fit_minuit(minuit, 5.88);
+      return do_fit_minuit(minuit);
     }
 
   auto fit()
     { return fit_chi2(); }
 
-  auto do_fit_minuit(TMinuit &minuit, double fit_factor) // -> FitResult
+  auto
+  do_fit_minuit(TMinuit &minuit, double sigma=1.0)  // -> Impl::FitResult
   {
     double strat_args[] = {1.0};
-    double migrad_args[] = {2000.0, fit_factor};
+    double migrad_args[] = {2000.0, sigma};
     double hesse_args[] = {2000.0, 1.0};
 
     int errflag;
