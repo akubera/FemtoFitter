@@ -18,9 +18,7 @@
 #include <iostream>
 
 #include "CoulombHist.hpp"
-#include "Fitter.hpp"
 #include "Fitter3D.hpp"
-#include "Data3D.hpp"
 
 
 /// \class FitterGaussFull

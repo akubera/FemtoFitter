@@ -4,6 +4,10 @@
 
 #pragma once
 
+#include "Fitter3D.hpp"
+#include "FitterTraits.hpp"
+#include "Value.hpp"
+#include "math/constants.hh"
 
 #include <TFile.h>
 #include <TH3.h>
@@ -16,13 +20,6 @@
 #include <memory>
 #include <valarray>
 #include <iostream>
-
-#include "CoulombHist.hpp"
-#include "FitterTraits.hpp"
-#include "Fitter.hpp"
-#include "Fitter3D.hpp"
-#include "Data3D.hpp"
-
 
 
 /// \class FitterLevy

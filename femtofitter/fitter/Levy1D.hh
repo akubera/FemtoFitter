@@ -4,7 +4,7 @@
 
 
 #include "Fitter1D.hpp"
-#include "value.hpp"
+#include "Value.hpp"
 
 #ifndef LEVY1D_HH_
 #define LEVY1D_HH_

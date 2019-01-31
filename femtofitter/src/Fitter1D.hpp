@@ -7,7 +7,7 @@
 #ifndef FITTER1D_HPP
 #define FITTER1D_HPP
 
-#include "./Fitter.hpp"
+#include "CalculatorResid.hpp"
 
 #include "./Data1D.hpp"
 
@@ -67,8 +67,8 @@ public:
         retval += resid_calc(n, d, CF);
       }
 
-    return retval;
-  }
+      return retval;
+    }
 
   void setup_chi2_fitter(TMinuit &minuit)
     {
