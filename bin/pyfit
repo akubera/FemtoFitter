@@ -31,6 +31,7 @@ class PyFitterResults:
     fit_results: Parameters
     subset: str
     mrc: Optional[str]
+    misc: dict
 
 
 def arg_parser():
@@ -130,6 +131,12 @@ def main(argv=None):
                 tmp[key + "_err"] = p.stderr
 
             tmp['subset'] = result.subset
+            tmp['fit_range'] = result.fitrange
+            tmp['mrc'] = result.mrc
+            tmp['gamma'] = result.misc.get('gamma')
+            tmp['ndof'] = fit_results.nfree
+            tmp['chi2'] = fit_results.chisqr
+            tmp['rchi2'] = fit_results.redchi
             tmp['kT'] = sum(map(float, tmp['kt'].split('_'))) / 2
             df = pd.DataFrame([tmp])
 
@@ -259,12 +266,17 @@ def do_fit(fitter,
     fit_results = mini.minimize(method='leastsq', params=results_0.params)
     fit_results = mini.minimize(method='leastsq', params=fit_results.params)
 
+    misc = {
+        'gamma': data.gamma,
+    }
+
     result = PyFitterResults(query,
                              config,
                              fit_range,
                              fit_results,
                              subset,
-                             mrc_path)
+                             mrc_path,
+                             misc)
     return result
 
 
