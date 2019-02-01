@@ -571,6 +571,7 @@ class FitterGauss6(FemtoFitter3D):
 
     @staticmethod
     def func(params, qspace, fsi, gamma=1.0, norm=None):
+        qo, qs, ql = qspace
         value = params.valuesdict()
         pseudo_Rinv = estimate_Rinv(gamma, value['Ro'], value['Rs'], value['Rl'])
 
@@ -606,6 +607,7 @@ class FitterGauss6(FemtoFitter3D):
         return np.multiply(norm, tmp, out=tmp)
 
         # return norm * ((1.0 - lam) + lam * k * (1.0 + np.exp(-e)))
+
 
 class FitterLevy(FemtoFitter3D):
 
