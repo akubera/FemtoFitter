@@ -94,25 +94,22 @@ Data3D::Data3D(const TH3 &n, const TH3 &d, const TH3 &q, double limit_)
     nbinsz = n.GetNbinsZ(),
     nbins = nbinsx * nbinsy * nbinsz,
 
-    lo_bin = xaxis->FindBin(-limit),
-    hi_bin = xaxis->FindBin(limit);
+    lo_binX = xaxis->FindBin(-limit),
+    hi_binX = xaxis->FindBin(limit),
 
-  true_limit = xaxis->GetBinUpEdge(hi_bin);
+    lo_binY = yaxis->FindBin(-limit),
+    hi_binY = yaxis->FindBin(limit),
+
+    lo_binZ = zaxis->FindBin(-limit),
+    hi_binZ = zaxis->FindBin(limit);
+
+  true_limit = xaxis->GetBinUpEdge(hi_binX);
 
   data.reserve(nbins);
 
-  std::vector<double>
-    axisX(nbinsx + 2),
-    axisY(nbinsy + 2),
-    axisZ(nbinsz + 2);
-
-  xaxis->GetCenter(axisX.data());
-  yaxis->GetCenter(axisY.data());
-  zaxis->GetCenter(axisZ.data());
-
-  for (size_t k = lo_bin; k <= hi_bin; ++k) {
-    for (size_t j = lo_bin; j <= hi_bin; ++j) {
-      for (size_t i = lo_bin; i <= hi_bin; ++i) {
+  for (size_t k = lo_binZ; k <= hi_binZ; ++k) {
+    for (size_t j = lo_binY; j <= hi_binY; ++j) {
+      for (size_t i = lo_binX; i <= hi_binX; ++i) {
 
         const double
           den = d.GetBinContent(i, j, k);
@@ -122,9 +119,9 @@ Data3D::Data3D(const TH3 &n, const TH3 &d, const TH3 &q, double limit_)
         }
 
         const double
-          qo = axisX[i],
-          qs = axisY[j],
-          ql = axisZ[k],
+          qo = xaxis->GetBinCenter(i),
+          qs = yaxis->GetBinCenter(j),
+          ql = zaxis->GetBinCenter(k),
           num = n.GetBinContent(i, j, k),
           num_err = n.GetBinError(i, j, k),
           qinv = q.GetBinContent(i, j, k);
@@ -133,6 +130,8 @@ Data3D::Data3D(const TH3 &n, const TH3 &d, const TH3 &q, double limit_)
       }
     }
   }
+
+  data.shrink_to_fit();
 }
 
 
