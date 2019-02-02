@@ -131,6 +131,7 @@ def find_analyses(file, pattern):
 
             def get_storage_key(kt_bin):
                 def _fmt(f):
+                    f = float(f)
                     return ('%0.1f' if f.is_integer() else '%g') % f
 
                 kt_dir = '_'.join(map(_fmt, kt_bin.split('_')))
