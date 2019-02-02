@@ -8,7 +8,7 @@ import json
 from dataclasses import dataclass
 from multiprocessing import Pool
 from datetime import datetime
-from itertools import islice
+from itertools import islice, chain
 from pathlib import Path
 from copy import copy
 
@@ -104,8 +104,9 @@ def main(argv=None):
 
     fitter = getattr(pyfitter, args.fitter)
 
-    #paths = walk_matching(tfile, "AnalysisQ3D/cfg*/*/*/*/*")
-    paths = walk_matching(tfile, "Q3DLCMS/cfg*/*/*/*/*")
+    paths = chain(
+            walk_matching(tfile, "Q3DLCMS/cfg*/*/*/*/*"),
+            walk_matching(tfile, "AnalysisQ3D/cfg*/*/*/*/*"))
 
     work = ((fitter, filename, path, fit_range, args.subset, mrc_path)
             for path, _ in paths)
