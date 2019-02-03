@@ -632,12 +632,12 @@ class FitterLevy(FemtoFitter3D):
     NPARAMS = 6
 
     @classmethod
-    def default_parameters(cls, limit_alpha=False):
+    def default_parameters(cls, limit_alpha=True):
 
         settings = {"value": 1.90}
-        if limit_alpha:
-            settings['min'] = 1.0
-            settings['max'] = 2.0
+        if limit_alpha is True:
+            settings['min'] = 0.0
+            # settings['max'] = 2.0
 
         q3d_params = FitterGauss.default_parameters()
         q3d_params.add('alpha', **settings)
@@ -684,12 +684,12 @@ class FitterLevy2(FemtoFitter3D):
     NPARAMS = 7
 
     @classmethod
-    def default_parameters(cls, limit_alpha=False):
+    def default_parameters(cls, limit_alpha=True):
 
         settings = {"value": 1.90}
         if limit_alpha:
-            settings['min'] = 1.0
-            settings['max'] = 2.0
+            settings['min'] = 0.0
+            #settings['max'] = 2.0
 
         q3d_params = FitterGauss.default_parameters()
         q3d_params.add('alpha_ol', **settings)
@@ -740,12 +740,12 @@ class FitterLevy3(FemtoFitter3D):
     NPARAMS = 8
 
     @classmethod
-    def default_parameters(cls, limit_alpha=False):
+    def default_parameters(cls, limit_alpha=True):
 
         settings = {"value": 1.90}
         if limit_alpha:
-            settings['min'] = 1.0
-            settings['max'] = 2.0
+            settings['min'] = 0.0
+            # settings['max'] = 2.0
 
         q3d_params = FitterGauss.default_parameters()
         q3d_params.add('alpha_o', **settings)
