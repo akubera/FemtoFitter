@@ -108,7 +108,7 @@ def main(argv=None):
             walk_matching(tfile, "Q3DLCMS/cfg*/*/*/*/*"),
             walk_matching(tfile, "AnalysisQ3D/cfg*/*/*/*/*"))
 
-    work = ((fitter, filename, path, fit_range, args.subset, mrc_path)
+    work = ((fitter, filename, path, args.chi2, fit_range, args.subset, mrc_path)
             for path, _ in paths)
 
     # only take first few work units
@@ -122,6 +122,8 @@ def main(argv=None):
 
         dfs = []
         for result in results:
+            if not result:
+                continue
             # print("processing: ", result)
             tmp: dict = result.path.as_dict()
             fit_results = result.fit_results
@@ -160,7 +162,7 @@ def main(argv=None):
         # results = pool.imap_unordered(lambda args: process_fit_result(do_fit(*args)), work)
         # results = pool.map(lambda args: process_fit_result(do_fit(*args)), work)
 
-        results = [process_fit_result(r) for r in pool.starmap(do_fit, work)]
+        results = [process_fit_result(r) for r in pool.starmap(do_fit, work) if r]
 
     df = pd.concat([r['df'] for r in results])
     config = pd.concat([r['config'] for r in results])
@@ -189,6 +191,7 @@ def do_fit_caller(args):
 def do_fit(fitter,
            filename,
            path,
+           chi2_fit: bool,
            fit_range,
            subset=None,
            mrc_path=None,
@@ -261,11 +264,19 @@ def do_fit(fitter,
     #    mrc.apply(data, query.pair, query.kt, query.magfield)
 
     fitter = fitter(data)
-    mini = fitter.pml_minimizer()
 
-    results_0 = mini.minimize(method='nelder')
-    fit_results = mini.minimize(method='leastsq', params=results_0.params)
-    fit_results = mini.minimize(method='leastsq', params=fit_results.params)
+    mini = (fitter.chi2_minimizer()
+            if chi2_fit
+            else fitter.pml_minimizer())
+
+    try:
+       results_0 = mini.minimize(method='nelder')
+       fit_results = mini.minimize(method='leastsq', params=results_0.params)
+       fit_results = mini.minimize(method='leastsq', params=fit_results.params)
+    except ValueError as e:
+        print("Error fitting %r" % query.as_path(), file=sys.stderr)
+        print(e)
+        return None
 
     misc = {
         'gamma': data.gamma,
