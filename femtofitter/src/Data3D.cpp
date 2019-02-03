@@ -176,6 +176,14 @@ Data3D::FromDirectory(TDirectory &tdir, const TH3 &mrc, double limit)
 
   n->Multiply(&mrc);
 
+  for (int k=1; k <= mrc.GetNbinsZ(); ++k)
+  for (int j=1; j <= mrc.GetNbinsY(); ++j)
+  for (int i=1; i <= mrc.GetNbinsX(); ++i) {
+    if (mrc.GetBinContent(i,j,k) == 0) {
+      d->SetBinContent(i, j, k, 0);
+    }
+  }
+
   auto data = std::make_unique<Data3D>(*n, *d, *q, limit);
   data->gamma = calc_gamma_from_dir(tdir.GetMotherDir());
 
