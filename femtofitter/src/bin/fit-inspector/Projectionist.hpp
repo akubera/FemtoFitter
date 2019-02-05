@@ -30,6 +30,8 @@ std::vector<T> vec_with_capacity(size_t n)
 class Projectionist {
 public:
 
+  size_t CACHE_CAPACITY = 1025;
+
   std::unique_ptr<TH3> num,
                        den,
                        ratio;
@@ -40,8 +42,6 @@ public:
   std::set<std::array<int, 3>> fRequestSet;
 
   std::mutex _cachemutex;
-
-  size_t CACHE_CAPACITY = 1025;
 
   Projectionist(TDirectory& tdir)
     : num((TH3*)tdir.Get("num"))
@@ -121,9 +121,18 @@ public:
 struct ProjectionistManager {
 
   std::map<std::string, std::shared_ptr<TFile>> fMap;
+  std::map<
+    std::array<std::string, 2>,
+    std::shared_ptr<Projectionist>>
+      projections;
+      // fDirMap;
+  // std::map<std::string, std::shared_ptr<TDirectory>> fDirMap;
   // std::map<std::string, std::shared_ptr<Projectionist>> fPs;
 
-  ProjectionistManager();
+  std::shared_ptr<Projectionist> current;
+
+  ProjectionistManager()
+    {}
 
   std::shared_ptr<TFile> add_tfile(const std::string &filename)
     {
@@ -134,4 +143,19 @@ struct ProjectionistManager {
       return fptr;
     }
 
+  void add_tdir(const std::string &path, TDirectory &tdir)
+    {
+      std::array<std::string, 2>
+        key {tdir.GetFile()->GetName(), path};
+
+      auto found = projections.find(key);
+
+      if (found == projections.end()) {
+        auto i = projections.emplace(key, std::make_shared<Projectionist>(tdir));
+        found = i.first;
+      }
+
+      current = found->second;
+      std::cout << "[Projectionist] Loaded CF from " << key[0] << " " << key[1] << "\n";
+    }
 };

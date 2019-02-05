@@ -1,9 +1,10 @@
 
 
+#include "MainFrame.hpp"
 
 #include "Projectionist.hpp"
+#include "FileManager.hpp"
 
-#include "MainFrame.hpp"
 
 #include <TGStatusBar.h>
 #include <TGFileDialog.h>
@@ -59,6 +60,8 @@ struct DataTree {
          pair = l[3],
          magfield = l[4],
          path = l[5];
+
+    path = "Q3DLCMS/" + cfg + "/" + pair + "/" + cent + "/" + kt + "/" + magfield;
     // tree.root[cfg][cent][kt][pair][magfield] = path;
 
     // auto found = std::find(root.begin(), root.end(), [cfg] (auto key) { return key->first == cfg; });
@@ -128,6 +131,17 @@ struct FrameData {
              *magfield_ddown,
              *pair_ddown;
 
+  FileManager files;
+  ProjectionistManager projection_manager;
+
+  std::shared_ptr<TFile>
+  open_file(const std::string filename)
+    {
+      auto tfile = std::make_shared<TFile>(filename.c_str());
+      files.add(filename, tfile);
+      return tfile;
+    }
+
   void SetFitResultFilename(const TString &fname)
     {
       lbl_fname->SetText(fname.Data());
@@ -138,7 +152,7 @@ struct FrameData {
       lbl_sname->SetText(fname.Data());
     }
 
-  std::string get_selected_path(const TString &fff)
+  std::string get_selected_path()
     {
       const auto
         cfg_id = cfg_ddown->GetSelected(),
@@ -147,12 +161,13 @@ struct FrameData {
         pair_id = pair_ddown->GetSelected(),
         mfld_id = magfield_ddown->GetSelected();
 
-      // const auto
-      //   cfgpair = root[cfg_id],
-      //   centpair = cfgpair.second[cent_id];
+      const auto cfgpair = available_data.root[cfg_id];
+      const auto centpair = cfgpair.second[cent_id];
+      const auto ktpair = centpair.second[kt_id];
+      const auto pairpair = ktpair.second[pair_id];
+      const auto mfield_pair = pairpair.second[mfld_id];
 
-      return root[cfg_id].second[cent_id].second[kt_id].second[pair_id].second[mfld_id].second;
-      // return "centpair"
+      return mfield_pair.second;
     }
 
   void build_slider_frame(MyMainFrame *self, TGCompositeFrame *parent)
@@ -547,4 +562,16 @@ MyMainFrame::OnDropdownSelection(int id, int entry)
 {
   std::cout << "DropdownSelection (" << id << ", " << entry << ")\n";
 
+  auto path = data->get_selected_path();
+  std::cout << " loading " << path << "\n";
+
+  auto file = data->files.current_file;
+
+  auto tdir = (TDirectory*)file->Get(path.c_str());
+  if (!tdir) {
+    std::cerr << "ERROR: Could not load path '" << path << "'\n";
+    return;
+  }
+
+  data->projection_manager.add_tdir(path, *tdir);
 }
