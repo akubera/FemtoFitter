@@ -47,6 +47,23 @@ def estimate_Rinv(gamma, Ro, Rs, Rl):
     return np.sqrt(((gamma * Ro)**2 + Rs**2 + Rl**2) / 3.0)
 
 
+def estimate_gamma_from_tdir(tdir):
+    gamma = 3.0
+
+    if tdir:
+        ktdir = tdir.GetMotherDir()
+        if ktdir:
+            try:
+                ktlo, kthi = map(float, ktdir.GetName().split('_'))
+            except Execption:
+                pass
+            else:
+                kt_mean = (ktlo + kthi) / 2.0
+                gamma = np.sqrt(kt_mean ** 2 / 0.139 ** 2 + 1.0)
+
+    return gamma
+
+
 class MomentumResolutionCorrector:
     """
     Used to interpolate data in a momentum resolution correction
@@ -102,7 +119,8 @@ class Data3D:
         if isinstance(mrc, TH3):
             num.Multiply(mrc)
 
-        self = cls(num, den, qinv, fit_range)
+        gamma = estimate_gamma_from_tdir(tdir)
+        self = cls(num, den, qinv, fit_range, gamma)
         return self
 
     def __init__(self, num, den, qinv, fit_range=None, gamma=3.0):
