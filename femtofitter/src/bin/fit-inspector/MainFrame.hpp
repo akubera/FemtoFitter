@@ -36,6 +36,7 @@ public:
   virtual void OnDraw();
   virtual void OnOpen();
   virtual void OnSliderUpdate();
+  virtual void OnDropdownSelection(int, int);
 
   virtual void LoadJsonFile(TString);
 

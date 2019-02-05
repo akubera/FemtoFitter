@@ -8,6 +8,8 @@
 #include <TGStatusBar.h>
 #include <TGFileDialog.h>
 #include <TGComboBox.h>
+#include <TGTextEntry.h>
+
 #include <TG3DLine.h>
 #include <TGButton.h>
 #include <TGLabel.h>
@@ -30,6 +32,79 @@
 #include <list>
 
 
+struct DataQuery {
+  std::string cfg;
+  std::string cent;
+};
+
+struct DataTree {
+  // std::map<std::string, // cfg
+  //   std::map<std::string, // cent
+  //     std::map<std::string, // kt
+  //      std::map<std::string, // pair
+  //       std::map<std::string, std::string>>>>> root; // mag
+
+  std::vector<std::pair<std::string, // cfg
+    std::vector<std::pair<std::string, // cent
+      std::vector<std::pair<std::string, // kt
+       std::vector<std::pair<std::string, // pair
+        std::vector<std::pair<std::string, std::string //magfield
+        >> >> >> >> >> root;
+
+  void insert_pieces(const std::vector<std::string> &l)
+  {
+    auto cfg = l[0],
+         cent = l[1],
+         kt = l[2],
+         pair = l[3],
+         magfield = l[4],
+         path = l[5];
+    // tree.root[cfg][cent][kt][pair][magfield] = path;
+
+    // auto found = std::find(root.begin(), root.end(), [cfg] (auto key) { return key->first == cfg; });
+    std::pair<std::string, std::string> mp {magfield, path};
+
+    std::pair<std::string, std::vector<decltype(mp)>> pairp {pair, {mp}};
+    std::pair<std::string, std::vector<decltype(pairp)>> ktp {kt, {pairp}};
+    std::pair<std::string, std::vector<decltype(ktp)>> centp {cent, {ktp}};
+    std::pair<std::string, std::vector<decltype(centp)>> cfg_p {cfg, {centp}};
+
+    // for (auto cfgit = root.begin(); cfgit != root.end(); ++cfgit) {
+    for (auto &cfgit : root) {
+      if (cfgit.first == cfg) {
+      for (auto &cent_it : cfgit.second) {
+        if (cent_it.first == cent) {
+        for (auto &kt_it : cent_it.second) {
+          if (kt_it.first == kt) {
+          for (auto &pair_it : kt_it.second) {
+            if (pair_it.first == pair) {
+            for (auto &mfield_it : pair_it.second) {
+              if (mfield_it.second == magfield) {
+                std::cerr << "Unexpected duplicate path\n";
+                return;
+              }
+            }
+            pair_it.second.emplace_back(mp);
+            return;
+            }
+          }
+          kt_it.second.emplace_back(pairp);
+          return;
+          }
+        }
+        cent_it.second.emplace_back(ktp);
+        return;
+        }
+      }
+      cfgit.second.emplace_back(centp);
+      return;
+      }
+    }
+    root.emplace_back(cfg_p);
+    return;
+  }
+};
+
 struct FrameData {
   TString filename;
   TString sfname;
@@ -45,7 +120,10 @@ struct FrameData {
             *slider_y,
             *slider_z;
 
-  TGComboBox *cent_ddown,
+  DataTree available_data;
+
+  TGComboBox *cfg_ddown,
+             *cent_ddown,
              *kt_ddown,
              *magfield_ddown,
              *pair_ddown;
@@ -60,6 +138,22 @@ struct FrameData {
       lbl_sname->SetText(fname.Data());
     }
 
+  std::string get_selected_path(const TString &fff)
+    {
+      const auto
+        cfg_id = cfg_ddown->GetSelected(),
+        cent_id = cent_ddown->GetSelected(),
+        kt_id = kt_ddown->GetSelected(),
+        pair_id = pair_ddown->GetSelected(),
+        mfld_id = magfield_ddown->GetSelected();
+
+      // const auto
+      //   cfgpair = root[cfg_id],
+      //   centpair = cfgpair.second[cent_id];
+
+      return root[cfg_id].second[cent_id].second[kt_id].second[pair_id].second[mfld_id].second;
+      // return "centpair"
+    }
 
   void build_slider_frame(MyMainFrame *self, TGCompositeFrame *parent)
     {
@@ -115,26 +209,30 @@ struct FrameData {
 
   void build_data_select_box(MyMainFrame *self, TGCompositeFrame *parent)
     {
-      auto add_combo_box = [&](TString label)
+      auto add_combo_box = [&](int id, TString label)
         {
           TGLabel *lbl = new TGLabel(parent, label);
             lbl->SetTextJustify(36);
-            lbl->SetMargins(0,0,0,0);
+            lbl->SetMargins(0,0,8,0);
             lbl->SetWrapLength(-1);
-            parent->AddFrame(lbl, new TGLayoutHints(kLHintsLeft | kLHintsTop, 2,2,2,2));
+            parent->AddFrame(lbl, new TGLayoutHints(kLHintsLeft | kLHintsTop, 2,2,0,0));
 
-          TGComboBox *cbox = new TGComboBox(parent, -1, kHorizontalFrame | kSunkenFrame | kOwnBackground);
-            cbox->SetName("cent_box");
+          TGComboBox *cbox = new TGComboBox(parent, id, kHorizontalFrame | kSunkenFrame | kOwnBackground);
+            // cbox->SetName("cent_box");
             // fComboBox687->AddEntry("00_05", 0);
             // fComboBox687->AddEntry("05_10", 1);
             cbox->Resize(247,25);
             parent->AddFrame(cbox, new TGLayoutHints(kLHintsNormal, 10));
+            cbox->Connect("Selected(int, int)", "MyMainFrame", self, "OnDropdownSelection(int, int)");
 
           return cbox;
         };
 
-      cent_ddown = add_combo_box("Centrality");
-      kt_ddown = add_combo_box("kT");
+      cfg_ddown = add_combo_box(1, "Config Hash");
+      cent_ddown = add_combo_box(2, "Centrality");
+      kt_ddown = add_combo_box(3, "kT");
+      pair_ddown = add_combo_box(4, "Pair");
+      magfield_ddown = add_combo_box(5, "Magnetic Field");
     }
 
   void build_fitparam_box(MyMainFrame *self, TGCompositeFrame *parent)
@@ -155,7 +253,7 @@ struct FrameData {
       lbl_zval->SetText(Form("%d  |  %.02f ", slider_z->GetPosition(), float(slider_z->GetPosition()) / slider_z->GetMaxPosition()));
     }
 
-  void update_choices(std::vector<std::string> cent, std::vector<std::string> kt)
+  void update_choices(std::vector<std::string> cfg, std::vector<std::string> cent, std::vector<std::string> kt)
     {
       cent_ddown->RemoveAll();
       for (int i=0; i < cent.size(); ++i) {
@@ -167,7 +265,64 @@ struct FrameData {
         kt_ddown->AddEntry(kt[i].c_str(), i);
       }
     }
+
+  void reset_datatree(DataTree tree)
+  {
+    available_data = tree;
+
+    cfg_ddown->RemoveAll();
+    cent_ddown->RemoveAll();
+    kt_ddown->RemoveAll();
+    pair_ddown->RemoveAll();
+    magfield_ddown->RemoveAll();
+
+    int idx_cfg = 0;
+    for (auto &cfg_pair : available_data.root) {
+      cfg_ddown->AddEntry(cfg_pair.first.c_str(), idx_cfg++);
+
+      if (idx_cfg == 1) {
+        cfg_ddown->Select(0, false);
+
+        int idx_cent = 0;
+        for (auto &cent_pair : cfg_pair.second) {
+          cent_ddown->AddEntry(cent_pair.first.c_str(), idx_cent++);
+          if (idx_cent == 1) {
+            cent_ddown->Select(0, false);
+
+        int idx_kt = 0;
+        for (auto &kt_pair : cent_pair.second) {
+          kt_ddown->AddEntry(kt_pair.first.c_str(), idx_kt++);
+          if (idx_kt == 1) {
+            kt_ddown->Select(0, false);
+
+        int idx_pair = 0;
+        for (auto &pair_pair : kt_pair.second) {
+          pair_ddown->AddEntry(pair_pair.first.c_str(), idx_pair++);
+          if (idx_pair == 1) {
+            pair_ddown->Select(0, false);
+
+        int idx_magfield = 0;
+        for (auto &magfield_pair : pair_pair.second) {
+          magfield_ddown->AddEntry(magfield_pair.first.c_str(), idx_magfield++);
+          if (idx_magfield == 1) {
+            magfield_ddown->Select(0, true);
+          } } } } } } }
+        }
+      }
+    }
+
+  for (auto &ddown : {cfg_ddown,
+    cent_ddown,
+    kt_ddown,
+    pair_ddown,
+    magfield_ddown}) {
+    std::cout << "/" << ddown->GetSelected();
+  }
+  std::cout << "\n";
+
+  }
 };
+
 
 
 ClassImp(MyMainFrame);
@@ -332,17 +487,47 @@ MyMainFrame::LoadJsonFile(TString filename)
       return result;
     };
 
+  auto load_string_vec_vec = [&] (TString cmd)
+    {
+      std::vector<std::vector<std::string>> result;
+      PyObject *pylist = TPython::Eval(cmd);
+      auto count = PyList_Size(pylist);
+      for (int i=0; i<count; ++i) {
+        auto pylist_inner = PyList_GetItem(pylist, i);
+        auto inner_count = PyList_Size(pylist_inner);
+
+        std::vector<std::string> inresult;
+        for (int j=0; j<inner_count; ++j) {
+          auto pystr = PyList_GetItem(pylist_inner, j);
+          Py_ssize_t len = 0;
+          const char *s = PyUnicode_AsUTF8AndSize(pystr, &len);
+          inresult.emplace_back(s, s+len);
+        }
+        result.emplace_back(std::move(inresult));
+
+        Py_DECREF(pylist_inner);
+      }
+      Py_DECREF(pylist);
+      return result;
+    };
+
   std::vector<std::string> cent = load_string_vec("list(df.cent.unique())");
   std::vector<std::string> kt = load_string_vec("list(df.kt.unique())");
 
-  for (auto &x : cent) {
-    std::cout << x << "\n";
+  DataTree tree;
+
+  auto vv = load_string_vec_vec("[(list(l) + ['/'.join(l)])"
+                                " for l in df[['cfg', 'cent', 'kt', 'pair', 'magfield']].drop_duplicates().values]");
+
+// std::cout << "Loaded: " << vv.size();
+  for (auto &l : vv) {
+
+    tree.insert_pieces(l);
   }
 
-  for (auto &x : kt) {
-    std::cout << x << "\n";
-  }
-  data->update_choices(cent, kt);
+  data->reset_datatree(tree);
+  std::cout << "Done.\n";
+  // data->update_choices(cent, kt);
 }
 
 void
@@ -355,4 +540,11 @@ MyMainFrame::OnSliderUpdate()
             << data->slider_z->GetPosition() << "\n";
 
   data->UpdateLabels();
+}
+
+void
+MyMainFrame::OnDropdownSelection(int id, int entry)
+{
+  std::cout << "DropdownSelection (" << id << ", " << entry << ")\n";
+
 }
