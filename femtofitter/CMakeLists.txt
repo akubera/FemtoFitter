@@ -74,7 +74,10 @@ include_directories(
 # find_package(Vdt)
 # find_package()
 
-add_library(fitinspector STATIC fitinspector_dict src/bin/fit-inspector/MainFrame.cpp)
+add_library(fitinspector
+            STATIC fitinspector_dict
+            src/bin/fit-inspector/MainFrame.cpp
+            src/bin/fit-inspector/Projectionist.cpp)
 add_executable(fit-inspector src/bin/fit-inspector/main.cc)
 target_link_libraries(fit-inspector fitinspector
     ROOT::Hist

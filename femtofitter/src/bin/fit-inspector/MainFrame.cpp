@@ -603,13 +603,21 @@ MyMainFrame::LoadJsonFile(TString filename)
 void
 MyMainFrame::OnSliderUpdate()
 {
-  // gSystem->Sleep(100);
-  std::cout << "sliders: "
-            << data->slider_x->GetPosition() << " "
-            << data->slider_y->GetPosition() << " "
-            << data->slider_z->GetPosition() << "\n";
+  const std::array<Int_t,3>
+    idxs = {data->slider_x->GetPosition(),
+            data->slider_y->GetPosition(),
+            data->slider_z->GetPosition()};
 
-  data->UpdateLabels();
+  auto projectionist = data->projection_manager.current;
+  auto pad = projectionist->get_full_canvas(idxs);
+
+  TCanvas &canvas = *fCanvas->GetCanvas();
+  canvas.Clear();
+  canvas.cd();
+
+  pad->Draw();
+  canvas.Modified();
+  canvas.Update();
 }
 
 void
@@ -630,4 +638,5 @@ MyMainFrame::OnDropdownSelection(int id, int entry)
 
   data->projection_manager.add_tdir(path, *tdir);
   data->update_sliders();
+  OnSliderUpdate();
 }
