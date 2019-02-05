@@ -482,27 +482,40 @@ MyMainFrame::LoadJsonFile(TString filename)
 
   char *root_file = TPython::Eval("data['filename']");
 
+  data->open_file(root_file);
+
   TPython::Exec("df = pd.DataFrame(data['df'])");
 
   data->SetSourceFilename(root_file);
   data->SetFitResultFilename(filename.Data());
 
-  auto load_string_vec = [] (TString cmd)
+  auto pyobj_to_str = [] (PyObject *obj)
+    {
+      Py_ssize_t len = 0;
+      const char *s = PyUnicode_AsUTF8AndSize(obj, &len);
+      return std::string(s, s+len);
+    };
+
+  auto pyobj_to_vec_str = [pyobj_to_str] (PyObject *pylist)
     {
       std::vector<std::string> result;
-      PyObject *pylist = TPython::Eval(cmd);
       auto count = PyList_Size(pylist);
       for (int i=0; i<count; ++i) {
         auto pystr = PyList_GetItem(pylist, i);
-        Py_ssize_t len = 0;
-        const char *s = PyUnicode_AsUTF8AndSize(pystr, &len);
-        result.emplace_back(s, s+len);
+        result.emplace_back(pyobj_to_str(pystr));
       }
+      return result;
+    };
+
+  auto load_string_vec = [pyobj_to_vec_str] (TString cmd)
+    {
+      PyObject *pylist = TPython::Eval(cmd);
+      std::vector<std::string> result = pyobj_to_vec_str(pylist);
       Py_DECREF(pylist);
       return result;
     };
 
-  auto load_string_vec_vec = [&] (TString cmd)
+  auto load_string_vec_vec = [pyobj_to_vec_str] (TString cmd)
     {
       std::vector<std::vector<std::string>> result;
       PyObject *pylist = TPython::Eval(cmd);
@@ -511,13 +524,7 @@ MyMainFrame::LoadJsonFile(TString filename)
         auto pylist_inner = PyList_GetItem(pylist, i);
         auto inner_count = PyList_Size(pylist_inner);
 
-        std::vector<std::string> inresult;
-        for (int j=0; j<inner_count; ++j) {
-          auto pystr = PyList_GetItem(pylist_inner, j);
-          Py_ssize_t len = 0;
-          const char *s = PyUnicode_AsUTF8AndSize(pystr, &len);
-          inresult.emplace_back(s, s+len);
-        }
+        std::vector<std::string> inresult = pyobj_to_vec_str(pylist_inner);
         result.emplace_back(std::move(inresult));
 
         Py_DECREF(pylist_inner);
