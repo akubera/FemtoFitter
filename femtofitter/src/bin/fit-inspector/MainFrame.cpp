@@ -125,14 +125,21 @@ MyMainFrame::MyMainFrame(const TGWindow *p)
   TGHorizontalFrame *topbar = new TGHorizontalFrame(subframe, 200, 80);
     TGTextButton *open_button = new TGTextButton(topbar, "&Open");
     open_button->Connect("Clicked()", "MyMainFrame", this, "OnOpen()");
-    topbar->AddFrame(open_button, new TGLayoutHints(kLHintsTop | kLHintsLeft));
+    topbar->AddFrame(open_button, new TGLayoutHints(kLHintsTop | kLHintsLeft, 0, 50));
 
-    data->lbl_fname = new TGLabel(topbar, "<nofile>");
-    topbar->AddFrame(data->lbl_fname, new TGLayoutHints(kLHintsTop | kLHintsLeft | kLHintsExpandX));
-    data->lbl_sname = new TGLabel(topbar, "<nofile>");
-    topbar->AddFrame(data->lbl_sname);
+    TGVerticalFrame *fname_frame = new TGVerticalFrame(topbar, 400, 80);
+      data->lbl_fname = new TGLabel(fname_frame, "<nofile>");
+      fname_frame->AddFrame(data->lbl_fname, new TGLayoutHints(kLHintsTop | kLHintsLeft | kLHintsExpandX));
+      data->lbl_fname->SetTextJustify(kTextLeft);
+
+      data->lbl_sname = new TGLabel(fname_frame, "<nofile>");
+      data->lbl_sname->SetTextJustify(kTextLeft);
+      fname_frame->AddFrame(data->lbl_sname, new TGLayoutHints(kLHintsTop | kLHintsLeft | kLHintsExpandX));
+      topbar->AddFrame(fname_frame, new TGLayoutHints(kLHintsTop | kLHintsLeft | kLHintsExpandX));
 
     subframe->AddFrame(topbar, new TGLayoutHints(kLHintsExpandX));
+
+  // { auto line = new TGHorizontal3DLine(topbar); topbar->AddFrame(line, new TGLayoutHints(kLHintsExpandX)); }
 
   TGHorizontalFrame *mainframe = new TGHorizontalFrame(subframe, 600, 200);
     TGGroupFrame *leftbar = new TGGroupFrame(mainframe, "Fit Parameters");
