@@ -281,9 +281,9 @@ struct FrameData {
         frac_z = float(slider_z->GetPosition()) / slider_z->GetMaxPosition();
       }
 
-      lbl_xval->SetText(Form("%d  |  %.02f ", Nx, frac_x));
-      lbl_yval->SetText(Form("%d  |  %.02f ", Ny, frac_y));
-      lbl_zval->SetText(Form("%d  |  %.02f ", Nz, frac_z));
+      lbl_xval->SetText(Form("%d  |  %.03f ", Nx, frac_x));
+      lbl_yval->SetText(Form("%d  |  %.03f ", Ny, frac_y));
+      lbl_zval->SetText(Form("%d  |  %.03f ", Nz, frac_z));
     }
 
   void update_choices(std::vector<std::string> cfg, std::vector<std::string> cent, std::vector<std::string> kt)
