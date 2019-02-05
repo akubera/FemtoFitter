@@ -263,9 +263,27 @@ struct FrameData {
 
   void UpdateLabels()
     {
-      lbl_xval->SetText(Form("%d  |  %.02f ", slider_x->GetPosition(), float(slider_x->GetPosition()) / slider_x->GetMaxPosition()));
-      lbl_yval->SetText(Form("%d  |  %.02f ", slider_y->GetPosition(), float(slider_y->GetPosition()) / slider_y->GetMaxPosition()));
-      lbl_zval->SetText(Form("%d  |  %.02f ", slider_z->GetPosition(), float(slider_z->GetPosition()) / slider_z->GetMaxPosition()));
+      const Int_t
+        Nx = slider_x->GetPosition(),
+        Ny = slider_y->GetPosition(),
+        Nz = slider_z->GetPosition();
+
+      float frac_x, frac_y, frac_z;
+
+      auto &r = projection_manager.current->ratio;
+      if (r) {
+        frac_x = r->GetXaxis()->GetBinCenter(Nx);
+        frac_y = r->GetYaxis()->GetBinCenter(Ny);
+        frac_z = r->GetZaxis()->GetBinCenter(Nz);
+      } else {
+        frac_x = float(slider_x->GetPosition()) / slider_x->GetMaxPosition();
+        frac_y = float(slider_y->GetPosition()) / slider_y->GetMaxPosition();
+        frac_z = float(slider_z->GetPosition()) / slider_z->GetMaxPosition();
+      }
+
+      lbl_xval->SetText(Form("%d  |  %.02f ", Nx, frac_x));
+      lbl_yval->SetText(Form("%d  |  %.02f ", Ny, frac_y));
+      lbl_zval->SetText(Form("%d  |  %.02f ", Nz, frac_z));
     }
 
   void update_choices(std::vector<std::string> cfg, std::vector<std::string> cent, std::vector<std::string> kt)
@@ -279,6 +297,36 @@ struct FrameData {
       for (int i=0; i < kt.size(); ++i) {
         kt_ddown->AddEntry(kt[i].c_str(), i);
       }
+    }
+
+  void update_sliders()
+    {
+      auto update_slider = [](TGSlider &slider, TAxis &ax)
+        {
+          const Int_t
+            N = ax.GetNbins(),
+            M = slider.GetMaxPosition();
+
+          if (N != M) {
+            const Int_t
+              n = slider.GetPosition(),
+              val = N * double(n) / M;
+
+            slider.SetRange(0, N);
+            slider.SetPosition(val);
+          }
+        };
+
+      auto &r = projection_manager.current->ratio;
+      if (!r) {
+        return;
+      }
+
+      update_slider(*slider_x, *r->GetXaxis());
+      update_slider(*slider_y, *r->GetYaxis());
+      update_slider(*slider_z, *r->GetZaxis());
+
+      UpdateLabels();
     }
 
   void reset_datatree(DataTree tree)
@@ -581,4 +629,5 @@ MyMainFrame::OnDropdownSelection(int id, int entry)
   }
 
   data->projection_manager.add_tdir(path, *tdir);
+  data->update_sliders();
 }
