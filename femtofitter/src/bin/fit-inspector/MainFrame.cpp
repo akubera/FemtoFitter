@@ -115,9 +115,7 @@ struct FrameData {
 ClassImp(MyMainFrame);
 
 
-MyMainFrame::
-MyMainFrame(const TGWindow *p)
-
+MyMainFrame::MyMainFrame(const TGWindow *p)
   : TGMainFrame(p, 600, 400)
   , fCanvas(nullptr)
   , data(new FrameData())
