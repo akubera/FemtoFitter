@@ -64,6 +64,13 @@ root_generate_dictionary(
   LINKDEF src/bin/fit-inspector/LinkDef.h
   MODULE fitinspector_dict)
 
+
+include_directories(
+  /usr/include/python3.6m
+  /usr/include/x86_64-linux-gnu/python3.6m
+)
+
+
 # find_package(Vdt)
 # find_package()
 
@@ -77,6 +84,7 @@ target_link_libraries(fit-inspector fitinspector
     # ROOT::vectorDict
     # ROOT::Math
     # Vdt::Vdt
+    /usr/lib/x86_64-linux-gnu/libpython3.6m.so.1.0
 
     # ROOT::VecOps
     # ROOTVecOps

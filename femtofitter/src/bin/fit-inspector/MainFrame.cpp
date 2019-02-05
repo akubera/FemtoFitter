@@ -7,6 +7,7 @@
 
 #include <TGStatusBar.h>
 #include <TGFileDialog.h>
+#include <TGComboBox.h>
 #include <TG3DLine.h>
 #include <TGButton.h>
 #include <TGLabel.h>
@@ -16,13 +17,17 @@
 #include <TH3I.h>
 
 #include <TPython.h>
+#include <Python.h>
 
 // #include <TGLayoutHints.h>
 
-#include "TString.h"
+#include <TString.h>
 
 #include <array>
 #include <tuple>
+#include <vector>
+#include <string>
+#include <list>
 
 
 struct FrameData {
@@ -39,6 +44,9 @@ struct FrameData {
   TGHSlider *slider_x,
             *slider_y,
             *slider_z;
+
+  TGComboBox *cent_ddown,
+             *kt_ddown;
 
   void SetFitResultFilename(const TString &fname)
     {
@@ -73,9 +81,9 @@ struct FrameData {
           //    lblbin->SetMargins(0,0,0,0);
           //    lblbin->SetWrapLength(-1);
           //    lblframe->AddFrame(lblbin, new TGLayoutHints(kLHintsRight | kLHintsTop,2,2,2,0));
-           TGLabel *lblval = new TGLabel(lblframe, "51  |  0.0");
+           TGLabel *lblval = new TGLabel(lblframe, "51");
              lblval->SetTextJustify(36);
-             lblval->SetMargins(40,10,0,0);
+             lblval->SetMargins(40,50,0,0);
              lblval->SetWrapLength(-1);
              lblframe->AddFrame(lblval, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,0));
            frame->AddFrame(lblframe, new TGLayoutHints(kLHintsCenterX | kLHintsTop | kLHintsExpandX,2,2,2,0));
@@ -103,14 +111,68 @@ struct FrameData {
       slidergroup->MoveResize(0,0,400,50);
     }
 
-    void UpdateLabels()
+  void build_data_select_box(MyMainFrame *self, TGCompositeFrame *parent)
+    {
+      auto add_combo_box = [&](TString label)
+        {
+          TGLabel *lbl = new TGLabel(parent, label);
+            lbl->SetTextJustify(36);
+            lbl->SetMargins(0,0,0,0);
+            lbl->SetWrapLength(-1);
+            parent->AddFrame(lbl, new TGLayoutHints(kLHintsLeft | kLHintsTop, 2,2,2,2));
+
+          TGComboBox *cbox = new TGComboBox(parent, -1, kHorizontalFrame | kSunkenFrame | kOwnBackground);
+            cbox->SetName("cent_box");
+            // fComboBox687->AddEntry("00_05", 0);
+            // fComboBox687->AddEntry("05_10", 1);
+            cbox->Resize(247,25);
+            parent->AddFrame(cbox, new TGLayoutHints(kLHintsNormal, 10));
+
+          return cbox;
+        };
+
+      cent_ddown = add_combo_box("Centrality");
+      kt_ddown = add_combo_box("kT");
+    }
+
+  void build_fitparam_box(MyMainFrame *self, TGCompositeFrame *parent)
+    {
+      TGLabel *fLabel639 = new TGLabel(parent, "Ro");
+        fLabel639->SetTextJustify(36);
+        fLabel639->SetMargins(0,0,0,0);
+        fLabel639->SetWrapLength(-1);
+        parent->AddFrame(fLabel639, new TGLayoutHints(kLHintsLeft | kLHintsTop, 2,2,2,2));
+      parent->SetLayoutManager(new TGVerticalLayout(parent));
+      // parent->Resize(500, 96);
+    }
+
+  void UpdateLabels()
     {
       lbl_xval->SetText(Form("%d  |  %.02f ", slider_x->GetPosition(), float(slider_x->GetPosition()) / slider_x->GetMaxPosition()));
       lbl_yval->SetText(Form("%d  |  %.02f ", slider_y->GetPosition(), float(slider_y->GetPosition()) / slider_y->GetMaxPosition()));
       lbl_zval->SetText(Form("%d  |  %.02f ", slider_z->GetPosition(), float(slider_z->GetPosition()) / slider_z->GetMaxPosition()));
     }
 
+  void update_choices(std::vector<std::string> cent, std::vector<std::string> kt)
+    {
+      cent_ddown->RemoveAll();
+      for (int i=0; i < cent.size(); ++i) {
+        cent_ddown->AddEntry(cent[i].c_str(), i);
+      }
+
+      kt_ddown->RemoveAll();
+      for (int i=0; i < kt.size(); ++i) {
+        kt_ddown->AddEntry(kt[i].c_str(), i);
+      }
+    }
 };
+
+
+// struct Abc {
+
+//   TGComboBox *kt_combo;
+
+// };
 
 ClassImp(MyMainFrame);
 
@@ -142,10 +204,16 @@ MyMainFrame::MyMainFrame(const TGWindow *p)
   // { auto line = new TGHorizontal3DLine(topbar); topbar->AddFrame(line, new TGLayoutHints(kLHintsExpandX)); }
 
   TGHorizontalFrame *mainframe = new TGHorizontalFrame(subframe, 600, 200);
-    TGGroupFrame *leftbar = new TGGroupFrame(mainframe, "Fit Parameters");
-    leftbar->SetLayoutManager(new TGVerticalLayout(leftbar));
-    leftbar->Resize(500, 96);
-    mainframe->AddFrame(leftbar, new TGLayoutHints(kLHintsLeft | kLHintsTop | kLHintsExpandY, 2,2,2,2));
+    TGVerticalFrame *leftbar = new TGVerticalFrame(mainframe);
+      TGGroupFrame *databox = new TGGroupFrame(leftbar, "Data Select");
+      data->build_data_select_box(this, databox);
+      leftbar->AddFrame(databox);
+
+      TGGroupFrame *parambox = new TGGroupFrame(leftbar, "Fit Parameters");
+      data->build_fitparam_box(this, parambox);
+      leftbar->AddFrame(parambox, new TGLayoutHints(kLHintsLeft | kLHintsTop | kLHintsExpandX));
+
+      mainframe->AddFrame(leftbar, new TGLayoutHints(kLHintsLeft | kLHintsTop | kLHintsExpandY, 2,2,2,2));
 
     auto *slider_canvas_container = new TGVerticalFrame(mainframe, 400, 200);
       data->build_slider_frame(this, slider_canvas_container);
@@ -235,6 +303,7 @@ MyMainFrame::OnOpen()
   LoadJsonFile(selected_filename);
 }
 
+
 void
 MyMainFrame::LoadJsonFile(TString filename)
 {
@@ -247,38 +316,37 @@ MyMainFrame::LoadJsonFile(TString filename)
 
   char *root_file = TPython::Eval("data['filename']");
 
-
   TPython::Exec("df = pd.DataFrame(data['df'])");
 
   data->SetSourceFilename(root_file);
   data->SetFitResultFilename(filename.Data());
 
-  int result_count = TPython::Eval("df.size");
-  std::cout << "Loaded " << result_count << " results.\n";
+  auto load_string_vec = [] (TString cmd)
+    {
+      std::vector<std::string> result;
+      PyObject *pylist = TPython::Eval(cmd);
+      auto count = PyList_Size(pylist);
+      for (int i=0; i<count; ++i) {
+        auto pystr = PyList_GetItem(pylist, i);
+        Py_ssize_t len = 0;
+        const char *s = PyUnicode_AsUTF8AndSize(pystr, &len);
+        result.emplace_back(s, s+len);
+      }
+      Py_DECREF(pylist);
+      return result;
+    };
 
-  // PathQuery
+  std::vector<std::string> cent = load_string_vec("list(df.cent.unique())");
+  std::vector<std::string> kt = load_string_vec("list(df.kt.unique())");
 
+  for (auto &x : cent) {
+    std::cout << x << "\n";
+  }
 
-
-/*
-
-  auto tfile = TFile::Open(root_file);
-  tfile->Get
-
-  std::cout << "Selected " << data->filename << "\n";
-  // filepicker.release();
-
-  TPython::Exec("from pprint import pprint");
-  // TPython::Exec("pprint(data)");
-
-  // TPython::Exec(("print(data = json.load(open('%s'))", data->filename.Data()));
-
-  // data->sfname = source_filename;
-  // data->lbl_fname->SetText(data->filename.Data());
-
-  // data->lbl_fname->
-  */
-
+  for (auto &x : kt) {
+    std::cout << x << "\n";
+  }
+  data->update_choices(cent, kt);
 }
 
 void
@@ -291,6 +359,4 @@ MyMainFrame::OnSliderUpdate()
             << data->slider_z->GetPosition() << "\n";
 
   data->UpdateLabels();
-
-
 }
