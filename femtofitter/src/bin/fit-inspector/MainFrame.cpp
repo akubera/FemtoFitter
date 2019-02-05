@@ -46,7 +46,9 @@ struct FrameData {
             *slider_z;
 
   TGComboBox *cent_ddown,
-             *kt_ddown;
+             *kt_ddown,
+             *magfield_ddown,
+             *pair_ddown;
 
   void SetFitResultFilename(const TString &fname)
     {
@@ -167,12 +169,6 @@ struct FrameData {
     }
 };
 
-
-// struct Abc {
-
-//   TGComboBox *kt_combo;
-
-// };
 
 ClassImp(MyMainFrame);
 
