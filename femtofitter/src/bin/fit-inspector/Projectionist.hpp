@@ -59,9 +59,9 @@ public:
       }
       else {
         TString name = num->GetName();
-        Int_t nbins = n->GetNbinsX();
-        Double_t xmin = n->GetXaxis()->GetXmin();
-        Double_t xmax = n->GetXaxis()->GetXmax();
+        Int_t nbins = num->GetNbinsX();
+        Double_t xmin = num->GetXaxis()->GetXmin();
+        Double_t xmax = num->GetXaxis()->GetXmax();
 
         ratio.reset(new TH3F(name, "", nbins, xmin, xmax, nbins, xmin, xmax, nbins, xmin, xmax));
         for (int i=0; i < num->GetNcells(); ++i) {
