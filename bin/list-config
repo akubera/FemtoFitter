@@ -43,7 +43,16 @@ def main(argv=None):
 
         f.Close()
 
-    pprint(analyses)
+    from collections import defaultdict
+    cfgz = defaultdict(list)
+    for k, v in analyses.items():
+        if not v: continue
+        for a, b in v.items():
+            cfgz[a].append((k, b))
+
+    #pprint(analyses)
+    pprint(dict(cfgz))
+
 
 if __name__ == "__main__":
     sys.exit(main())
