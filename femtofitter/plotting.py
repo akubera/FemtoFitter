@@ -135,7 +135,6 @@ class QuadPlot:
         plt.close()
 
         legend_key = 'lam'
-        xshift = 0.0
 
         def _do_makeplot(data):
             fig, axs = plt.subplots(2, 2, figsize=(12, 12))
