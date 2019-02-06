@@ -118,8 +118,9 @@ class QuadPlot:
         else:
             self.df = fr
 
-    def show(self, *groups, limit_alpha=True, cfg=None):
+    def show(self, *groups, limit_alpha=True, cfg=None, sysdf=None, xshift=None):
         import matplotlib.pyplot as plt
+        from itertools import repeat
 
         if cfg is not None:
             df = self.df[self.df.cfg == cfg]
@@ -127,20 +128,32 @@ class QuadPlot:
             df = self.df
 
         default_plot_ops = {
-            "linestyle": "-",
-            'marker': 'o',
+            "linestyle": "--",
+            'marker': 's',
+            'fmt': '',
+            'capsize': 4,
+#             'solid_capstyle': 'butt',
             'xlim': (0.2, 1.0),
         }
 
         plt.close()
 
+        keys = ["Ro", "Rs", "Rl", 'lam']
+        if 'alpha' in df.columns:
+            keys.append('alpha')
+
         legend_key = 'lam'
+
+        if xshift is None:
+            xshift = repeat(0)
 
         def _do_makeplot(data):
             fig, axs = plt.subplots(2, 2, figsize=(12, 12))
+            xshift_it = iter(xshift)
             for cent, cent_data in data.groupby("cent"):
+                shift = next(xshift_it)
                 cent = cent.replace('_', '-') + "%"
-                for ax, key in zip(axs.flat, ("Ro", "Rs", "Rl", 'lam')):
+                for ax, key in zip(axs.flat, keys):
                     plot_ops = default_plot_ops.copy()
                     if limit_alpha and key == 'alpha':
                         plot_ops['ylim'] = (1.0, 2.2) if limit_alpha is True else limit_alpha
@@ -158,10 +171,21 @@ class QuadPlot:
 
                     X, Y, E = extract_values(cent_data, key)
 
-                    plot_ops.pop("xlim")
-                    plot_ops['marker'] = cent
+                    if sysdf is not None:
+                        subsysdf = sysdf[sysdf.cent == cent]
+                        E + subsysdf[key + "_sys"]
+
+                    xlim = plot_ops.pop("xlim")
+                    plot_ops['label'] = cent
+                    plot_ops['lw'] = 2
+
                     ax.errorbar(X, Y, E, label=cent, **plot_ops)
+                    X += shift
+                    eb = ax.errorbar(X, Y, yerr=E, label=cent, lw=2, **plot_ops)
+                    eb[-1][0].set_linestyle('--')
+
                     ax.set_title(title)
+                    ax.set_xlim(*xlim)
 
                     if key == legend_key:
                         leg = ax.legend(numpoints=1, loc='best', fontsize=16)
