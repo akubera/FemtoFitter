@@ -227,7 +227,7 @@ def do_fit(fitter,
     print("Fitting:", filename, path)
 
     config = get_configuration_json(tfile, [query])
-    from femtofitter.pyfitter import Data3D
+    from femtofitter.pyfitter import PyData3D
 
     if mrc_path:
         mrcfile, _, mrc_cfg = mrc_path.partition(':')
@@ -246,9 +246,9 @@ def do_fit(fitter,
             print("Could not load MRC at %r" % mrc_query.as_path())
             return None
 
-        data = Data3D.From(tdir, mrchist, fit_range)
+        data = PyData3D.From(tdir, mrchist, fit_range)
     else:
-        data = Data3D.From(tdir, fit_range)
+        data = PyData3D.From(tdir, fit_range)
 
     if subset is None:
         pass
