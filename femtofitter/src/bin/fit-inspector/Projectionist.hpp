@@ -53,6 +53,8 @@ public:
 
   size_t id;
 
+  std::pair<double, double> limits;
+
   std::mutex _cachemutex;
 
   Projectionist(TDirectory& tdir)
@@ -90,6 +92,18 @@ public:
           ratio->SetBinError(i, e);
         }
       }
+
+      double min = 100, max = 0;
+
+      for (int i=0; i < ratio->GetNcells(); ++i) {
+        double c = ratio->GetBinContent(i);
+        if (c != 0 && c < 0.5) {
+          min = std::min(min, c);
+          max = std::max(max, c);
+        }
+      }
+
+      limits = {min * 0.99, max * 1.01};
 
       ratio->SetStats(false);
     }
@@ -135,6 +149,7 @@ public:
                   : (idx == 2) ? ratio->ProjectionZ(name, a, a, b, b)
                   : nullptr;
 
+          h->GetYaxis()->SetRangeUser(limits.first, limits.second);
           h->SetStats(false);
           h->SetTitle("");
           h->DrawCopy("HE");
@@ -172,6 +187,8 @@ public:
           axis->SetRange(a, a);
           auto *h = static_cast<TH2D*>(ratio->Project3D(project.c_str()));
           axis->SetRange();
+
+          h->GetZaxis()->SetRangeUser(limits.first, limits.second);
           h->SetName(name);
           h->SetStats(false);
           h->SetTitle("");
