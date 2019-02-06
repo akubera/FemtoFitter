@@ -59,7 +59,6 @@ def plot_projections(fit_results, data, mrc, limit=0.1, ylim=(0.98, 1.15), c=Non
         c.cd(i)
         r.DrawCopy("HE")
 
-
     RED = 2
     fithist = den.Clone(basename + "fithist")
     fithist.Divide(mrc)
@@ -90,6 +89,25 @@ def plot_projections(fit_results, data, mrc, limit=0.1, ylim=(0.98, 1.15), c=Non
     return c
 
 
+def stat_mean(vals, errs):
+    """
+    Correct statistical error combining
+    """
+    weights = errs ** -2
+    value = (vals * weights).sum() / weights.sum()
+    error = np.sqrt(1.0 / weights.sum())
+    return value, error
+
+
+def extract_values(df, ykey, ekey=None, xkey='kT', ):
+    # ensure x
+    odf = df.cent_data.sort_values(xkey)
+    if ekey is None:
+        ekey = ykey + "_err"
+
+    res = np.array([(x, *stat_mean(d[ykey], d[ekey])) for x, d in odf.groupby(xkey)])
+    return res.T
+
 
 class QuadPlot:
 
@@ -99,7 +117,6 @@ class QuadPlot:
             self.df = fr.df
         else:
             self.df = fr
-
 
     def show(self, *groups, limit_alpha=True, cfg=None):
         import matplotlib.pyplot as plt
@@ -118,11 +135,11 @@ class QuadPlot:
         plt.close()
 
         legend_key = 'lam'
+        xshift = 0.0
 
         def _do_makeplot(data):
             fig, axs = plt.subplots(2, 2, figsize=(12, 12))
             for cent, cent_data in data.groupby("cent"):
-                #print(cent, cent_data)
                 cent = cent.replace('_', '-') + "%"
                 for ax, key in zip(axs.flat, ("Ro", "Rs", "Rl", 'lam')):
                     plot_ops = default_plot_ops.copy()
@@ -140,15 +157,7 @@ class QuadPlot:
                     else:
                         title = key
 
-                   def _mean(vals, errs):
-                       weights = errs ** -2
-                       value = (vals * weights).sum() / weights.sum()
-                       error = np.sqrt(1.0 / weights.sum())
-                       return value, error
-
-                    ktdata = cent_data.sort_values("kT")
-                    cd = np.array([(kT, *_mean(d[key], d[key + "_err")) for kT, d in ktdata.groupby('kT')])
-                    X, Y, E = cd.T
+                    X, Y, E = extract_values(cent_data, key)
 
                     plot_ops.pop("xlim")
                     plot_ops['marker'] = cent
@@ -158,7 +167,7 @@ class QuadPlot:
                     if key == legend_key:
                         leg = ax.legend(numpoints=1, loc='best', fontsize=16)
                         if leg:
-                             leg.set_title("Centrality", prop={"size": 16, 'weight': 'bold'})
+                            leg.set_title("Centrality", prop={"size": 16, 'weight': 'bold'})
 
             # for ax, key in zip(axs.flat, ("Ro", "Rs", "Rl", 'lam')):
             #     if key.startswith("R"):
@@ -175,8 +184,3 @@ class QuadPlot:
 
         return result
 
-
-
-
-
-        plt.show()
