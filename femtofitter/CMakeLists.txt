@@ -58,9 +58,9 @@ set(INCS
   src/Data3D.hpp
   fitter/FitterGaussOSL.hpp
   fitter/FitterGaussOSL3.hpp
+  fitter/FitterGaussFull.hpp
   fitter/FitterLevy3D.hpp
   fitter/Levy1D.hh
-  src/FitterGaussFull.hpp
 )
 list(TRANSFORM INCS PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/)
 set(CMAKE_BUILD_TYPE Release)
