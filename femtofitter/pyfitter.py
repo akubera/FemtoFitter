@@ -17,6 +17,8 @@ try:
 except ImportError:
     ne = None
 
+ne = None
+
 from lmfit import Parameters, Minimizer
 from lmfit.minimizer import MinimizerResult
 from scipy.interpolate import interp2d
@@ -118,6 +120,9 @@ class Data3D:
             mrc = mrc.Get("mrc")
         if isinstance(mrc, TH3):
             num.Multiply(mrc)
+            for i in range(mrc.GetNcells()):
+                if mrc.GetBinContent(i) == 0 or num.GetBinContent(i) < 0:
+                    den.SetBinContent(i, 0)
 
         gamma = estimate_gamma_from_tdir(tdir)
         self = cls(num, den, qinv, fit_range, gamma)
@@ -240,11 +245,16 @@ class Data3D:
             if ne:
                 return ne.evaluate("""-2 * ( where(a == 0.0, 0.0, a * log(a_plus_b_over_a * c / (c+1)))
                                            + where(b == 0.0, 0.0, b * log(a_plus_b_over_b / (c+1))) )""")
+
+            if np.any(c < 0):
+                print("c < 0")
+
             c_plus_1 = c + 1.0
 
             tmp = a * np.log(a_plus_b_over_a * c / c_plus_1,
                              where=zero_mask,
                              out=np.zeros_like(a))
+
             tmp += b * np.log(a_plus_b_over_b / c_plus_1)
 
             return -2 * tmp
@@ -676,7 +686,14 @@ class FitterLevy(FemtoFitter3D):
         np.power(ql * Rl, 2, out=tmp)
         e += np.power(tmp, alpha/2, out=tmp)
 
-        return norm * ((1.0 - lam) + lam * k * (1.0 + np.exp(-e)))
+        res = norm * ((1.0 - lam) + lam * k * (1.0 + np.exp(-e)))
+        if np.any(res < 0):
+            print('result < 0 :: %d / %d' % ((res < 0).sum(), res.size))
+            print(' ', res[res < 0])
+            from pprint import pprint
+            pprint(value)
+            # print('   < 0 :: %d / %d' % ((res < 0).sum(), res.size))
+        return res
 
 
 class FitterLevy2(FemtoFitter3D):

@@ -14,3 +14,11 @@ default:
   # pt: 0.2:2.0
   # sigma: 1.0
   - cfg3144288C76BAC926
+
+  # delta-eta: 0.01
+  # delta-phi: 0.03
+  # pt: 0.2:2.0
+  # sigma 1.5
+  - cfgA906F7761F838EB6:
+    data:
+      - Data-6200 
