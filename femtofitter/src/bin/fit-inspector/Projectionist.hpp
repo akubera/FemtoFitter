@@ -18,6 +18,7 @@
 #include <TH1D.h>
 #include <TH2D.h>
 #include <TPad.h>
+#include <TLine.h>
 #include <TDirectory.h>
 
 #include <atomic>
@@ -51,6 +52,9 @@ public:
   std::map<std::array<int, 3>, std::unique_ptr<TH1D>> fCachedHists1D;
   std::map<std::array<int, 3>, std::unique_ptr<TH2D>> fCachedHists2D;
 
+  // std::vector<std::unique_ptr<TLine>> fCachedLines;
+  std::vector<TLine> fCachedLines;
+
   size_t id;
 
   std::pair<double, double> limits;
@@ -65,6 +69,7 @@ public:
     , fLruCache(vec_with_capacity<std::shared_ptr<TPad>>(CACHE_CAPACITY))
     , fCachedHists1D()
     , fCachedHists2D()
+    , fCachedLines(15)
     , id(++_id_counter)
     {
       if (auto *n = dynamic_cast<TH3F*>(num.get())) {
@@ -115,6 +120,51 @@ public:
 
   std::shared_ptr<TPad> get_full_canvas(int i, int j, int k)
     {
+      const std::array<double, 3>
+        R = { ratio->GetXaxis()->GetBinCenter(i),
+              ratio->GetYaxis()->GetBinCenter(j),
+              ratio->GetZaxis()->GetBinCenter(k), },
+
+        limit_axis_lo = {
+              ratio->GetXaxis()->GetXmin(),
+              ratio->GetYaxis()->GetXmin(),
+              ratio->GetZaxis()->GetXmin() },
+
+        limit_axis_hi = {
+              ratio->GetXaxis()->GetXmax(),
+              ratio->GetYaxis()->GetXmax(),
+              ratio->GetZaxis()->GetXmax() };
+
+      const std::array<int, 3> colors = {kRed, kGreen+1, kTeal};
+
+      const double rval = ratio->GetBinContent(i, j, k);
+
+      for (int idx=0; idx < 3; ++idx) {
+        fCachedLines[idx].SetX1(R[idx]);
+        fCachedLines[idx].SetX2(R[idx]);
+        fCachedLines[idx].SetY2(rval * 1.10);
+      }
+
+      std::vector<std::array<int, 3>> v = {{0, 1, 2}, {0, 2, 1}, {1, 2, 0}};
+      for (int idx = 0; idx < 3; ++idx) {
+        auto ix = v[idx][0], iy = v[idx][1], iz = v[idx][2];
+
+        auto idx1 = 3 + idx * 2,
+             idx2 = idx1 + 1;
+
+        fCachedLines[idx1].SetLineColor(colors[iy]);
+        fCachedLines[idx1].SetX1(R[ix]);
+        fCachedLines[idx1].SetX2(R[ix]);
+        fCachedLines[idx1].SetY1(limit_axis_lo[iy]);
+        fCachedLines[idx1].SetY2(limit_axis_hi[iy]);
+
+        fCachedLines[idx2].SetLineColor(colors[ix]);
+        fCachedLines[idx2].SetX1(limit_axis_lo[ix]);
+        fCachedLines[idx2].SetX2(limit_axis_hi[ix]);
+        fCachedLines[idx2].SetY1(R[iy]);
+        fCachedLines[idx2].SetY2(R[iy]);
+      }
+
       const std::array<int, 3> key = {i, j, k};
       if (auto ptr = fCanvasMap[key].lock()) {
         cache(ptr);
@@ -126,13 +176,17 @@ public:
 
       cache(pad);
 
+      double marke_line_length = (limits.first - limits.second) / 2 / 10;
+
       auto draw_1d_hist = [&](int idx)
         {
           const std::array<int, 3>
+            c1 = {i, j, k},
             a1 = {j, i, i},
             b1 = {k, k, j};
 
           const Int_t
+            c = c1[idx],
             a = a1[idx],
             b = b1[idx];
 
@@ -198,21 +252,30 @@ public:
 
       pad->cd(1);
       draw_1d_hist(0);
+      fCachedLines[0].Draw();
 
       pad->cd(4);
       draw_2d_hist(0, 1);
+      fCachedLines[4].Draw();
+      fCachedLines[3].Draw();
 
       pad->cd(5);
       draw_1d_hist(1);
+      fCachedLines[1].Draw();
 
       pad->cd(7);
       draw_2d_hist(0, 2);
+      fCachedLines[5].Draw();
+      fCachedLines[6].Draw();
 
       pad->cd(8);
       draw_2d_hist(1, 2);
+      fCachedLines[7].Draw();
+      fCachedLines[8].Draw();
 
       pad->cd(9);
       draw_1d_hist(2);
+      fCachedLines[2].Draw();
 
       fCanvasMap[key] = pad;
 
