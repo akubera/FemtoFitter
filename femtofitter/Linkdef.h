@@ -19,6 +19,10 @@
 #pragma link C++ class FitterLevy3D::FitParams;
 #pragma link C++ class FitterLevy3D::FitResult;
 
+#pragma link C++ class Fitter3D<FitterLevyFull>;
+#pragma link C++ class FitterLevyFull::FitParams;
+#pragma link C++ class FitterLevyFull::FitResult;
+
 #pragma link C++ function apply_momentum_resolution_correction;
 
 #pragma link C++ class CoulombHist;

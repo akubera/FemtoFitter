@@ -60,6 +60,7 @@ set(INCS
   fitter/FitterGaussOSL3.hpp
   fitter/FitterGaussFull.hpp
   fitter/FitterLevy3D.hpp
+  fitter/FitterLevyFull.hpp
   fitter/Levy1D.hh
 )
 list(TRANSFORM INCS PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/)
