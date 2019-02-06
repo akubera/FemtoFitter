@@ -17,8 +17,6 @@ try:
 except ImportError:
     ne = None
 
-ne = None
-
 from lmfit import Parameters, Minimizer
 from lmfit.minimizer import MinimizerResult
 from scipy.interpolate import interp2d
