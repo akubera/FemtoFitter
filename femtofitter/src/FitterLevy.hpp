@@ -183,6 +183,16 @@ struct FitterLevy : public Fitter3D<FitterLevy> {
   {
   }
 
+  FitterLevy(const Data3D &data)
+    : Fitter3D(data)
+  {
+  }
+
+  FitterLevy(Data3D &&data)
+    : Fitter3D(std::move(data))
+  {
+  }
+
   static double
   gauss(const std::array<double, 3> &q, const FitParams &p, double K)
     { return p.gauss(q, K); }

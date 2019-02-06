@@ -222,6 +222,11 @@ struct FitterGaussOSL3 : public Fitter3D<FitterGaussOSL3> {
   {
   }
 
+  FitterGaussOSL3(Data3D &&data)
+    : Fitter3D(std::move(data))
+  {
+  }
+
   FitterGaussOSL3(std::unique_ptr<Data3D> data)
     : Fitter3D(std::move(data))
   {

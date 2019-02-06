@@ -24,7 +24,7 @@
 /// \class FitterGaussFull
 /// \brief Fit full $ q_i q_j R_ij^2 $ gaussian parameters
 ///
-struct FitterGaussFull : public Fitter3D<FitterGaussFull>{
+struct FitterGaussFull : public Fitter3D<FitterGaussFull> {
 
   /// constants used to lookup data from pointer
   enum {
@@ -225,6 +225,16 @@ struct FitterGaussFull : public Fitter3D<FitterGaussFull>{
   ///
   FitterGaussFull(TH3 &n, TH3 &d, TH3 &q, double limit=0.0)
     : Fitter3D(n, d, q, limit)
+    {
+    }
+
+  FitterGaussFull(const Data3D &data)
+    : Fitter3D(data)
+    {
+    }
+
+  FitterGaussFull(Data3D &&data)
+    : Fitter3D(std::move(data))
     {
     }
 

@@ -45,6 +45,10 @@ public:
     : data(data_)
   { }
 
+  Fitter3D(Data3D &&data_)
+    : data(std::move(data_))
+  { }
+
   /// Utility function for building fitter with tdirectory in file
   /// at specified path
   static std::unique_ptr<Impl>
