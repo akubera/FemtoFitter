@@ -15,6 +15,8 @@
 
 #include <TFile.h>
 #include <TH3.h>
+#include <TH1D.h>
+#include <TH2D.h>
 #include <TPad.h>
 #include <TDirectory.h>
 
@@ -47,6 +49,7 @@ public:
   std::set<std::array<int, 3>> fRequestSet;
 
   std::map<std::array<int, 3>, std::unique_ptr<TH1D>> fCachedHists1D;
+  std::map<std::array<int, 3>, std::unique_ptr<TH2D>> fCachedHists2D;
 
   size_t id;
 
@@ -59,6 +62,7 @@ public:
     , fCanvasMap()
     , fLruCache(vec_with_capacity<std::shared_ptr<TPad>>(CACHE_CAPACITY))
     , fCachedHists1D()
+    , fCachedHists2D()
     , id(++_id_counter)
     {
       if (auto *n = dynamic_cast<TH3F*>(num.get())) {
@@ -137,11 +141,58 @@ public:
           fCachedHists1D[key] = std::unique_ptr<TH1D>(h);
         };
 
+      auto draw_2d_hist = [&](int idxX, int idxY)
+        {
+          const char axes[] = "xyz";
+
+          auto project = std::string(axes+idxY, axes+idxY+1) + axes[idxX];
+
+          const Int_t offaxis =
+            (idxX == 0 && idxY == 1) || (idxX == 1 && idxY == 0) ? 2 :
+            (idxX == 0 && idxY == 2) || (idxX == 2 && idxY == 0) ? 1 :
+            (idxX == 1 && idxY == 2) || (idxX == 2 && idxY == 1) ? 0 : 0;
+
+          const Int_t
+            axesidx[] = {i, j, k},
+            a = axesidx[offaxis];
+
+          const char *name = Form("_2dp%lu_%d_%d_%d", id, idxX, idxY, a);
+
+          std::array<int, 3> key = {idxX, idxY, a};
+          if (auto &hist = fCachedHists2D[key]) {
+            hist->DrawCopy("COLZ");
+            return;
+          }
+
+          auto *axis = offaxis == 0 ? ratio->GetXaxis()
+                     : offaxis == 1 ? ratio->GetYaxis()
+                     : offaxis == 2 ? ratio->GetZaxis()
+                     : nullptr;
+
+          axis->SetRange(a, a);
+          auto *h = static_cast<TH2D*>(ratio->Project3D(project.c_str()));
+          axis->SetRange();
+          h->SetName(name);
+          h->SetStats(false);
+          h->SetTitle("");
+          h->DrawCopy("COLZ");
+          fCachedHists2D[key] = std::unique_ptr<TH2D>(h);
+        };
+
       pad->cd(1);
       draw_1d_hist(0);
 
+      pad->cd(4);
+      draw_2d_hist(0, 1);
+
       pad->cd(5);
       draw_1d_hist(1);
+
+      pad->cd(7);
+      draw_2d_hist(0, 2);
+
+      pad->cd(8);
+      draw_2d_hist(1, 2);
 
       pad->cd(9);
       draw_1d_hist(2);

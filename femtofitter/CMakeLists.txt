@@ -79,6 +79,7 @@ add_library(fitinspector
             src/bin/fit-inspector/MainFrame.cpp
             src/bin/fit-inspector/Projectionist.cpp)
 add_executable(fit-inspector src/bin/fit-inspector/main.cc)
+# target_compile_definitions(fitinspector PRIVATE "-D" -O2)
 target_link_libraries(fit-inspector fitinspector
     ROOT::Hist
     ROOT::Gui
