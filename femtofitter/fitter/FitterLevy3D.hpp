@@ -1,5 +1,5 @@
 ///
-/// \file FitterLevy.hpp
+/// \file femtofitter/fitter/FitterLevy3D.hpp
 ///
 
 #pragma once
@@ -22,10 +22,10 @@
 #include <iostream>
 
 
-/// \class FitterLevy
+/// \class FitterLevy3D
 /// \brief Fit out-side-long with gaussian parameters
 ///
-struct FitterLevy : public Fitter3D<FitterLevy> {
+struct FitterLevy3D : public Fitter3D<FitterLevy3D> {
 
   /// constants used to lookup data from pointer
   enum {
@@ -38,9 +38,6 @@ struct FitterLevy : public Fitter3D<FitterLevy> {
     RLONG_PARAM_IDX = 5,
     ALPHA_PARAM_IDX = 6,
   };
-
-  /// The associated fit data
-  // Data3D data;
 
   static double
   gauss(const std::array<double, 3> &q,
@@ -171,24 +168,24 @@ struct FitterLevy : public Fitter3D<FitterLevy> {
     double gauss(const std::array<double, 3> &q, double K) const
       {
         std::array<double, 3> Rsq = {Ro*Ro, Rs*Rs, Rl*Rl};
-        return FitterLevy::gauss(q, Rsq, lam, alpha, K, norm);
+        return FitterLevy3D::gauss(q, Rsq, lam, alpha, K, norm);
       }
   };
 
   /// Construct fitter from numerator denominator qinv histograms
   /// and a fit-range limit
   ///
-  FitterLevy(TH3 &n, TH3 &d, TH3 &q, double limit=0.0)
+  FitterLevy3D(TH3 &n, TH3 &d, TH3 &q, double limit=0.0)
     : Fitter3D(n, d, q, limit)
   {
   }
 
-  FitterLevy(const Data3D &data)
+  FitterLevy3D(const Data3D &data)
     : Fitter3D(data)
   {
   }
 
-  FitterLevy(Data3D &&data)
+  FitterLevy3D(Data3D &&data)
     : Fitter3D(std::move(data))
   {
   }
