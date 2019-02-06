@@ -72,7 +72,7 @@ set(SRCS
   src/Data1D.cpp
   src/Value.cpp
   src/CoulombHist.cpp
-  src/MinuitFitter.cpp
+  src/MinimizerMinuit.cpp
 #   ${CMAKE_CURRENT_SOURCE_DIR}/femtofitter/MomentumResolutionCorrector.cxx
 )
 

@@ -1,9 +1,9 @@
 ///
-/// \file femtofitter/MinuitFitter.cpp
+/// \file femtofitter/MinimizerMinuit.cpp
 ///
 
 
-#include "MinuitFitter.hpp"
+#include "MinimizerMinuit.hpp"
 
 /*
 MinuitFitter::MinuitFitter()
