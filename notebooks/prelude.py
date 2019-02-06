@@ -21,6 +21,8 @@ import feather
 
 import stumpy
 import lmfit
+from femtofitter import FitResults
+from femtofitter.plotting import QuadPlot
 from femtofitter.pyfitter import Data3D as PyDat3D, FitterGauss as PyFitterGauss
 
 import ROOT
