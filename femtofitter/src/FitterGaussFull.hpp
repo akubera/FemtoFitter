@@ -243,7 +243,7 @@ struct FitterGaussFull : public Fitter3D<FitterGaussFull> {
     { return p.gauss(q, K); }
 
   int
-  setup_minuit(TMinuit &minuit)
+  setup_minuit(TMinuit &minuit) const override
   {
     int errflag = 0;
     minuit.mnparm(NORM_PARAM_IDX, "Norm", 0.25, 0.02, 0.0, 0.0, errflag);

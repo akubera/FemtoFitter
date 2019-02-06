@@ -80,6 +80,11 @@ public:
     return std::make_unique<Impl>(*num, *den, *qinv, limit);
   }
 
+  virtual ~Fitter3D() = default;
+
+  /// Add parameters to minuit object
+  virtual int setup_minuit(TMinuit &) const = 0;
+
   template <typename FitParams>
   double
   resid_chi2_calc(const FitParams &p) const
@@ -146,7 +151,6 @@ public:
     const typename Impl::FitParams &params = r;
     return resid_calc(params, loglikelihood_calc);
   }
-
 
   /// Automatic Fit Function
   ///
