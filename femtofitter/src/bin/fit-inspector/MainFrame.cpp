@@ -615,9 +615,12 @@ MyMainFrame::OnSliderUpdate()
   canvas.Clear();
   canvas.cd();
 
+  pad->ResizePad();
   pad->Draw();
   canvas.Modified();
   canvas.Update();
+
+  data->UpdateLabels();
 }
 
 void

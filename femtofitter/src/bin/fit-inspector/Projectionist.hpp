@@ -108,16 +108,43 @@ public:
 
       cache(pad);
 
+      auto draw_1d_hist = [&](int idx)
+        {
+          const std::array<int, 3>
+            a1 = {j, i, i},
+            b1 = {k, k, j};
+
+          const Int_t
+            a = a1[idx],
+            b = b1[idx];
+
+          std::array<int, 3> key = {idx, a, b};
+          if (auto &hist = fCachedHists1D[key]) {
+            hist->DrawCopy("HE");
+            return;
+          }
+
+          const char *name = Form("_p%lu_%d_%d_%d", id, idx, a, b);
+
+          TH1D *h = (idx == 0) ? ratio->ProjectionX(name, a, a, b, b)
+                  : (idx == 1) ? ratio->ProjectionY(name, a, a, b, b)
+                  : (idx == 2) ? ratio->ProjectionZ(name, a, a, b, b)
+                  : nullptr;
+
+          h->SetStats(false);
+          h->SetTitle("");
+          h->DrawCopy("HE");
+          fCachedHists1D[key] = std::unique_ptr<TH1D>(h);
+        };
+
       pad->cd(1);
-      if (auto &hist = fCachedHists1D[{1, j, k}]) {
-        hist->DrawCopy();
-      } else {
-        TH1D *h = ratio->ProjectionX(Form("_px_%d_%d", j, k), j, j, k, k);
-        h->SetStats(false);
-        h->SetTitle("");
-        fCachedHists1D[{1, j, k}] = std::unique_ptr<TH1D>(h);
-        h->DrawCopy();
-      }
+      draw_1d_hist(0);
+
+      pad->cd(5);
+      draw_1d_hist(1);
+
+      pad->cd(9);
+      draw_1d_hist(2);
 
       fCanvasMap[key] = pad;
 
