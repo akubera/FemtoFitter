@@ -1,0 +1,208 @@
+#!/usr/bin/env python
+#
+# create-projected-images
+#
+
+import sys
+import numpy as np
+
+
+def argparser():
+    from argparse import ArgumentParser
+    p = ArgumentParser()
+    p.add_argument('filename')
+    p.add_argument('-p', '--path',
+                   default=None,
+                   help='Path to the data')
+    return p
+
+
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
+    args = argparser().parse_args(argv)
+    print(args)
+
+    from ROOT import TFile
+    tfile = TFile(args.filename)
+    if not tfile:
+        return 1
+
+    if not args.path:
+        interactive_analysis_load(tfile)
+
+    tdir = tfile.Get(args.path)
+    if not tfile:
+        return 1
+
+    n = tdir.Get('num')
+    assert n
+
+    d = tdir.Get('den')
+    assert d
+
+    c = run(n, d)
+
+    from ROOT import gApplication, gSystem
+
+    c.Draw()
+
+    while True:
+        gSystem.Sleep(100)
+        c.Update()
+        gSystem.ProcessEvents()
+
+
+def make_ratio(n, d):
+    from ROOT import TH3D
+
+    if isinstance(n, TH3D):
+        r = n.Clone("r")
+        r.Divide(d)
+        return r
+
+    axinfo = (d.GetNbinsX(), d.GetXaxis().GetXmin(), d.GetXaxis().GetXmax())
+    r = TH3D('r', '', *(axinfo)*3)
+    for i in range(d.GetNcells()+1):
+        denom = d.GetBinContent(i)
+        if denom:
+            ra = n.GetBinContent(i) /  denom
+            r.SetBinContent(i, ra)
+            r.SetBinError(i, np.sqrt(ra * (1.0 + ra) /  denom))
+    return r
+
+line_cache = []
+
+
+def run(n, d):
+
+    r = make_ratio(n, d)
+
+    import ROOT
+    from ROOT import TH3, TCanvas
+
+    axinfo = (r.GetNbinsX(), r.GetXaxis().GetXmin(), r.GetXaxis().GetXmax())
+
+    projections_1d = (
+        TH3.ProjectionX,
+        TH3.ProjectionY,
+        TH3.ProjectionZ,
+    )
+
+    get_axis = (
+        TH3.GetXaxis,
+        TH3.GetYaxis,
+        TH3.GetZaxis,
+    )
+
+    # def dcan(xidx, yidx, zidx, llim=None):
+    llim = None
+    xidx, yidx, zidx = (43,43,43)
+    global line_cache
+    alimits = (xidx, yidx, zidx)
+
+    xxlim = (xidx, ) * 2
+    yylim = (yidx, ) * 2
+    zzlim = (zidx, ) * 2
+
+    yzlimits = (*yylim, *zzlim)
+    xzlimits = (*xxlim, *zzlim)
+    xylimits = (*xxlim, *yylim)
+
+    limits = [yzlimits, xzlimits, xylimits]
+
+    full = r.GetXaxis().GetXmin(), r.GetXaxis().GetXmax()
+    X = r.GetXaxis().GetBinCenter(xidx)
+    Y = r.GetYaxis().GetBinCenter(yidx)
+    Z = r.GetZaxis().GetBinCenter(zidx)
+    R = [X, Y, Z]
+
+    c = TCanvas()
+    c.SetCanvasSize(800, 800)
+    c.Divide(3, 3, 0, 0)
+
+    if llim is None:
+        ymin = 0.99 * r.GetMinimum()
+        ymax = 1.02 * r.GetMaximum()
+    else:
+        ymin, ymax = llim
+
+    mlength = (ymax - ymin) / 2 / 10
+
+    colors = [ROOT.kRed, ROOT.kGreen+1, ROOT.kMagenta]
+#     h1d = list(_gen_1d_projections())
+#     lines = [ROOT.TLine(r, ymin, r, ymax) for r in R]
+
+    def _draw_1d(idx):
+        p = projections_1d[idx]
+        pr = p(r, 'p%d' % idx, *limits[idx])
+        pr.SetTitle("")
+        pr.SetStats(False)
+        pr.GetYaxis().SetRangeUser(ymin, ymax)
+        pr.Draw("HE")
+
+        yval = pr.GetBinContent(alimits[idx])
+        line = ROOT.TLine(R[idx], ymin, R[idx], yval + mlength)
+        line.Draw()
+        line_cache.append(line)
+
+    c.cd(1)
+    _draw_1d(0)
+
+    c.cd(5)
+    _draw_1d(1)
+
+    c.cd(9)
+    _draw_1d(2)
+
+    def _draw_2d(ix, iy, iz):
+        global line_cache
+        axi = get_axis[iz](r)
+        axi.SetRange(*(alimits[iz], )*2)
+        proj2d = r.Project3D("xyz"[iy] + "xyz"[ix])
+        axi.SetRange()
+        proj2d.SetTitle(";;")
+        proj2d.SetStats(False)
+        proj2d.GetZaxis().SetRangeUser(ymin, ymax)
+        proj2d.DrawCopy("COLZ")
+        lineix = ROOT.TLine(R[ix], full[0], R[ix], full[1],)
+        lineix.SetLineColor(colors[iy])
+        lineix.Draw()
+        lineiy = ROOT.TLine(full[0], R[iy], full[1], R[iy],)
+        lineiy.SetLineColor(colors[ix])
+        lineiy.Draw()
+        line_cache += [lineix, lineiy]
+
+    c.cd(4)
+    _draw_2d(0, 1, 2)
+
+    c.cd(7)
+    _draw_2d(0, 2, 1)
+
+    c.cd(2)
+    _draw_2d(1, 0, 2)
+
+    c.cd(8)
+    _draw_2d(1, 2, 0)
+
+    c.cd(3)
+    _draw_2d(2, 0, 1)
+
+    c.cd(6)
+    _draw_2d(2, 1, 0)
+
+    return c
+
+
+def interactive_analysis_load(tfile):
+    from stumpy.utils import walk_matching
+
+    for path, obj in walk_matching(tfile, 'Q3DLCMS/cfg*/pi*/*/*/*'):
+        print(path)
+
+        # cfgBDC0F09B1F286D46/pim/00_05/0.2_0.3/--
+        # tdir.ls()
+
+
+if __name__ == '__main__':
+    sys.exit(main())
