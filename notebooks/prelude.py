@@ -22,6 +22,7 @@ import yaml
 import feather
 
 import stumpy
+from stumpy.utils import walk_matching
 import lmfit
 from femtofitter import FitResults, PathQuery
 from femtofitter.plotting import QuadPlot
