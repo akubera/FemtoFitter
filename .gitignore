@@ -6,6 +6,7 @@ fit-results/
 *.ipynb
 *.yaml
 *.txt
+*.feather
 
 # default build destination
 /build/

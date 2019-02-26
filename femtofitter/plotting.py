@@ -206,4 +206,3 @@ class QuadPlot:
             result = _do_makeplot(df)
 
         return result
-

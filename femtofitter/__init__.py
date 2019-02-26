@@ -76,6 +76,13 @@ class PathQuery:
 
         raise TypeError(f"Cannot build pathquery from {obj.__class__}")
 
+    def __call__(self, **kwargs):
+        from copy import copy
+        res = copy(self)
+        for k, v in kwargs.items():
+            setattr(res, k, v)
+        return res
+
     def __iter__(self):
         yield from self.values()
 

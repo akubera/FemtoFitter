@@ -17,8 +17,6 @@ try:
 except ImportError:
     ne = None
 
-ne = None
-
 from lmfit import Parameters, Minimizer
 from lmfit.minimizer import MinimizerResult
 from scipy.interpolate import interp2d
@@ -110,7 +108,12 @@ class MomentumResolutionCorrector:
         data.apply_mrc(mrc)
 
 
-class Data3D:
+class PyData3D:
+    """
+    3D correlation function data to be fit.
+
+    Use 'PyData3D' to distinguish from the C++ Data3D class.
+    """
 
     @classmethod
     def From(cls, tdir, mrc=None, fit_range=None):
@@ -333,7 +336,7 @@ class FemtoFitter3D:
         return mini
 
     @classmethod
-    def chi2_evaluator(cls, data: Data3D) -> Callable[[Parameters, Any], float]:
+    def chi2_evaluator(cls, data: PyData3D) -> Callable[[Parameters, Any], float]:
         """
         Return a function that evaluates chisquared from parameters
         to cls.func.
@@ -352,7 +355,7 @@ class FemtoFitter3D:
         return _eval
 
     @classmethod
-    def pml_evaluator(cls, data: Data3D) -> Callable[[Parameters, Any], float]:
+    def pml_evaluator(cls, data: PyData3D) -> Callable[[Parameters, Any], float]:
         """
         Return a function that evaluates loglikelihood from parameters
         to cls.func.
@@ -424,7 +427,7 @@ class FemtoFitter3D:
         return r.sum()
 
     @classmethod
-    def func_args(cls, data: Data3D, gamma=None, fsi=None) -> (np.array, float, float):
+    def func_args(cls, data: PyData3D, gamma=None, fsi=None) -> (np.array, float, float):
         """
         Create tuple of arguments to be used in the function's func()
         """
