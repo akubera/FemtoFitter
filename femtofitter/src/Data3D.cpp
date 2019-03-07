@@ -174,7 +174,24 @@ Data3D::FromDirectory(TDirectory &tdir, const TH3 &mrc, double limit)
     return nullptr;
   }
 
-  n->Multiply(&mrc);
+  if (n->GetNbinsX() == mrc.GetNbinsX()) {
+    n->Multiply(&mrc);
+  } else {
+    for (int k=1; k <= mrc.GetNbinsZ(); ++k)
+    for (int j=1; j <= mrc.GetNbinsY(); ++j)
+    for (int i=1; i <= mrc.GetNbinsX(); ++i) {
+      double x = n->GetXaxis()->GetBinCenter(i);
+      double y = n->GetYaxis()->GetBinCenter(j);
+      double z = n->GetZaxis()->GetBinCenter(k);
+
+      int bin = const_cast<TH3&>(mrc).FindBin(x,y,z);
+      if (mrc.IsBinUnderflow(bin) || mrc.IsBinOverflow(bin)) {
+	      continue;
+      }
+      double f = const_cast<TH3&>(mrc).Interpolate(x,y,z);
+      n->SetBinContent(i,j,k, f * n->GetBinContent(i,j,k));
+    }
+  }
 
   for (int k=1; k <= mrc.GetNbinsZ(); ++k)
   for (int j=1; j <= mrc.GetNbinsY(); ++j)

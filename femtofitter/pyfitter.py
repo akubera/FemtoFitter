@@ -122,10 +122,27 @@ class PyData3D:
         if isinstance(mrc, TDirectory):
             mrc = mrc.Get("mrc")
         if isinstance(mrc, TH3):
-            num.Multiply(mrc)
-            for i in range(mrc.GetNcells()):
-                if mrc.GetBinContent(i) == 0 or num.GetBinContent(i) < 0:
-                    den.SetBinContent(i, 0)
+            if num.GetNbinsX() == mrc.GetNbinsX():
+               num.Multiply(mrc)
+               for i in range(mrc.GetNcells()):
+                   if mrc.GetBinContent(i) == 0 or num.GetBinContent(i) < 0:
+                       den.SetBinContent(i, 0)
+            # elif num.GetXaxis().GetBinWidth(1) == :
+            else:
+                for k in range(num.GetNbinsZ()):
+                  z = num.GetZaxis().GetBinCenter(k)
+                  for j in range(num.GetNbinsY()):
+                    y = num.GetYaxis().GetBinCenter(j)
+                    for i in range(num.GetNbinsX()):
+                        x = num.GetXaxis().GetBinCenter(i)
+                        fact = mrc.Interpolate(x,y,z)
+                        if fact <=0 or np.isnan(fact):
+                           print(x,y,z,'->',fact)
+                        if fact == 0:
+                            den.SetBinContent(i,j,k,0)
+                        else:
+                            n = num.GetBinContent(i,j,k)
+                            num.SetBinContent(i,j,k, n * fact)
 
         gamma = estimate_gamma_from_tdir(tdir)
         self = cls(num, den, qinv, fit_range, gamma)
