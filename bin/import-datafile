@@ -107,8 +107,14 @@ def find_analyses(file, pattern):
             if not config:
                 continue
 
-            cent_range = AliFemtoConfigObject.RangeValue_t()
-            config.find_and_load("event_cut.centrality_range", cent_range)
+            cent_range_keys = ('event_cut.cent_range', 'event_cut.centrality_range')
+            for cent_range_key in cent_range_keys:
+                cent_range = AliFemtoConfigObject.RangeValue_t()
+                config.find_and_load(cent_range_key, cent_range)
+                if not (cent_range.first == 0 and cent_range.second == 0):
+                    break
+            else:
+                print("warning: centrality range could not be determined for", name)
 
             cent = '%02d_%02d' % tuple(cent_range)
 
@@ -125,7 +131,7 @@ def find_analyses(file, pattern):
             key = config.Clone()
             key.pop("is_mc")
             key.pop("track_cut.charge")
-            key.pop("event_cut.centrality_range")
+            key.pop(cent_range_key)
 
             hashkey = f'cfg{key.Hash():016X}'
 
