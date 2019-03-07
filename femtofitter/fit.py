@@ -126,7 +126,8 @@ def parallel_fit_all(tfile,
                      fitter_t='FitterGausOSL',
                      mrc=False,
                      fitrange=0.21,
-                     chi2=False):
+                     chi2=False,
+                     limit=None):
     """
     """
 
@@ -158,6 +159,7 @@ def parallel_fit_all(tfile,
 
     paths = []
     mrc_paths = []
+    limit_reached = False
 
     valid_analysis_keys = {'AnalysisQ3D', 'Q3DLCMS'}
     for analysis in valid_analysis_keys:
@@ -168,6 +170,12 @@ def parallel_fit_all(tfile,
             paths.append(query)
             if mrc_path:
                 mrc_paths.append((query, mrc_path))
+            if limit is not None:
+                if len(paths) >= limit:
+                    limit_reached = True
+                    break
+        if limit_reached:
+            break
 
     configuration_information = get_configuration_json(tfile, paths)
 

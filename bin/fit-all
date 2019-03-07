@@ -19,6 +19,10 @@ def arg_parser():
     parser.add_argument("--chi2",
                         action='store_true',
                         help="file to fit")
+    parser.add_argument("--limit",
+                        type=int,
+                        default=None,
+                        help="limit input count")
     parser.add_argument("--fitrange",
                         type=float,
                         default=0.11,
@@ -83,7 +87,8 @@ def main(argv=None):
                      args.fitter,
                      mrc_path,
                      args.fitrange,
-                     args.chi2)
+                     args.chi2,
+                     args.limit)
     return 0
 
 
