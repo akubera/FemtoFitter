@@ -21,7 +21,7 @@ def arg_parser():
                         help="file to fit")
     parser.add_argument("--fitrange",
                         type=float,
-                        default=0.21,
+                        default=0.11,
                         help="symmetric limit to fit")
     parser.add_argument("--mrc-path",
                         nargs='?',
