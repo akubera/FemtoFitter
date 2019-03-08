@@ -40,6 +40,9 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
     RLONG_PARAM_IDX = 5,
   };
 
+  struct FitParams;
+  struct FitResult;
+
   static double
   gauss(const std::array<double, 3> &q,
         const std::array<double, 3> &RSq,
@@ -112,6 +115,8 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
 
       #undef OUT
     }
+
+    FitParams as_params() const;
   };
 
   /// \brief 3D Gaussian fit parameters
@@ -312,3 +317,11 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
     { return Fitter3D::fit(); }
 
 };
+
+
+// FitterGaussOSL::FitParams
+auto
+FitterGaussOSL::FitResult::as_params() const -> FitParams
+{
+  return FitParams(*this);
+}
