@@ -24,7 +24,8 @@ struct Levy1D : Fitter1D<Levy1D> {
     ALPHA_PARAM_IDX = 4,
   };
 
-  std::vector<Data1D> data;
+  int degrees_of_freedom() const
+    { return data.size() - 4; }
 
   /// \class Fit results from TMinuit
   ///
@@ -144,7 +145,6 @@ struct Levy1D : Fitter1D<Levy1D> {
   Levy1D(const Data1D &data)
     : Fitter1D(data)
     { }
-
 
   int
   setup_minuit(TMinuit &minuit)

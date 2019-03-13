@@ -126,7 +126,7 @@ def run_fit(fitter_classname: str,
 
     results['kT'] = mean(map(float, query.kt.split("_")))
     results['chi2'] = fitter.resid_chi2(fit_results)
-    results['ndof'] = fitter.size()
+    results['ndof'] = fitter.degrees_of_freedom()
     results['rchi2'] = results['chi2'] / results['ndof']
     results['mrc'] = mrc_path
     results['gamma'] = fitter.data.gamma

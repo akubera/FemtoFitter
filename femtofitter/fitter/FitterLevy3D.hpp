@@ -39,6 +39,9 @@ struct FitterLevy3D : public Fitter3D<FitterLevy3D> {
     ALPHA_PARAM_IDX = 6,
   };
 
+  int degrees_of_freedom() const
+    { return data.size() - 6; }
+
   static double
   gauss(const std::array<double, 3> &q,
         const std::array<double, 3> &RSq,

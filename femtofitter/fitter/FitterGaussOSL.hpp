@@ -60,6 +60,9 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
     return norm * result;
   }
 
+  int degrees_of_freedom() const
+    { return data.size() - 5; }
+
   /// \class FitResult
   /// \brief Values and stderr from minuit results
   ///

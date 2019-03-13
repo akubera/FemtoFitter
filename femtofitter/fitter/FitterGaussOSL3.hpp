@@ -39,6 +39,9 @@ struct FitterGaussOSL3 : public Fitter3D<FitterGaussOSL3> {
     ROS_PARAM_IDX = 6,
   };
 
+  int degrees_of_freedom() const
+    { return data.size() - 6; }
+
   static double
   gauss(const std::array<double, 3> &q,
         const std::array<double, 4> &RSq,
