@@ -60,7 +60,7 @@ def estimate_gamma_from_tdir(tdir):
                 pass
             else:
                 kt_mean = (ktlo + kthi) / 2.0
-                gamma = np.sqrt(kt_mean ** 2 / 0.139 ** 2 + 1.0)
+                gamma = np.sqrt(4 * kt_mean ** 2 / 0.139 ** 2 + 1.0)
 
     return gamma
 
