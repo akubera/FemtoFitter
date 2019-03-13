@@ -7,7 +7,9 @@ Fitting routines
 """
 
 import sys
+from copy import copy
 from itertools import chain
+from dataclasses import dataclass
 from multiprocessing import Pool, Process
 from statistics import mean
 import json
@@ -16,6 +18,7 @@ import pandas as pd
 
 from femtofitter import PathQuery
 
+from typing import Any, Tuple, Optional
 
 
 def run_fitter(fitter, *args, **kwargs):
@@ -28,19 +31,20 @@ def run_fitter(fitter, *args, **kwargs):
 
 def run_fit(fitter_classname: str,
             filename: str,
+            fsi_class: str,
+            fsi_args: Tuple[Any],
             query: PathQuery,
             fit_range: float,
             fit_chi2: bool = False,
             mrc_path: str = None,
             subset: str = None,
-            fsi_class: str = None,
             ) -> dict:
     """
     Finds data at (filename, query), and fits using the
     remaining parameters
     """
 
-    from copy import copy
+    import ROOT
     from ROOT import TFile
     from ROOT import Data3D
 
@@ -107,6 +111,7 @@ def run_fit(fitter_classname: str,
         data = data.sailor_subset()
 
     fitter = fitter_class(data)
+    fitter.fsi = fsi_class.new_shared_ptr(*fsi_args)
 
     fit_results = fitter.fit_chi2() if fit_chi2 else fitter.fit_pml()
     if not fit_results:
@@ -125,11 +130,24 @@ def run_fit(fitter_classname: str,
     results['rchi2'] = results['chi2'] / results['ndof']
     results['mrc'] = mrc_path
     results['gamma'] = fitter.data.gamma
+    results['fsi'] = f'{fsi_class.__name__}{fsi_args}'
 
     return results
 
 
+@dataclass
+class ParallelFitArgs:
+    tfile: str
+    output_path: str = None
+    fitter_t: str ='FitterGausOSL'
+    mrc: bool = False
+    fitrange: float = 0.11
+    chi2: bool = False
+    limit: Optional[int] = None
+
+
 def parallel_fit_all(tfile,
+                     fsi: Tuple[str, Tuple[Any]],
                      output_path=None,
                      fitter_t='FitterGausOSL',
                      mrc=False,
@@ -192,8 +210,8 @@ def parallel_fit_all(tfile,
     # results = pool.starmap(run_fit_gauss, ((filename, p, fitrange) for p in paths[:4]))
 
     work = chain(
-        ((fitter_t, filename, p, fitrange, chi2) for p in paths),
-        ((fitter_t, filename, p, fitrange, chi2, m) for p, m in mrc_paths),
+        ((fitter_t, filename, *fsi, p, fitrange, chi2) for p in paths),
+        ((fitter_t, filename, *fsi, p, fitrange, chi2, m) for p, m in mrc_paths),
     )
 
     results = pool.starmap(run_fit, work)
