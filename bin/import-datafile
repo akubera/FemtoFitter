@@ -199,11 +199,20 @@ class AnalysisQinv(AnalysisResults):
     @classmethod
     def From(cls, container) -> Optional['AnalysisFinderQ3D']:
 
-        keys = ("Num_qinv", "Den_qinv", "kTDep_qinv")
-        num, den, kt = (get_tobject(container, k) for k in keys)
+        key_vec = [
+           ("Num", "Den", "kTDep"),
+           ("Num_qinv", "Den_qinv", "kTDep_qinv"),
+        ]
 
-        if any(x == nullptr for x in (num, den, kt)):
+        for keys in key_vec:
+            num, den, kt = (get_tobject(container, k) for k in keys)
+
+            if all((num, den, kt)):
+                break
+        else:
+            print("Could not find Qinv results in", container)
             return
+
         self = cls(num, den, kt)
         return self
 
