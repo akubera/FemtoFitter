@@ -8,6 +8,7 @@
 #define FITTER3D_HPP
 
 #include "CalculatorResid.hpp"
+#include "CalculatorFsi.hpp"
 #include "CoulombHist.hpp"
 #include "Data3D.hpp"
 #include "math/fit.hh"
@@ -17,85 +18,104 @@
 
 #include <iostream>
 #include <typeinfo>
+#include <functional>
 
 
+/// \class Fitter3D
+/// \brief Abstract fitter associated the the Data3D class
+///
 template <typename Impl>
 class Fitter3D {
 public:
   using CalcLoglike = ResidCalculatorPML<Impl>;
   using CalcChi2 = ResidCalculatorChi2<Impl>;
 
-
   /// The Associated fit data
   Data3D data;
 
-  Fitter3D(TH3 &n, TH3 &d, TH3 &q, double limit)
+  /// The final-state-interaction calculator
+  std::shared_ptr<FsiCalculator> fsi = nullptr;
+
+  Fitter3D(TH3 &n, TH3 &d, TH3 &q, double limit, std::shared_ptr<FsiCalculator> fsi_calc=nullptr)
     : data(n, d, q, limit)
-  { }
+    , fsi(fsi_calc)
+    { }
 
   Fitter3D(std::unique_ptr<Data3D> data_)
     : data(std::move(data_))
-  { }
+    { }
 
   Fitter3D(std::shared_ptr<const Data3D> data_)
     : data(*data_)
-  { }
+    { }
 
   Fitter3D(const Data3D &data_)
     : data(data_)
-  { }
+    { }
 
   /// Utility function for building fitter with tdirectory in file
   /// at specified path
   static std::unique_ptr<Impl>
   From(TFile &file, const std::string &path, double limit=0.0)
-  {
-    auto tdir = static_cast<TDirectory*>(file.Get(path.c_str()));
-    if (!tdir) {
-      return nullptr;
+    {
+      auto tdir = static_cast<TDirectory*>(file.Get(path.c_str()));
+      if (!tdir) {
+        return nullptr;
+      }
+      return From(*tdir, limit);
     }
-    return From(*tdir, limit);
-  }
 
   /// Construct from ("num", "den", "qinv") histograms in tdirectory
   /// limit sets the fit-range.
   ///
   static std::unique_ptr<Impl>
   From(TDirectory &tdir, double limit=0.0)
-  {
-    TH3 *num = static_cast<TH3*>(tdir.Get("num")),
-        *den = static_cast<TH3*>(tdir.Get("den")),
-        *qinv = static_cast<TH3*>(tdir.Get("qinv"));
+    {
+      TH3 *num = static_cast<TH3*>(tdir.Get("num")),
+          *den = static_cast<TH3*>(tdir.Get("den")),
+          *qinv = static_cast<TH3*>(tdir.Get("qinv"));
 
-    if (!num || !den || !qinv) {
-      std::cerr << "Error loading " << typeid(Impl).name() << " histograms from path "
-                << "'" << tdir.GetName() << "'\n";
-      return nullptr;
+      if (!num || !den || !qinv) {
+        std::cerr << "Error loading " << typeid(Impl).name() << " histograms from path "
+                  << "'" << tdir.GetName() << "'\n";
+        return nullptr;
+      }
+
+      return std::make_unique<Impl>(*num, *den, *qinv, limit);
     }
-
-    return std::make_unique<Impl>(*num, *den, *qinv, limit);
-  }
 
   template <typename FitParams>
   double
   resid_chi2_calc(const FitParams &p) const
-  {
-    double result = 0;
+    {
+      double result = 0;
 
-    double phony_r = p.PseudoRinv(data.gamma);
-    auto coulomb_factor = CoulombHist::GetHistWithRadius(phony_r);
-    auto Kfsi = [&coulomb_factor] (double q) {
-      return coulomb_factor.Interpolate(q);
-    };
+      double pseudo_rinv = p.PseudoRinv(data.gamma);
+      // auto coulomb_factor = CoulombHist::GetHistWithRadius(phony_r);
+      // auto Kfsi = [&coulomb_factor] (double q) {
+      //   return coulomb_factor.Interpolate(q);
+      // };
 
-    for (size_t i=0; i < data.size(); ++i) {
-      const auto &datum = data[i];
-      double CF = p.gauss(datum.qspace(), Kfsi(datum.qinv));
-      result += datum.calc_chi2(CF);
+
+      const std::function<double(double)>
+         Kfsi = fsi
+              ? fsi->ForRadius(pseudo_rinv)
+              : [] (double qinv) { return 1.0; };
+
+      // auto Kfsi_ptr = fsi->ForRadius(pseudo_rinv);
+      // auto &Kfsi = *Kfsi_ptr;
+
+
+      // for (size_t i=0; i < data.size(); ++i) {
+      //   const auto &datum = data[i];
+      for (const auto &datum : data) {
+        // double CF = p.gauss(datum.qspace(), *(fsi)(datum.qinv));
+        double CF = p.gauss(datum.qspace(), Kfsi(datum.qinv));
+        result += datum.calc_chi2(CF);
+      }
+
+      return result;
     }
-
-    return result;
-  }
 
   template <typename ResidFunc, typename FitParams>
   double resid_calc(const FitParams &p, ResidFunc resid_calc) const
@@ -103,11 +123,14 @@ public:
     double retval = 0;
 
     double phony_r = p.PseudoRinv(data.gamma);
-    auto coulomb_factor = CoulombHist::GetHistWithRadius(phony_r);
+    // auto coulomb_factor = CoulombHist::GetHistWithRadius(phony_r);
 
-    auto Kfsi = [&coulomb_factor] (double q) {
-      return coulomb_factor.Interpolate(q);
-    };
+    auto Kfsi = fsi->ForRadius(phony_r);
+    // std::unique_ptr<FsiQinv> kfsi_ptr = fsi->ForRadius(phony_r);
+    // auto &Kfsi = *kfsi_ptr;
+    // auto Kfsi = [&coulomb_factor] (double q) {
+    //   return coulomb_factor.Interpolate(q);
+    // };
 
     for (const auto &datum : data) {
       const double

@@ -21,6 +21,14 @@
 
 #pragma link C++ function apply_momentum_resolution_correction;
 
+#pragma link C++ class FsiGamov;
+#pragma link C++ class FsiGamov::Kcalc;
+#pragma link C++ class FsiStatic;
+#pragma link C++ class FsiStatic::Kcalc;
+#pragma link C++ class FsiKFile;
+#pragma link C++ class FsiKFile::KCalc;
+#pragma link C++ class FsiCalculator;
+
 #pragma link C++ class CoulombHist;
 
 #endif

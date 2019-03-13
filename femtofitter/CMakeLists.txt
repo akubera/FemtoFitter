@@ -59,6 +59,10 @@ set(INCS
   fitter/FitterGaussOSL.hpp
   fitter/FitterGaussOSL3.hpp
   fitter/Levy1D.hh
+  fsi/FsiKFile.hpp
+  fsi/FsiGamov.hpp
+  fsi/FsiStatic.hpp
+ src/CalculatorFsi.hpp
   src/FitterGaussFull.hpp
   src/FitterLevy.hpp
 )
@@ -71,6 +75,7 @@ set(SRCS
   src/Data3D.cpp
   src/Data1D.cpp
   src/Value.cpp
+  fsi/FsiKFile.cpp
   src/CoulombHist.cpp
   src/MinuitFitter.cpp
 #   ${CMAKE_CURRENT_SOURCE_DIR}/femtofitter/MomentumResolutionCorrector.cxx
