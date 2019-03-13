@@ -23,6 +23,7 @@ import feather
 
 import stumpy
 from stumpy.utils import walk_matching
+from stumpy.rhist import normalize_hist, average_hist_contents
 import lmfit
 from femtofitter import FitResults, PathQuery
 from femtofitter.plotting import QuadPlot
@@ -33,5 +34,5 @@ from femtofitter.pyfitter import (
 
 import ROOT
 from ROOT import gROOT, cppyy, TFile
-from ROOT import TLegend, TCanvas
+from ROOT import TCanvas, TLegend, TLine, TText
 from ROOT import TH1, TH3, TF1
