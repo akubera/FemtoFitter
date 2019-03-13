@@ -23,12 +23,13 @@
 // struct FsiKFile : public FsiCalculatorImpl<FsiKFile> {
 struct FsiKFile : public FsiCalculator {
 
-  std::string filename;
-
-  std::vector<double> qinv;
-
+  /// Histogram of K-factor qinv vs Rinv
   std::shared_ptr<const TH2D> k2ss;
 
+  /// Name of the file storing the histogram
+  std::string filename;
+
+  /// buffer
   std::shared_ptr<const TH1D> _qinv_src;
 
   FsiKFile(TString filename)
@@ -52,6 +53,7 @@ struct FsiKFile : public FsiCalculator {
 
   FsiKFile(const FsiKFile &orig)
     : k2ss(orig.k2ss)
+    , filename(orig.filename)
     {
       const TAxis &x = *k2ss->GetXaxis();
       _qinv_src = std::make_shared<TH1D>("_cache", "", x.GetNbins(), x.GetXmin(), x.GetXmax());
