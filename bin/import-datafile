@@ -232,12 +232,16 @@ class AnalysisQ3D(AnalysisResults):
     def From(cls, container) -> Optional['AnalysisFinderQ3D']:
         """
         """
+        from ROOT import TH3I, TH3D
 
         keys = ("Num_q3d", "Den_q3d", "NumWqinv_q3d", "DenWqinv_q3d")
         num, den, nqinv, dqinv = (get_tobject(container, k) for k in keys)
 
         if any(x == nullptr for x in (num, den, nqinv, dqinv)):
             return
+        if isinstance(num, TH3I):
+            print("warning TH3I")
+
         qinv = nqinv.Clone("qinv")
         qinv.SetTitle("q_{inv}")
         if qinv.GetSumw2N() == 0:

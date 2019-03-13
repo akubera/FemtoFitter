@@ -9,6 +9,9 @@
 
 #include "CalculatorFsi.hpp"
 
+#include <vector>
+
+
 /// Final state interaction calculator that always returns a single
 /// value (default 1.0)
 ///
@@ -22,11 +25,34 @@ struct FsiStatic : public FsiCalculator {
     {
     }
 
-  double
-  operator()(double R) const override
+  struct Kcalc : FsiQinv {
+
+    double val;
+
+    Kcalc(double v)
+      : val(v)
+      {}
+
+    double operator()(double qinv) override
+      {
+        return val;
+      }
+  };
+
+  std::function<double(double)> ForRadius(double) override
     {
-      return value;
+      return [=](double) { return value; };
     }
+
+  void Fill(std::vector<double> &dest, double _R)
+    {
+      for (auto &n : dest) {
+        n = value;
+      }
+    }
+
+  std::string ClassName() const override
+    { return std::string("FsiStatic[") + Form("%g", value) + "]"; }
 
 };
 

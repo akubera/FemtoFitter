@@ -24,6 +24,7 @@ from scipy.interpolate import interp2d
 CoulombHist = None
 
 HBAR_C = 0.19732697
+ETA_PION = 1.0 / 388.0;
 
 
 try:
@@ -321,6 +322,11 @@ class FemtoFitter3D:
     @staticmethod
     def get_fsi_factor(qinv, R):
         return COULOMB_INTERP(qinv, R)
+
+    @staticmethod
+    def get_fsi_gamov(qinv, R):
+        x = 2 * np.pi * HBAR_C * ETA_PION / qinv;
+        return x / (np.exp(x) - 1)
 
     def chi2_minimizer(self, data=None, gamma=None, fsi=None, **kwds) -> Minimizer:
         """

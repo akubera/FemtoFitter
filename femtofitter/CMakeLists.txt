@@ -62,6 +62,10 @@ set(INCS
   fitter/FitterLevy3D.hpp
   fitter/FitterLevyFull.hpp
   fitter/Levy1D.hh
+  fsi/FsiKFile.hpp
+  fsi/FsiGamov.hpp
+  fsi/FsiStatic.hpp
+  src/CalculatorFsi.hpp
 )
 list(TRANSFORM INCS PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/)
 set(CMAKE_BUILD_TYPE Release)
@@ -72,6 +76,7 @@ set(SRCS
   src/Data3D.cpp
   src/Data1D.cpp
   src/Value.cpp
+  fsi/FsiKFile.cpp
   src/CoulombHist.cpp
   src/MinimizerMinuit.cpp
 #   ${CMAKE_CURRENT_SOURCE_DIR}/femtofitter/MomentumResolutionCorrector.cxx

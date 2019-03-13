@@ -33,6 +33,7 @@ def run_fit(fitter_classname: str,
             fit_chi2: bool = False,
             mrc_path: str = None,
             subset: str = None,
+            fsi_class: str = None,
             ) -> dict:
     """
     Finds data at (filename, query), and fits using the
@@ -50,6 +51,13 @@ def run_fit(fitter_classname: str,
         fitter_class = fitter_classname
     else:
         raise TypeError(f"Unexpected type {type(fitter_classname)}")
+
+    if isinstance(fsi_class, str):
+        fsi_class = getattr(ROOT, fsi_class)
+    elif fsi_class is None:
+        fsi_class = getattr(ROOT, 'FsiGamov')
+    elif not isinstance(fsi_class, type):
+        raise TypeError(f"Unexpected type of FSI calculator: {type(fsi_class)}")
 
     tfile = TFile.Open(filename)
     if not tfile:
