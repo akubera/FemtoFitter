@@ -54,7 +54,8 @@ struct FsiStatic : public FsiCalculator {
   std::string ClassName() const override
     { return std::string("FsiStatic[") + Form("%g", value) + "]"; }
 
+  static std::shared_ptr<FsiCalculator> new_shared_ptr(double value)
+    { return std::make_shared<FsiStatic>(value); }
 };
-
 
 #endif

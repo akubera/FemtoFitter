@@ -45,7 +45,7 @@ struct FsiGamov : public FsiCalculator {
   std::string ClassName() const override
     { return "FsiGamov"; }
 
-  static std::shared_ptr<FsiGamov> NewPtr()
+  static std::shared_ptr<FsiCalculator> new_shared_ptr()
     { return std::make_shared<FsiGamov>(); }
 
 };
