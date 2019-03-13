@@ -22,8 +22,9 @@ import yaml
 import feather
 
 import stumpy
-from stumpy.utils import walk_matching
+from stumpy.utils import iter_tobject, walk_matching
 from stumpy.rhist import normalize_hist, average_hist_contents
+
 import lmfit
 from femtofitter import FitResults, PathQuery
 from femtofitter.plotting import QuadPlot
