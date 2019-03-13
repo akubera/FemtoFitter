@@ -20,7 +20,18 @@ if sys.path[0] != '':
 
 from femtofitter import PathQuery
 
-from typing import Optional
+from typing import Optional, Tuple
+
+
+@dataclass
+class PyFitterParms:
+    fitter: str
+    filename: str
+    path: PathQuery
+    chi2_fit: bool
+    fit_range: float
+    subset: str=None
+    mrc_path: str=None
 
 
 @dataclass
@@ -188,14 +199,7 @@ def do_fit_caller(args):
     return do_fit(*args)
 
 
-def do_fit(fitter,
-           filename,
-           path,
-           chi2_fit: bool,
-           fit_range,
-           subset=None,
-           mrc_path=None,
-           ) -> Optional[PyFitterResults]:
+def do_fit(params: PyFitterParms) -> Optional[PyFitterResults]:
 
     from ROOT import gSystem, TFile
     from femtofitter.fit import get_configuration_json
@@ -204,12 +208,20 @@ def do_fit(fitter,
     if gSystem.Load("build/libFemtoFitter.so") < 0:
         return None
 
-    filename = str(filename)
+        #    fitter,
+        #    filename,
+        #    path,
+        #    chi2_fit: bool,
+        #    fit_range,
+        #    subset=None,
+        #    mrc_path=None,
+
+    filename = str(params.filename)
     tfile = TFile.Open(filename)
     if not tfile:
         return None
 
-    tdir = tfile.Get(path)
+    tdir = tfile.Get(params.path)
     if not tdir:
         return None
 
