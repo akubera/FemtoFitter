@@ -323,7 +323,7 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
 
 
 // FitterGaussOSL::FitParams
-auto
+inline auto
 FitterGaussOSL::FitResult::as_params() const -> FitParams
 {
   return FitParams(*this);
