@@ -82,17 +82,29 @@ struct FsiKFile : public FsiCalculator {
       auto k2 = const_cast<TH2D&>(*k2ss);
 
       auto hist = std::make_shared<TH1D>(*_qinv_src);
+      hist->SetName("fsi_interp");
+     
+      double max_R = hist->GetYaxis()->GetXmax() * 0.99;
+      double min_R = hist->GetYaxis()->GetXmin() * 1.01;
+      if (Rinv > max_R) {
+        Rinv = max_R;
+      }
+      else if (Rinv < min_R) {
+        Rinv  = min_R;
+      }
+
       for (int i=1; i <= hist->GetNbinsX(); ++i) {
         double qinv = hist->GetXaxis()->GetBinCenter(i);
         double K = k2.Interpolate(qinv, Rinv);
         hist->SetBinContent(i, K);
       }
       double max_qinv = hist->GetXaxis()->GetXmax();
+      double min_qinv = hist->GetXaxis()->GetXmin();
       // return std::make_unique<KCalc>(hist);
 
       return [=](double qinv)
         {
-          return __builtin_expect(qinv > max_qinv, 0)
+          return __builtin_expect(qinv > max_qinv || qinv < min_qinv, 0)
                ? 1.0
                : hist->Interpolate(qinv);
         };
