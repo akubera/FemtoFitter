@@ -250,6 +250,8 @@ public:
   auto num_as_vec() const -> std::vector<double>
     { return numerator_as_vec(*this); }
 
+  void SetFsi(std::shared_ptr<FsiCalculator> ptr)
+    { fsi = ptr; }
 };
 
 #endif
