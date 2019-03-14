@@ -123,13 +123,19 @@ def run_fit(fitter_classname: str,
     fitter = fitter_class(data)
     fitter.fsi = fsi_class.new_shared_ptr(*fsi_args)
 
+    results = {
+        'fsi': str(fitter.fsi.ClassName()), 
+        'mrc': mrc_path,
+    }
     fit_results = fitter.fit_chi2() if fit_chi2 else fitter.fit_pml()
     if not fit_results:
         print(f"Could not fit: {query.as_path()}")
         return {}
 
-    results = dict(fit_results.as_map())
-    results.update(query.as_dict())
+    results.update(fit_results.as_map())
+
+    #results = dict(fit_results.as_map())
+    #results.update(query.as_dict())
 
     results['fit_range'] = fit_range
     results['subset'] = subset
@@ -138,9 +144,9 @@ def run_fit(fitter_classname: str,
     results['chi2'] = fitter.resid_chi2(fit_results)
     results['ndof'] = fitter.degrees_of_freedom()
     results['rchi2'] = results['chi2'] / results['ndof']
-    results['mrc'] = mrc_path
+    #results['mrc'] = mrc_path
     results['gamma'] = fitter.data.gamma
-    results['fsi'] = f'{fsi_class.__name__}{fsi_args}'
+    #results['fsi'] = f'{fsi_class.__name__}{fsi_args}'
 
     return results
 
@@ -220,7 +226,7 @@ def parallel_fit_all(tfile,
     # results = pool.starmap(run_fit_gauss, ((filename, p, fitrange) for p in paths[:4]))
 
     work = chain(
-        ((fitter_t, filename, *fsi, p, fitrange, chi2) for p in paths),
+        # ((fitter_t, filename, *fsi, p, fitrange, chi2) for p in paths),
         ((fitter_t, filename, *fsi, p, fitrange, chi2, m) for p, m in mrc_paths),
     )
 
