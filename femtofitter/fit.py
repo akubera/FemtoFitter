@@ -80,26 +80,36 @@ def run_fit(fitter_classname: str,
         else:
             #mrc_filename = 'Data-sbin.root'
             mrc_filename, _, cfg = mrc_path.partition(':')
-            mrc_query = copy(query)
-            mrc_query.analysis = 'AnalysisTrueQ3D'
-            mrc_query.cent = '00_90'
+            mrc_query = query(cent='00_90')
+            mrc_analyses = [
+                'AnalysisTrueQ3D',
+                'TrueQ3D',
+            ]
             if cfg:
                 mrc_query.cfg = cfg
-            mrc_rootpath = mrc_query.as_path()
-            print(f"Loading MRC from file {mrc_filename} {mrc_rootpath}", )
+
             if mrc_filename and mrc_filename != filename:
                 mrc_tfile = TFile.Open(mrc_filename)
             else:
                 mrc_tfile = tfile
 
-        mrc_path = mrc_rootpath + "/mrc"
-        mrc = mrc_tfile.Get(mrc_path)
-        if mrc_tfile is not tfile:
-            mrc_tfile.Close()
+            for analysis in mrc_analyses:
+                mrc_query.analysis = analysis
+                mrc_rootpath = mrc_query.as_path()
+                mrc_path = mrc_rootpath + "/mrc"
 
-        if not mrc:
-            print("missing mrc path %r" % mrc_path)
-            return {}
+                mrc = mrc_tfile.Get(mrc_path)
+                if mrc:
+                    break
+            else:
+                print(f"Could not find MRC at {mrc_filename}:{mrc_rootpath}")
+                return {}
+
+            if mrc_tfile is not tfile:
+                mrc_tfile.Close()
+
+            # print(f"Loaded MRC from file {mrc_filename} {mrc_rootpath}", )
+
         data = Data3D.FromDirectory(tdir, mrc, fit_range)
         # apply_momentum_resolution_correction(fitter.data, mrc)
     else:
