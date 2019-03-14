@@ -66,6 +66,7 @@ def main(argv=None):
         print(f"\nBeginning scan of {path}")
         process_file(path, output, args.container_pattern)
 
+    print("\nOutput file:", args.out)
     return 0
 
 
@@ -98,11 +99,18 @@ def find_analyses(file, pattern):
     if not file:
         return
 
-    magfield = field_from_filename(str(file.GetName()))
+    filepath = Path(str(file.GetName()))
+    mfield = field_from_name(filepath.name)
 
     for name, container in walk_matching(file, pattern):
         print('scanning container %r' % name)
+        if mfield == '??':
+            magfield = field_from_name(container.GetName())
+        else:
+            magfield = mfield
+
         for analysis in iter_tobject(container):
+            print('analysis:', analysis)
             config = get_tobject(analysis, 'AliFemtoConfigObject')
             if not config:
                 continue
@@ -449,8 +457,8 @@ class LazyTFile:
         return getattr(self._file, key)
 
 
-def field_from_filename(filename: str) -> str:
-    lower = filename.casefold()
+def field_from_name(name: str) -> str:
+    lower = name.casefold()
     if 'neg' in lower:
         return '--'
     elif 'pos' in lower:
