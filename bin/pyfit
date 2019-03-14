@@ -11,6 +11,7 @@ from datetime import datetime
 from itertools import islice, chain
 from pathlib import Path
 from copy import copy
+from os import environ
 
 import pandas as pd
 from lmfit import Parameters
@@ -24,14 +25,14 @@ from typing import Optional, Tuple
 
 
 @dataclass
-class PyFitterParms:
+class PyFitterParams:
     fitter: str
     filename: str
     path: PathQuery
     chi2_fit: bool
     fit_range: float
-    subset: str=None
-    mrc_path: str=None
+    subset: str = None
+    mrc_path: str = None
 
 
 @dataclass
@@ -61,10 +62,10 @@ def arg_parser():
                         type=float,
                         default=0.11,
                         help="symmetric limit to fit")
-    parser.add_argument("--mrc-path",
+    parser.add_argument("--mrc",
                         nargs='?',
                         default=None,
-                        help="file to fit")
+                        help="Source of momentum resolution correction")
     parser.add_argument("--fitter",
                         default='FitterGauss6',
                         help="Name of the fitter class to use")
@@ -85,6 +86,7 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
     args = arg_parser().parse_args(argv)
+    environ['ALICE_BATCH'] = '1'
 
     from femtofitter import pyfitter
     from stumpy.utils import walk_matching
@@ -109,7 +111,7 @@ def main(argv=None):
         dest = dest_dir / dest_filename
         # todo: Check if dest exists and warn user?
 
-    mrc_path = args.mrc_path
+    mrc_path = args.mrc
 
     fit_range = args.fitrange
 
@@ -119,8 +121,9 @@ def main(argv=None):
             walk_matching(tfile, "Q3DLCMS/cfg*/*/*/*/*"),
             walk_matching(tfile, "AnalysisQ3D/cfg*/*/*/*/*"))
 
-    work = ((fitter, filename, path, args.chi2, fit_range, args.subset, mrc_path)
+    work = (PyFitterParams(fitter, filename, path, args.chi2, fit_range, args.subset, mrc_path)
             for path, _ in paths)
+
 
     # only take first few work units
     if args.count:
@@ -173,7 +176,7 @@ def main(argv=None):
         # results = pool.imap_unordered(lambda args: process_fit_result(do_fit(*args)), work)
         # results = pool.map(lambda args: process_fit_result(do_fit(*args)), work)
 
-        results = [process_fit_result(r) for r in pool.starmap(do_fit, work) if r]
+        results = [process_fit_result(r) for r in pool.map(do_fit, work) if r]
 
     df = pd.concat([r['df'] for r in results])
     config = pd.concat([r['config'] for r in results])
@@ -199,11 +202,12 @@ def do_fit_caller(args):
     return do_fit(*args)
 
 
-def do_fit(params: PyFitterParms) -> Optional[PyFitterResults]:
+def do_fit(params: PyFitterParams) -> Optional[PyFitterResults]:
 
     from ROOT import gSystem, TFile
     from femtofitter.fit import get_configuration_json
     from femtofitter.pyfitter import MomentumResolutionCorrector
+    from femtofitter import pyfitter
 
     if gSystem.Load("build/libFemtoFitter.so") < 0:
         return None
@@ -215,6 +219,14 @@ def do_fit(params: PyFitterParms) -> Optional[PyFitterResults]:
         #    fit_range,
         #    subset=None,
         #    mrc_path=None,
+    mrc_path = params.mrc_path
+    fit_range = params.fit_range
+    subset = params.subset
+
+    if isinstance(params.fitter, str):
+        fitter = getattr(pyfitter, params.fitter)
+    else:
+        fitter = params.fitter
 
     filename = str(params.filename)
     tfile = TFile.Open(filename)
@@ -235,8 +247,8 @@ def do_fit(params: PyFitterParms) -> Optional[PyFitterResults]:
     else:
         mrc = None
 
-    query = PathQuery.from_path(path)
-    print("Fitting:", filename, path)
+    query = PathQuery.from_path(params.path)
+    print("Fitting:", filename, query.as_path())
 
     config = get_configuration_json(tfile, [query])
     from femtofitter.pyfitter import PyData3D
@@ -250,11 +262,15 @@ def do_fit(params: PyFitterParms) -> Optional[PyFitterResults]:
             mrc_tfile = TFile.Open(mrcfile)
         mrc_query = copy(query)
         mrc_query.cent = '00_90'
-        mrc_query.analysis = 'AnalysisTrueQ3D'
         if mrc_cfg:
             mrc_query.cfg = mrc_cfg
-        mrchist = mrc_tfile.Get(mrc_query.as_path() + "/mrc")
-        if not mrchist:
+
+        for mrc_key in ['AnalysisTrueQ3D', 'TrueQ3D']:
+            mrc_query.analysis = mrc_key
+            mrchist = mrc_tfile.Get(mrc_query.as_path() + "/mrc")
+            if mrchist:
+                break
+        else:
             print("Could not load MRC at %r" % mrc_query.as_path())
             return None
 
@@ -278,13 +294,13 @@ def do_fit(params: PyFitterParms) -> Optional[PyFitterResults]:
     fitter = fitter(data)
 
     mini = (fitter.chi2_minimizer()
-            if chi2_fit
+            if params.chi2_fit
             else fitter.pml_minimizer())
 
     try:
-       results_0 = mini.minimize(method='nelder')
-       fit_results = mini.minimize(method='leastsq', params=results_0.params)
-       fit_results = mini.minimize(method='leastsq', params=fit_results.params)
+        results_0 = mini.minimize(method='nelder')
+        fit_results = mini.minimize(method='leastsq', params=results_0.params)
+        fit_results = mini.minimize(method='leastsq', params=fit_results.params)
     except ValueError as e:
         print("Error fitting %r" % query.as_path(), file=sys.stderr)
         print(e)
@@ -296,7 +312,7 @@ def do_fit(params: PyFitterParms) -> Optional[PyFitterResults]:
 
     result = PyFitterResults(query,
                              config,
-                             fit_range,
+                             params.fit_range,
                              fit_results,
                              subset,
                              mrc_path,
