@@ -177,17 +177,23 @@ Data3D::FromDirectory(TDirectory &tdir, const TH3 &mrc, double limit)
   if (n->GetNbinsX() == mrc.GetNbinsX()) {
     n->Multiply(&mrc);
   } else {
-    for (int k=1; k <= mrc.GetNbinsZ(); ++k)
-    for (int j=1; j <= mrc.GetNbinsY(); ++j)
-    for (int i=1; i <= mrc.GetNbinsX(); ++i) {
-      double x = n->GetXaxis()->GetBinCenter(i);
-      double y = n->GetYaxis()->GetBinCenter(j);
-      double z = n->GetZaxis()->GetBinCenter(k);
+    const TAxis &xaxis = *n->GetXaxis(),
+                &yaxis = *n->GetYaxis(),
+                &zaxis = *n->GetZaxis();
+
+    for (int k=zaxis.GetFirst(); k <= zaxis.GetLast(); ++k)
+    for (int j=yaxis.GetFirst(); j <= yaxis.GetLast(); ++j)
+    for (int i=xaxis.GetFirst(); i <= xaxis.GetLast(); ++i) {
+      const double
+        x = xaxis.GetBinCenter(i),
+        y = yaxis.GetBinCenter(j),
+        z = zaxis.GetBinCenter(k);
 
       int bin = const_cast<TH3&>(mrc).FindBin(x,y,z);
       if (mrc.IsBinUnderflow(bin) || mrc.IsBinOverflow(bin)) {
 	      continue;
       }
+
       double f = const_cast<TH3&>(mrc).Interpolate(x,y,z);
       n->SetBinContent(i,j,k, f * n->GetBinContent(i,j,k));
     }
