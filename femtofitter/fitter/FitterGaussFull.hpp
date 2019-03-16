@@ -40,6 +40,9 @@ struct FitterGaussFull : public Fitter3D<FitterGaussFull> {
     RSL_PARAM_IDX = 8,
   };
 
+  static unsigned char CountParams()
+    { return 8; }
+
   static double
   gauss(std::array<double, 3> q,
         // std::array<double, 6> RSq,

@@ -90,6 +90,9 @@ public:
 
   virtual ~Fitter3D() = default;
 
+  size_t degrees_of_freedom() const
+    { return data.size() - Impl::CountParams(); }
+
   /// Add parameters to minuit object
   virtual int setup_minuit(TMinuit &) const = 0;
 
