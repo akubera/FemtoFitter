@@ -63,8 +63,8 @@ double
 ParamHints::GenRo()
 {
   // double guess = 6.0 - 2.73 * _kt;
-  double guess = quad(_kt, {3.962834, -3.169876, 1.392115});
-  double width = quad(_kt, {-0.091011, 0.326387, 0.0});
+  double guess = quad(_kt, {5.948559, -4.761364, 1.493706});
+  double width = quad(_kt, {1.167456, -0.579258, 0.0});
   double res = rng.Gaus(guess, width);
   std::cout << "kt: " << _kt << " Ro: " << guess << "(sig: "<<width<<") -> " << res << "\n";
   return res;
@@ -74,8 +74,8 @@ double
 ParamHints::GenRs()
 {
   // double guess = 6.0 - 2.73 * _kt;
-  double guess = quad(_kt, {4.949104, -1.445119, -0.040149});
-  double width = quad(_kt, {-0.066673, 0.706656, 0.0});
+  double guess = quad(_kt, {5.987421, -4.997335, 2.092529});
+  double width = quad(_kt, {0.930945, -0.364653, 0.0});
   // [5.26584761643512, -1.3636154652965575, -0.2066691955864532]
   return rng.Gaus(guess, width);
 }
@@ -84,8 +84,8 @@ double
 ParamHints::GenRl()
 {
   // double guess = 1.48 * _kt * _kt - 3.278 * _kt - 4.108;
-  double guess = quad(_kt, {6.193636, -4.870681, 2.039706});
-  double width = quad(_kt, {0.012742, 0.659730, 0.0});
+  double guess = quad(_kt, {8.099881, -10.182387, 4.802380});
+  double width = quad(_kt, {1.155730, -0.624690, 0.0});
 
   return rng.Gaus(guess, width);
 }
@@ -95,8 +95,8 @@ ParamHints::GenLam()
 {
   // double guess = -1.152 * _kt * _kt + 2.075 * _kt - 0.01221;
   // double guess = quad(_kt, {-0.0122132, 2.0753803674, -1.151999760});
-  double guess = quad(_kt, {0.155513, 1.729715, -0.976775});
-  double width = quad(_kt, {-0.265663, 0.281445, 0.0});
+  double guess = quad(_kt, {0.162619, 0.396256, -0.119527});
+  double width = quad(_kt, {0.066672, 0.001860, 0.0});
 
   return rng.Gaus(guess, width);
 }
