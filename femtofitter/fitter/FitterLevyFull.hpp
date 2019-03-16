@@ -42,8 +42,8 @@ struct FitterLevyFull : public Fitter3D<FitterLevyFull> {
   };
 
 
-  int degrees_of_freedom() const
-    { return data.size() - 8; }
+  static unsigned char CountParams()
+    { return 8; }
 
   static double
   gauss(const std::array<double, 3> &q,

@@ -66,6 +66,7 @@ set(INCS
   fsi/FsiGamov.hpp
   fsi/FsiStatic.hpp
   src/CalculatorFsi.hpp
+  src/ParamHints.hpp
 )
 list(TRANSFORM INCS PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/)
 set(CMAKE_BUILD_TYPE Release)
@@ -79,6 +80,7 @@ set(SRCS
   fsi/FsiKFile.cpp
   src/CoulombHist.cpp
   src/MinimizerMinuit.cpp
+  src/ParamHints.cpp
 #   ${CMAKE_CURRENT_SOURCE_DIR}/femtofitter/MomentumResolutionCorrector.cxx
 )
 

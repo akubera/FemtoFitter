@@ -33,6 +33,8 @@
 #pragma link C++ class FsiKFile::KCalc;
 #pragma link C++ class FsiCalculator;
 
+#pragma link C++ class ParamHints;
+
 #pragma link C++ class CoulombHist;
 
 #endif

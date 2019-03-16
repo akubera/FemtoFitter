@@ -43,6 +43,9 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
   struct FitParams;
   struct FitResult;
 
+  static unsigned char CountParams()
+    { return 5; }
+
   static double
   gauss(const std::array<double, 3> &q,
         const std::array<double, 3> &RSq,
