@@ -349,7 +349,9 @@ void FitterGaussOSL::fit_with_random_inits(TMinuit &minuit, FitResult &res, int 
   minuit.mnparm(ROUT_PARAM_IDX, "Ro", paramhints->GenRo(), 0.1, 0.0, 0.0, errflag);
   minuit.mnparm(RSIDE_PARAM_IDX, "Rs", paramhints->GenRs(), 0.1, 0.0, 0.0, errflag);
   minuit.mnparm(RLONG_PARAM_IDX, "Rl", paramhints->GenRl(), 0.1, 0.0, 0.0, errflag);
+  minuit.mnprin(1, 0.0);
 
+  std::cout << "--------\n";
   res = do_fit_minuit(minuit, 1.0, rec);  // -> Impl::FitResult
 
   // res = FitResult(minuit);
