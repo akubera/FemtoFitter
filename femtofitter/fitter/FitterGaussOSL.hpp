@@ -344,10 +344,10 @@ void FitterGaussOSL::fit_with_random_inits(TMinuit &minuit, FitResult &res, int 
 {
   int errflag = 0;
 
-  minuit.mnparm(LAM_PARAM_IDX, "Lam", paramhints->GenLam(), 0.01, 0.0, 0.0, errflag);
-  minuit.mnparm(ROUT_PARAM_IDX, "Ro", paramhints->GenRo(), 0.1, 0.0, 0.0, errflag);
-  minuit.mnparm(RSIDE_PARAM_IDX, "Rs", paramhints->GenRs(), 0.1, 0.0, 0.0, errflag);
-  minuit.mnparm(RLONG_PARAM_IDX, "Rl", paramhints->GenRl(), 0.1, 0.0, 0.0, errflag);
+  minuit.mnparm(LAM_PARAM_IDX, "Lam", paramhints->GenLam(), 0.001, 0.0, 0.0, errflag);
+  minuit.mnparm(ROUT_PARAM_IDX, "Ro", paramhints->GenRo(), 0.01, 0.0, 0.0, errflag);
+  minuit.mnparm(RSIDE_PARAM_IDX, "Rs", paramhints->GenRs(), 0.01, 0.0, 0.0, errflag);
+  minuit.mnparm(RLONG_PARAM_IDX, "Rl", paramhints->GenRl(), 0.01, 0.0, 0.0, errflag);
 
   // minuit.mnprin(1, 0.0);
   // std::cout << "--------\n";
