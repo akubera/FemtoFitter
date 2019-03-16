@@ -122,9 +122,10 @@ def run_fit(fitter_classname: str,
 
     fitter = fitter_class(data)
     fitter.fsi = fsi_class.new_shared_ptr(*fsi_args)
+    fitter.SetParamHintsFromDir(tdir)
 
     results = {
-        'fsi': str(fitter.fsi.ClassName()), 
+        'fsi': str(fitter.fsi.ClassName()),
         'mrc': mrc_path,
     }
     fit_results = fitter.fit_chi2() if fit_chi2 else fitter.fit_pml()
@@ -169,7 +170,7 @@ def parallel_fit_all(tfile,
                      mrc=False,
                      fitrange=0.21,
                      chi2=False,
-                     limit=None):
+                     limit=None, threads=None):
     """
     """
 
@@ -222,7 +223,7 @@ def parallel_fit_all(tfile,
     configuration_information = get_configuration_json(tfile, paths)
 
     filename = str(filename.absolute())
-    pool = Pool()
+    pool = Pool(threads)
     # results = pool.starmap(run_fit_gauss, ((filename, p, fitrange) for p in paths[:4]))
 
     work = chain(

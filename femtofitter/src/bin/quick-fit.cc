@@ -1,7 +1,7 @@
 
 #include "fitter/FitterGaussOSL.hpp"
-#include "fitter/FitterLevy3D.hpp"
-#include "fitter/FitterLevyFull.hpp"
+// #include "fitter/FitterLevy3D.hpp"
+// #include "fitter/FitterLevyFull.hpp"
 
 #include "Data3D.hpp"
 

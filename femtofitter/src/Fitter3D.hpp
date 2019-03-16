@@ -33,6 +33,8 @@ public:
   using CalcLoglike = ResidCalculatorPML<Impl>;
   using CalcChi2 = ResidCalculatorChi2<Impl>;
 
+  struct FitResult;
+
   /// The Associated fit data
   Data3D data;
 
@@ -63,6 +65,11 @@ public:
   Fitter3D(Data3D &&data_)
     : data(std::move(data_))
   { }
+
+  void SetParamHintsFromDir(const TDirectory &tdir)
+    {
+      paramhints = std::make_unique<ParamHints>(tdir);
+    }
 
   /// Utility function for building fitter with tdirectory in file
   /// at specified path
@@ -235,7 +242,7 @@ public:
     { return fit_chi2(); }
 
   auto
-  do_fit_minuit(TMinuit &minuit, double sigma=1.0)  // -> Impl::FitResult
+  do_fit_minuit(TMinuit &minuit, double sigma=1.0, int recursive_count=0)  // -> Impl::FitResult
   {
     double strat_args[] = {1.0};
     double migrad_args[] = {2000.0, sigma};
@@ -251,18 +258,46 @@ public:
 
     minuit.mnexcm("HESSE", hesse_args, 1, errflag);
 
+    auto result = typename Impl::FitResult(minuit);
+
     for (int pidx=1; pidx < Impl::CountParams(); ++pidx) {
       // Impl
       double val, _err;
       if (minuit.GetParameter(pidx, val, _err)) {
         if (val > 100) {
-          std::cout << "Bad Fit " << val << "\n";
+          std::cout << "Bad Fit " << pidx << " " << val << "\n";
+
+        // minuit.SetParameter(2, paramhints->GenLam(), .01);
+        // minuit.SetParameter(3, , .1);
+        // minuit.SetParameter(4, paramhints->GenRs(), .1);
+        // minuit.SetParameter(5, paramhints->GenRl(), .1);
+        /*
+        minuit.mnparm(Impl::LAM_PARAM_IDX, "Lam", paramhints->GenLam(), 0.01, 0.0, 0.0, errflag);
+        minuit.mnparm(Impl::ROUT_PARAM_IDX, "Ro", paramhints->GenRo(), 0.1, 0.0, 0.0, errflag);
+        minuit.mnparm(Impl::RSIDE_PARAM_IDX, "Rs", paramhints->GenRs(), 0.1, 0.0, 0.0, errflag);
+        minuit.mnparm(Impl::RLONG_PARAM_IDX, "Rl", paramhints->GenRl(), 0.1, 0.0, 0.0, errflag);
+        */
+
+        if (++recursive_count < 10) {
+          std::cout << "Retrying with random params\n";
+          // auto res = do_fit_minuit(minuit, sigma, recursive_count);
+          auto &self = static_cast<Impl&>(*this);
+          self.fit_with_random_inits(minuit, result);
+          std::cout << "done.";
+          break;
+        }
+        else {
+          break;
+        }
         }
       }
     }
 
-    return typename Impl::FitResult(minuit);
+    return result;
   }
+
+  // template <typename FitRes>
+  // void fit_with_random_inits(TMinuit &, FitRes &res);
 
   std::size_t size() const
     { return data.size(); }

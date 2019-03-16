@@ -251,7 +251,9 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
   FromDirectory(TDirectory &dir, double limit=0.0)
     {
       auto data = Data3D::FromDirectory(dir, limit);
-      return std::make_unique<FitterGaussOSL>(std::move(data));
+      auto fitter = std::make_unique<FitterGaussOSL>(std::move(data));
+      fitter->paramhints = std::make_unique<ParamHints>(dir);
+      return fitter;
     }
 
   FitterGaussOSL(const Data3D &data)
@@ -325,6 +327,8 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
   FitResult fit()
     { return Fitter3D::fit(); }
 
+  void fit_with_random_inits(TMinuit &minuit, FitResult &res);
+
 };
 
 
@@ -333,4 +337,20 @@ inline auto
 FitterGaussOSL::FitResult::as_params() const -> FitParams
 {
   return FitParams(*this);
+}
+
+// template<>
+void FitterGaussOSL::fit_with_random_inits(TMinuit &minuit, FitResult &res)
+{
+  int errflag = 0;
+  std::cout << "paramhints: " << paramhints.get() << "\n";
+
+  minuit.mnparm(LAM_PARAM_IDX, "Lam", paramhints->GenLam(), 0.01, 0.0, 0.0, errflag);
+  minuit.mnparm(ROUT_PARAM_IDX, "Ro", paramhints->GenRo(), 0.1, 0.0, 0.0, errflag);
+  minuit.mnparm(RSIDE_PARAM_IDX, "Rs", paramhints->GenRs(), 0.1, 0.0, 0.0, errflag);
+  minuit.mnparm(RLONG_PARAM_IDX, "Rl", paramhints->GenRl(), 0.1, 0.0, 0.0, errflag);
+
+  res = do_fit_minuit(minuit, 11);  // -> Impl::FitResult
+
+  // res = FitResult(minuit);
 }

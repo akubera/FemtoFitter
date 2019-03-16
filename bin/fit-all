@@ -114,7 +114,7 @@ def main(argv=None):
                      mrc_path,
                      args.fitrange,
                      args.chi2,
-                     args.limit)
+                     args.limit, 7)
     return 0
 
 
