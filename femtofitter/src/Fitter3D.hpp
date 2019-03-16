@@ -266,7 +266,7 @@ public:
       if (minuit.GetParameter(pidx, val, _err)) {
         if (val > 14 || val < 0 || (pidx > 2 && val < 1)) {
           // std::cout << "Bad Fit" << "\n";
-          minuit.mnprin(1, 0.0);
+          // minuit.mnprin(1, 0.0);
 
         // minuit.SetParameter(2, paramhints->GenLam(), .01);
         // minuit.SetParameter(3, , .1);
