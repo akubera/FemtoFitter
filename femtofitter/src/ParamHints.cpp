@@ -66,7 +66,7 @@ ParamHints::GenRo()
   double guess = quad(_kt, {3.962834, -3.169876, 1.392115});
   double width = quad(_kt, {0.0, 0.326387, -0.091011});
   double res = rng.Gaus(guess, width);
-  std::cout << "kt: " << _kt << " Ro: " << res << "\n";
+  std::cout << "kt: " << _kt << " Ro: " << guess << "(sig: "<<width<<") -> " << res << "\n";
   return res;
 }
 
