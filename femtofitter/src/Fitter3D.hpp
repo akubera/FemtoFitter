@@ -13,8 +13,11 @@
 #include "Data3D.hpp"
 #include "math/fit.hh"
 
+#include "ParamHints.hpp"
+
 #include <TMinuit.h>
 #include <TFile.h>
+
 
 #include <iostream>
 #include <typeinfo>
@@ -36,6 +39,9 @@ public:
   /// The final-state-interaction calculator
   std::shared_ptr<FsiCalculator> fsi = nullptr;
 
+  /// Used to initialize parameters
+  std::unique_ptr<ParamHints> paramhints;
+
   Fitter3D(TH3 &n, TH3 &d, TH3 &q, double limit, std::shared_ptr<FsiCalculator> fsi_calc=nullptr)
     : data(n, d, q, limit)
     , fsi(fsi_calc)
@@ -43,6 +49,7 @@ public:
 
   Fitter3D(std::unique_ptr<Data3D> data_)
     : data(std::move(data_))
+    // , paramhints(std::make_unique<ParamHints>())
     { }
 
   Fitter3D(std::shared_ptr<const Data3D> data_)
@@ -243,6 +250,16 @@ public:
     minuit.mnexcm("MIGRAD", migrad_args, 2, errflag);
 
     minuit.mnexcm("HESSE", hesse_args, 1, errflag);
+
+    for (int pidx=1; pidx < Impl::CountParams(); ++pidx) {
+      // Impl
+      double val, _err;
+      if (minuit.GetParameter(pidx, val, _err)) {
+        if (val > 100) {
+          std::cout << "Bad Fit " << val << "\n";
+        }
+      }
+    }
 
     return typename Impl::FitResult(minuit);
   }
