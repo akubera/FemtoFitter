@@ -166,7 +166,7 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
 
     /// Return calculated Rinv: $\sqrt{Ro^2 \gamma + Rs^2 + Rl^2}$
     double PseudoRinv(double gamma) const
-      { return std::sqrt((Ro * Ro * gamma + Rs * Rs + Rl * Rl) / 3.0); }
+      { return std::sqrt((Ro * Ro * gamma * gamma + Rs * Rs + Rl * Rl) / 3.0); }
 
     double gauss(const std::array<double, 3> &q, double K) const
       { return FitterGaussOSL::gauss(q, {Ro*Ro, Rs*Rs, Rl*Rl}, lam, K, norm); }
