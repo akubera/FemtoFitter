@@ -264,8 +264,8 @@ public:
       // Impl
       double val, _err;
       if (minuit.GetParameter(pidx, val, _err)) {
-        if (val > 100 || val < 0) {
-          std::cout << "Bad Fit" << "\n";
+        if (val > 14 || val < 0 || (pidx > 2 && val < 1)) {
+          // std::cout << "Bad Fit" << "\n";
           minuit.mnprin(1, 0.0);
 
         // minuit.SetParameter(2, paramhints->GenLam(), .01);
@@ -280,11 +280,11 @@ public:
         */
 
         if (++recursive_count < 10) {
-          std::cout << "Retrying (" << recursive_count << ") with random params\n";
+          // std::cout << "Retrying (" << recursive_count << ") with random params\n";
           // auto res = do_fit_minuit(minuit, sigma, recursive_count);
           auto &self = static_cast<Impl&>(*this);
           self.fit_with_random_inits(minuit, result, recursive_count);
-          std::cout << "done .";
+          // std::cout << "done .";
         }
         else {
           std::cout << "giving up.\n";
