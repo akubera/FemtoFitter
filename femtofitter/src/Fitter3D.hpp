@@ -282,11 +282,12 @@ public:
           std::cout << "Retrying with random params\n";
           // auto res = do_fit_minuit(minuit, sigma, recursive_count);
           auto &self = static_cast<Impl&>(*this);
-          self.fit_with_random_inits(minuit, result);
-          std::cout << "done.";
+          self.fit_with_random_inits(minuit, result, recursive_count);
+          std::cout << "done .";
           break;
         }
         else {
+          std::cout << "giving up.\n";
           break;
         }
         }

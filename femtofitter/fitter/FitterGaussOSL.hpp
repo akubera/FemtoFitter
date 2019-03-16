@@ -327,7 +327,7 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
   FitResult fit()
     { return Fitter3D::fit(); }
 
-  void fit_with_random_inits(TMinuit &minuit, FitResult &res);
+  void fit_with_random_inits(TMinuit &minuit, FitResult &res, int);
 
 };
 
@@ -340,7 +340,7 @@ FitterGaussOSL::FitResult::as_params() const -> FitParams
 }
 
 // template<>
-void FitterGaussOSL::fit_with_random_inits(TMinuit &minuit, FitResult &res)
+void FitterGaussOSL::fit_with_random_inits(TMinuit &minuit, FitResult &res, int rec)
 {
   int errflag = 0;
   std::cout << "paramhints: " << paramhints.get() << "\n";
@@ -350,7 +350,7 @@ void FitterGaussOSL::fit_with_random_inits(TMinuit &minuit, FitResult &res)
   minuit.mnparm(RSIDE_PARAM_IDX, "Rs", paramhints->GenRs(), 0.1, 0.0, 0.0, errflag);
   minuit.mnparm(RLONG_PARAM_IDX, "Rl", paramhints->GenRl(), 0.1, 0.0, 0.0, errflag);
 
-  res = do_fit_minuit(minuit, 11);  // -> Impl::FitResult
+  res = do_fit_minuit(minuit, rec);  // -> Impl::FitResult
 
   // res = FitResult(minuit);
 }
