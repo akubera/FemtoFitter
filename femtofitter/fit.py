@@ -170,7 +170,8 @@ def parallel_fit_all(tfile,
                      mrc=False,
                      fitrange=0.21,
                      chi2=False,
-                     limit=None, threads=None):
+                     limit=None,
+                     threads=None):
     """
     """
 

@@ -40,6 +40,10 @@ def arg_parser():
     parser.add_argument("--fsi-args",
                         default=(),
                         help="Arguments used to build fsi object")
+    parser.add_argument("--threads",
+                        default=None,
+                        type=int,
+                        help="Number of parallel processes to run")
     return parser
 
 
@@ -114,7 +118,10 @@ def main(argv=None):
                      mrc_path,
                      args.fitrange,
                      args.chi2,
-                     args.limit, 7)
+                     args.limit,
+                     args.threads)
+
+    print(f"Output written to {dest}")
     return 0
 
 
