@@ -24,7 +24,7 @@
 struct FsiKFile : public FsiCalculator {
 
   /// Histogram of K-factor qinv vs Rinv
-  std::shared_ptr<const TH2D> k2ss;
+  std::shared_ptr<const TH2> k2ss;
 
   /// Name of the file storing the histogram
   std::string filename;
@@ -79,11 +79,11 @@ struct FsiKFile : public FsiCalculator {
   // std::unique_ptr<FsiQinv> ForRadius(double Rinv) override
     {
       // because Interpolate is non-const for some reason
-      auto k2 = const_cast<TH2D&>(*k2ss);
+      auto &k2 = const_cast<TH2&>(*k2ss);
 
       auto hist = std::make_shared<TH1D>(*_qinv_src);
       hist->SetName("fsi_interp");
-     
+
       double max_R = hist->GetYaxis()->GetXmax() * 0.99;
       double min_R = hist->GetYaxis()->GetXmin() * 1.01;
       if (Rinv > max_R) {

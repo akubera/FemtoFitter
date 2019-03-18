@@ -174,13 +174,22 @@ Data3D::FromDirectory(TDirectory &tdir, const TH3 &mrc, double limit)
     return nullptr;
   }
 
-  if (n->GetNbinsX() == mrc.GetNbinsX()) {
+  const TAxis
+    &xaxis = *n->GetXaxis(),
+    &yaxis = *n->GetYaxis(),
+    &zaxis = *n->GetZaxis();
+
+  const bool
+    can_simply_multiply = n->GetNbinsX() == mrc.GetNbinsX()
+                       && xaxis.GetXmax() == mrc.GetXaxis()->GetXmax()
+                       && n->GetNbinsY() == mrc.GetNbinsY()
+                       && yaxis.GetXmax() == mrc.GetYaxis()->GetXmax()
+                       && n->GetNbinsZ() == mrc.GetNbinsZ()
+                       && zaxis.GetXmax() == mrc.GetZaxis()->GetXmax();
+
+  if (can_simply_multiply) {
     n->Multiply(&mrc);
   } else {
-    const TAxis &xaxis = *n->GetXaxis(),
-                &yaxis = *n->GetYaxis(),
-                &zaxis = *n->GetZaxis();
-
     for (int k=zaxis.GetFirst(); k <= zaxis.GetLast(); ++k)
     for (int j=yaxis.GetFirst(); j <= yaxis.GetLast(); ++j)
     for (int i=xaxis.GetFirst(); i <= xaxis.GetLast(); ++i) {
