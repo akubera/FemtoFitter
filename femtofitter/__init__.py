@@ -10,7 +10,6 @@ import pandas as pd
 
 @dataclass
 class PathQuery:
-# class PathQuery(NamedTuple):
     analysis: str
     cfg: str
     pair: str
@@ -252,3 +251,26 @@ def normalize_yaxis(canvas, offset_percent=2):
 
     for h in hists:
         h.GetYaxis().SetRangeUser(range_min * lofact, range_max * hifact)
+
+
+def interpolate_mrc_hist(h, mrc, warn=False):
+    xaxis = h.GetXaxis()
+    yaxis = h.GetYaxis()
+    zaxis = h.GetZaxis()
+
+    for k in range(zaxis.GetFirst(), zaxis.GetLast() + 1):
+        z = zaxis.GetBinCenter(k)
+        for j in range(yaxis.GetFirst(), yaxis.GetLast() + 1):
+            y = yaxis.GetBinCenter(j)
+            for i in range(xaxis.GetFirst(), xaxis.GetLast() + 1):
+                x = xaxis.GetBinCenter(i)
+
+                mbin = mrc.FindBin(x, y, z)
+                if mrc.IsBinUnderflow(mbin) or mrc.IsBinOverflow(mbin):
+                    if warn:
+                        print("bin", mbin, "is outside mrc range")
+                    continue
+
+                f = mrc.Interpolate(x, y, z)
+                # print("factor", f)
+                h.SetBinContent(i, j, k, f * h.GetBinContent(i, j, k))
