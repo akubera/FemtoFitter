@@ -1,0 +1,116 @@
+#!/usr/bin/env python
+#
+# plot-fit-projections
+#
+
+
+import sys
+import json
+from pathlib import Path
+
+
+def arg_parser():
+    from argparse import ArgumentParser, FileType
+    parser = ArgumentParser()
+    parser.add_argument("fit_result_file",
+                        type=FileType("r"),
+                        help='JSON fitresult file')
+    return parser
+
+
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
+    args = arg_parser().parse_args(argv)
+
+    import ROOT
+    from ROOT import TFile
+
+    fit_results = json.load(args.fit_result_file)
+
+    # print(fit_results)
+    tfile = TFile.Open(fit_results['filename'])
+    if not tfile:
+        return 1
+
+    print("Opened", tfile.GetName())
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    print(sys.path)
+
+    from femtofitter import PathQuery
+
+    from ROOT import TH3, TCanvas
+    TH3.AddDirectory(False)
+
+    get_axes = TH3.GetXaxis, TH3.GetYaxis, TH3.GetZaxis
+    get_projector = TH3.ProjectionX, TH3.ProjectionY, TH3.ProjectionZ
+
+    canvases = []
+
+    for fitres in fit_results['df']:
+        print(fitres['mrc'])
+        query = PathQuery.From(fitres)
+        tdir = tfile.Get(query.as_path())
+
+        data_keys = [("num", "den"), ("Num", "Den")]
+
+        for names in data_keys:
+            num, den = map(tdir.Get, names)
+            if num and den:
+                break
+        else:
+            print("Could not find num & den in", query.as_path())
+            break
+
+        # from femtofitter.pyfitter import FitterGauss
+        from ROOT import FitterGaussOSL, FsiKFile
+
+        FitterClass = FitterGaussOSL
+
+        import numpy as np
+        arr = np.array([0.0] + [fitres[k] for k in ("norm", "lam", "Ro", "Rs", "Rl")])
+        params = FitterClass.FitParams(arr)
+        fitter = FitterClass.From(tdir)
+        fsi = FsiKFile("KFile2.root")
+        from femtofitter.plotting import normalize_canvas
+
+        fit = den.Clone("fit")
+        if fit.GetSumw2N() == 0:
+            fit.Sumw2()
+
+        qinv = tdir.Get("qinv")
+        params.apply_to(fit, qinv, fsi, fitter.data.gamma)
+        lim = 0.05
+
+        for get_ax, proj in zip(get_axes, get_projector):
+            c = TCanvas()
+            lb, hb = map(get_ax(num).FindBin, (-lim, lim))
+            pargs = (lb, hb) * 2
+            r = proj(num, 'rx', *pargs)
+            r.SetStats(False)
+            if r.GetSumw2N() == 0:
+                r.Sumw2()
+            dx = proj(den, 'dx', *pargs)
+            r.Divide(dx)
+            r.Scale(1.0 / fitres['norm'])
+            r.DrawCopy("HIST HE")
+
+            f = proj(fit, 'fx', *pargs)
+            f.Scale(1.0 / fitres['norm'])
+            f.Divide(dx)
+            f.SetLineColor(ROOT.kRed)
+            f.Draw("SAME HIST C")
+            normalize_canvas(c)
+            canvases.append(c)
+
+        break
+
+    from ROOT import gApplication
+
+    gApplication.Run()
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
