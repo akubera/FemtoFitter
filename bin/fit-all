@@ -101,7 +101,7 @@ def main(argv=None):
         import ast
         try:
             fsi_args = ast.literal_eval(args.fsi_args)
-        except:
+        except Exception:
             pass
 
     if not isinstance(fsi_args, tuple):
