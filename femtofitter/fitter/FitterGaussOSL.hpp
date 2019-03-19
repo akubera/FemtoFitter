@@ -211,14 +211,14 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
       }
 
     void
-    apply_to(TH3 &hist, TH3& qinv, double gamma)
+    apply_to(TH3 &hist, const TH3 &qinv, double gamma)
     {
       const int I = hist.GetNbinsX(),
                 J = hist.GetNbinsY(),
                 K = hist.GetNbinsZ();
 
       const double phony_r = PseudoRinv(gamma);
-      auto coulomb_factor = CoulombHist::GetHistWithRadius(phony_r);
+      // auto coulomb_factor = CoulombHist::GetHistWithRadius(phony_r);
 
       const TAxis &qout = *hist.GetXaxis(),
                   &qside = *hist.GetYaxis(),
@@ -232,7 +232,36 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
           qs = qside.GetBinCenter(j),
           ql = qlong.GetBinCenter(k),
           q = qinv.GetBinContent(i, j, k),
-          K = coulomb_factor.Interpolate(q);
+          K = 1.0;// coulomb_factor.Interpolate(q);
+
+        hist.SetBinContent(i,j,k, hist.GetBinContent(i,j,k) * gauss({qo, qs, ql}, K));
+      }
+    }
+
+    void
+    apply_to(TH3 &hist, const TH3 &qinv, FsiCalculator &fsi, double gamma)
+    {
+      const int I = hist.GetNbinsX(),
+                J = hist.GetNbinsY(),
+                K = hist.GetNbinsZ();
+
+      const double Rinv = PseudoRinv(gamma);
+      auto Kfsi = fsi.ForRadius(Rinv);
+      // auto coulomb_factor = CoulombHist::GetHistWithRadius(phony_r);
+
+      const TAxis &qout = *hist.GetXaxis(),
+                  &qside = *hist.GetYaxis(),
+                  &qlong = *hist.GetZaxis();
+
+      for (int k=1; k<=K; ++k)
+      for (int j=1; j<=J; ++j)
+      for (int i=1; i<=I; ++i) {
+        const double
+          qo = qout.GetBinCenter(i),
+          qs = qside.GetBinCenter(j),
+          ql = qlong.GetBinCenter(k),
+          q = qinv.GetBinContent(i, j, k),
+          K = Kfsi(q);// coulomb_factor.Interpolate(q);
 
         hist.SetBinContent(i,j,k, hist.GetBinContent(i,j,k) * gauss({qo, qs, ql}, K));
       }
@@ -293,6 +322,8 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
       std::cerr << "Error setting paramters: " << errflag << "\n";
       throw std::runtime_error("Could not set Minuit parameters.");
     }
+
+    minuit.mnprin(3, 0.0);
     return errflag;
   }
 
@@ -344,13 +375,19 @@ void FitterGaussOSL::fit_with_random_inits(TMinuit &minuit, FitResult &res, int 
 {
   int errflag = 0;
 
-  minuit.mnparm(LAM_PARAM_IDX, "Lam", paramhints->GenLam(), 0.001, 0.0, 0.0, errflag);
-  minuit.mnparm(ROUT_PARAM_IDX, "Ro", paramhints->GenRo(), 0.01, 0.0, 0.0, errflag);
-  minuit.mnparm(RSIDE_PARAM_IDX, "Rs", paramhints->GenRs(), 0.01, 0.0, 0.0, errflag);
-  minuit.mnparm(RLONG_PARAM_IDX, "Rl", paramhints->GenRl(), 0.01, 0.0, 0.0, errflag);
 
-  // minuit.mnprin(1, 0.0);
-  // std::cout << "--------\n";
+  std::cout << "--------\n";
+  minuit.mnprin(3, 0.0);
+  std::cout << "\n";
+
+  minuit.mnparm(NORM_PARAM_IDX, "NORM", 0.04, 1e1, 0.0, 0.0, errflag);
+  minuit.mnparm(LAM_PARAM_IDX, "Lam", paramhints->GenLam(), 1e1, 0.0, 0.0, errflag);
+  minuit.mnparm(ROUT_PARAM_IDX, "Ro", paramhints->GenRo(),  1e0, 0.0, 0.0, errflag);
+  minuit.mnparm(RSIDE_PARAM_IDX, "Rs", paramhints->GenRs(), 1e0, 0.0, 0.0, errflag);
+  minuit.mnparm(RLONG_PARAM_IDX, "Rl", paramhints->GenRl(), 1e0, 0.0, 0.0, errflag);
+
+  minuit.mnprin(3, 0.0);
+  std::cout << "--------\n";
 
   res = do_fit_minuit(minuit, 1.0, rec);  // -> Impl::FitResult
 
