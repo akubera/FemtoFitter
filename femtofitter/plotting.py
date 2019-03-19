@@ -14,6 +14,50 @@ def projections3D():
     yield TH3.ProjectionZ
 
 
+def yield_axes(h):
+    yield h.GetXaxis()
+    yield h.GetYaxis()
+    yield h.GetZaxis()
+
+
+def plot_projected_cf(num, den,
+                      lim=0.05,
+                      c=None,
+                      opt='HIST HE',
+                      linecolor=None,
+                      linestyle=None):
+    from ROOT import TCanvas
+    from stumpy.rhist import normalize_hist
+
+    if c is None:
+        c = TCanvas()
+        c.SetCanvasSize(800, 800)
+        c.Divide(2,2)
+
+    lb, hb = map(num.GetXaxis().FindBin, (-lim, lim))
+    l = (lb,hb)*2
+
+    projections = ((p(num, "pn", *l), p(den, "pd", *l))
+                   for p in projections3D())
+
+#     normrange = tuple(map(num.GetXaxis().FindBin, (-.11, -0.08)))
+
+    for i, (n,d) in enumerate(projections, 1):
+        c.cd(i)
+        if n.GetSumw2N() == 0:
+            n.Sumw2()
+        n.Divide(d)
+        n.SetStats(False)
+        if linecolor is not None:
+            n.SetLineColor(linecolor)
+        if linestyle is not None:
+            n.SetLineStyle(linestyle)
+        normalize_hist(n, (-.11, -0.08))
+        n.DrawCopy(opt)
+
+    return c
+
+
 def plot_projections(fit_results, data, mrc, limit=0.1, ylim=(0.98, 1.15), c=None):
     import ROOT
     from ROOT import TFile, TCanvas, TH3
@@ -87,6 +131,50 @@ def plot_projections(fit_results, data, mrc, limit=0.1, ylim=(0.98, 1.15), c=Non
 
     c.Draw()
     return c
+
+
+def normalize_canvas(c, d=0.02):
+    from ROOT import TH1
+    mins, maxs = [], []
+    for obj in c.GetListOfPrimitives():
+        if isinstance(obj, TH1):
+            maxs.append(obj.GetMaximum())
+            mins.append(obj.GetMinimum())
+
+    gmin = (1 - d) * min(mins)
+    gmax = (1 + d) * max(maxs)
+
+    for obj in c.GetListOfPrimitives():
+        if isinstance(obj, TH1):
+            obj.GetYaxis().SetRangeUser(gmin, gmax)
+
+
+def normalize_subcanvases(c, d=0.02):
+    from ROOT import TH1
+    mins, maxs = [], []
+    for pad in c.GetListOfPrimitives():
+        for obj in pad.GetListOfPrimitives():
+            if isinstance(obj, TH1):
+                maxs.append(obj.GetMaximum())
+                mins.append(obj.GetMinimum())
+
+    gmin = (1 - d) * min(mins)
+    gmax = (1 + d) * max(maxs)
+
+    for pad in c.GetListOfPrimitives():
+        for obj in pad.GetListOfPrimitives():
+            if isinstance(obj, TH1):
+                obj.GetYaxis().SetRangeUser(gmin, gmax)
+
+
+def set_titles(canvas, *titles):
+    from ROOT import TH1
+    title_iterator = iter(titles)
+    for pad in canvas.GetListOfPrimitives():
+        for obj in pad.GetListOfPrimitives():
+            if isinstance(obj, TH1):
+                obj.SetTitle(next(title_iterator))
+                break
 
 
 def stat_mean(vals, errs):
