@@ -370,15 +370,10 @@ FitterGaussOSL::FitResult::as_params() const -> FitParams
   return FitParams(*this);
 }
 
-// template<>
-void FitterGaussOSL::fit_with_random_inits(TMinuit &minuit, FitResult &res, int rec)
+inline void
+FitterGaussOSL::fit_with_random_inits(TMinuit &minuit, FitResult &res, int rec)
 {
   int errflag = 0;
-
-
-  std::cout << "--------\n";
-  minuit.mnprin(3, 0.0);
-  std::cout << "\n";
 
   minuit.mnparm(NORM_PARAM_IDX, "NORM", 0.04, 1e1, 0.0, 0.0, errflag);
   minuit.mnparm(LAM_PARAM_IDX, "Lam", paramhints->GenLam(), 1e1, 0.0, 0.0, errflag);
@@ -386,10 +381,5 @@ void FitterGaussOSL::fit_with_random_inits(TMinuit &minuit, FitResult &res, int 
   minuit.mnparm(RSIDE_PARAM_IDX, "Rs", paramhints->GenRs(), 1e0, 0.0, 0.0, errflag);
   minuit.mnparm(RLONG_PARAM_IDX, "Rl", paramhints->GenRl(), 1e0, 0.0, 0.0, errflag);
 
-  minuit.mnprin(3, 0.0);
-  std::cout << "--------\n";
-
-  res = do_fit_minuit(minuit, 1.0, rec);  // -> Impl::FitResult
-
-  // res = FitResult(minuit);
+  res = do_fit_minuit(minuit, 1.0, rec);
 }
