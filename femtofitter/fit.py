@@ -134,13 +134,12 @@ def run_fit(fitter_classname: str,
         return {}
 
     results.update(fit_results.as_map())
-
-    #results = dict(fit_results.as_map())
-    #results.update(query.as_dict())
+    results.update(query.as_dict())
 
     results['fit_range'] = fit_range
     results['subset'] = subset
 
+    results['cent'] = query.cent
     results['kT'] = mean(map(float, query.kt.split("_")))
     results['chi2'] = fitter.resid_chi2(fit_results)
     results['ndof'] = fitter.degrees_of_freedom()
