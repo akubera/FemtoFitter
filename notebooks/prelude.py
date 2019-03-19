@@ -10,6 +10,7 @@ os.chdir(Path(__file__).parent.parent)
 import sys
 from itertools import chain, repeat, cycle, islice
 from functools import partial, reduce
+from copy import copy
 
 from scipy.interpolate import interp1d, CubicSpline
 from statistics import mean

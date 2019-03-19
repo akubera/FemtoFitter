@@ -6,4 +6,3 @@
   }
   gSystem->Load("libFemtoFitter.so");
 }
-

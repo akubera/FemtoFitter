@@ -32,11 +32,15 @@ if (TARGET_DOCUMENTATION)
 endif(TARGET_DOCUMENTATION)
 
 list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS})
+message(STATUS "cmake path: ${CMAKE_PREFIX_PATH}")
+
+list(APPEND CMAKE_MODULE_PATH $ENV{ROOTSYS}/cmake/modules)
+message(STATUS "cmake module path: ${CMAKE_MODULE_PATH}")
 
 #
 # Dependencies
 #
-find_package(ROOT REQUIRED COMPONENTS PyROOT MathMore Minuit)
+find_package(ROOT REQUIRED COMPONENTS PyROOT MathMore Minuit vdt)
 include(${ROOT_USE_FILE})
 message(STATUS "Found ROOT v${ROOT_VERSION} at ${ROOT_DIR}")
 set(ROOTCLING "${ROOT_rootcling_CMD}")
@@ -46,6 +50,52 @@ set(ROOTCLING "${ROOT_rootcling_CMD}")
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(src)
 
+message(STATUS "VDT: ${VDT_INCLUDE_DIRS}")
+
+if(NOT TARGET Vdt::Vdt)
+  add_library(Vdt::Vdt INTERFACE IMPORTED)
+  set_property(TARGET Vdt::Vdt PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${VDT_INCLUDE_DIRS}")
+  set_property(TARGET Vdt::Vdt PROPERTY INTERFACE_LINK_LIBRARIES "${VDT_LIBRARIES}")
+endif(NOT TARGET Vdt::Vdt)
+
+root_generate_dictionary(
+  fitinspector_dict
+  src/bin/fit-inspector/MainFrame.hpp
+  LINKDEF src/bin/fit-inspector/LinkDef.h
+  MODULE fitinspector_dict)
+
+
+include_directories(
+  /usr/include/python3.6m
+  /usr/include/x86_64-linux-gnu/python3.6m
+)
+
+
+# find_package(Vdt)
+# find_package()
+
+add_library(fitinspector
+            STATIC fitinspector_dict
+            src/bin/fit-inspector/MainFrame.cpp
+            src/bin/fit-inspector/Projectionist.cpp)
+add_executable(fit-inspector src/bin/fit-inspector/main.cc)
+# target_compile_definitions(fitinspector PRIVATE "-D" -O2)
+target_link_libraries(fit-inspector fitinspector
+    ROOT::Hist
+    ROOT::Gui
+    ROOT::PyROOT
+    # ${ROOT_vdt_LIBRARY}
+    # ROOT::vectorDict
+    # ROOT::Math
+    # Vdt::Vdt
+    /usr/lib/x86_64-linux-gnu/libpython3.6m.so.1.0
+
+    # ROOT::VecOps
+    # ROOTVecOps
+    # ${VDT_LIBRARIES}
+    )
+
+    return(0)
 
 # Build Headers
 # set(INCS
