@@ -11,24 +11,26 @@
 int
 main(int argc, char **argv)
 {
+  TString json_filename;
+
+  if (argc > 1) {
+    json_filename = argv[1];
+  }
+
   auto app = new TApplication("FitInspector", &argc, argv);
   std::cout << "[fit-inspector]\n";
   auto root = gClient->GetRoot();
   if (!root) {
     std::cerr << "no root client\n";
   }
+
   auto frame = std::make_unique<MyMainFrame>(root);
 
-
-  if (argc > 1) {
-    TString json_filename(argv[1]);
+  if (!json_filename.IsNull()) {
     frame->LoadJsonFile(json_filename);
   }
 
   app->Run();
 
-  // for (;;) {
-  //   gSystem->ProcessEvents();
-  //   gSystem->Sleep(100);
-  // }
+  return 0;
 }
