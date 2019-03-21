@@ -74,29 +74,6 @@ include_directories(
 # find_package(Vdt)
 # find_package()
 
-add_library(fitinspector
-            STATIC fitinspector_dict
-            src/bin/fit-inspector/MainFrame.cpp
-            src/bin/fit-inspector/Projectionist.cpp)
-add_executable(fit-inspector src/bin/fit-inspector/main.cc)
-# target_compile_definitions(fitinspector PRIVATE "-D" -O2)
-target_link_libraries(fit-inspector fitinspector
-    ROOT::Hist
-    ROOT::Gui
-    ROOT::PyROOT
-    # ${ROOT_vdt_LIBRARY}
-    # ROOT::vectorDict
-    # ROOT::Math
-    # Vdt::Vdt
-    /usr/lib/x86_64-linux-gnu/libpython3.6m.so.1.0
-
-    # ROOT::VecOps
-    # ROOTVecOps
-    # ${VDT_LIBRARIES}
-    )
-
-    return(0)
-
 # Build Headers
 # set(INCS
 #   ${CMAKE_CURRENT_SOURCE_DIR}/femtofitter/inc/fitter.h
@@ -158,3 +135,15 @@ target_link_libraries(run-fit-spec ROOT::Minuit)
 add_executable(quick-fit src/bin/quick-fit.cc)
 target_include_directories(quick-fit PRIVATE src)
 target_link_libraries(quick-fit FemtoFitter ${LIB_FEMTO})
+
+add_library(fitinspector
+            STATIC fitinspector_dict
+            src/bin/fit-inspector/MainFrame.cpp
+            src/bin/fit-inspector/Projectionist.cpp)
+add_executable(fit-inspector src/bin/fit-inspector/main.cc)
+target_link_libraries(fit-inspector fitinspector
+    ROOT::Hist
+    ROOT::Gui
+    ROOT::PyROOT
+    /usr/lib/x86_64-linux-gnu/libpython3.6m.so.1.0
+    )
