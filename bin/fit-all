@@ -23,6 +23,10 @@ def arg_parser():
                         type=int,
                         default=None,
                         help="limit input count")
+    parser.add_argument("--ratio-minimum",
+                        type=float,
+                        default=0.0,
+                        help="Limit correlation function")
     parser.add_argument("--fitrange",
                         type=float,
                         default=0.11,
@@ -54,7 +58,7 @@ def main(argv=None):
     if sys.path[0] != '':
         sys.path.insert(0, '')
 
-    from femtofitter.fit import parallel_fit_all
+    from femtofitter.fit import parallel_fit_all, pfit_all, ParallelFitArgs
     import ROOT
     from ROOT import gSystem, TFile
 
@@ -85,15 +89,21 @@ def main(argv=None):
         dest = dest_dir / dest_filename
         # todo: Check if dest exists and warn user?
 
+    args.output = dest
+
     if args.mrc_path == 'True':
-        mrc_path = True
-    else:
-        mrc_path = args.mrc_path
+        args.mrc_path = True
 
     try:
         fsi_class = getattr(ROOT, args.fsi)
     except AttributeError as e:
         raise ValueError(f'Could not load FSI class {args.fsi!r}') from e
+
+    fit_args = ParallelFitArgs.FromCli(tfile, args)
+    pfit_all(fit_args)
+
+    print(f"Output written to {args.output}")
+    return 0
 
     fsi_args = args.fsi_args
     if isinstance(args.fsi_args, str):
@@ -107,6 +117,7 @@ def main(argv=None):
     if not isinstance(fsi_args, tuple):
         fsi_args = (fsi_args, )
 
+    mrc_path = args.mrc_path
     print(f"Using MRC {mrc_path!r}" if mrc_path else "No Momentum Resolution Correction")
     print(f"Using FSI: {fsi_class.__name__}{fsi_args}")
     print(f"Output will be written to {dest}")
@@ -117,6 +128,7 @@ def main(argv=None):
                      args.fitter,
                      mrc_path,
                      args.fitrange,
+                     args.ratio_minimum,
                      args.chi2,
                      args.limit,
                      args.threads)

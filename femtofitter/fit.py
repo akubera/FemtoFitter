@@ -154,12 +154,57 @@ def run_fit(fitter_classname: str,
 @dataclass
 class ParallelFitArgs:
     tfile: str
+    fsi: str
+    fsi_args: Tuple[any] = ()
     output_path: str = None
     fitter_t: str ='FitterGausOSL'
     mrc: bool = False
     fitrange: float = 0.11
+    ratio_min: float = 0.0
     chi2: bool = False
     limit: Optional[int] = None
+    threads: Optional[int] = None
+
+    @classmethod
+    def FromCli(cls, tfile, cli_args):
+        """
+        Build from command line arguments
+        """
+        fsi_args = cli_args.fsi_args
+        if isinstance(fsi_args, str):
+            # try interpreting as python literal
+            import ast
+            try:
+                fsi_args = ast.literal_eval(fsi_args)
+            except :
+                pass
+
+        if not isinstance(fsi_args, tuple):
+            fsi_args = (fsi_args, )
+
+        return cls(tfile,
+                   cli_args.fsi,
+                   fsi_args,
+                   cli_args.output,
+                   cli_args.fitter,
+                   cli_args.mrc_path,
+                   cli_args.fitrange,
+                   cli_args.ratio_minimum,
+                   cli_args.chi2,
+                   cli_args.limit,
+                   cli_args.threads)
+
+
+def pfit_all(args):
+    return parallel_fit_all(args.tfile,
+                            (args.fsi, args.fsi_args),
+                            args.output_path,
+                            args.fitter_t,
+                            args.mrc,
+                            args.fitrange,
+                            args.chi2,
+                            args.limit,
+                            args.threads)
 
 
 def parallel_fit_all(tfile,
@@ -168,6 +213,7 @@ def parallel_fit_all(tfile,
                      fitter_t='FitterGausOSL',
                      mrc=False,
                      fitrange=0.21,
+                     ratio_min=0.0,
                      chi2=False,
                      limit=None,
                      threads=None):
@@ -227,7 +273,7 @@ def parallel_fit_all(tfile,
     # results = pool.starmap(run_fit_gauss, ((filename, p, fitrange) for p in paths[:4]))
 
     work = chain(
-        # ((fitter_t, filename, *fsi, p, fitrange, chi2) for p in paths),
+        ((fitter_t, filename, *fsi, p, fitrange, chi2) for p in paths),
         ((fitter_t, filename, *fsi, p, fitrange, chi2, m) for p, m in mrc_paths),
     )
 
