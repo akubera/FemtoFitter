@@ -147,7 +147,7 @@ public:
 
       std::vector<std::array<int, 3>> v = {{0, 1, 2}, {0, 2, 1}, {1, 2, 0}};
       for (int idx = 0; idx < 3; ++idx) {
-        auto ix = v[idx][0], iy = v[idx][1], iz = v[idx][2];
+        auto ix = v[idx][0], iy = v[idx][1];
 
         auto idx1 = 3 + idx * 2,
              idx2 = idx1 + 1;
@@ -176,17 +176,13 @@ public:
 
       cache(pad);
 
-      double marke_line_length = (limits.first - limits.second) / 2 / 10;
-
       auto draw_1d_hist = [&](int idx)
         {
           const std::array<int, 3>
-            c1 = {i, j, k},
             a1 = {j, i, i},
             b1 = {k, k, j};
 
           const Int_t
-            c = c1[idx],
             a = a1[idx],
             b = b1[idx];
 

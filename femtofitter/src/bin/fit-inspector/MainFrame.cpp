@@ -289,12 +289,12 @@ struct FrameData {
   void update_choices(std::vector<std::string> cfg, std::vector<std::string> cent, std::vector<std::string> kt)
     {
       cent_ddown->RemoveAll();
-      for (int i=0; i < cent.size(); ++i) {
+      for (size_t i=0; i < cent.size(); ++i) {
         cent_ddown->AddEntry(cent[i].c_str(), i);
       }
 
       kt_ddown->RemoveAll();
-      for (int i=0; i < kt.size(); ++i) {
+      for (size_t i=0; i < kt.size(); ++i) {
         kt_ddown->AddEntry(kt[i].c_str(), i);
       }
     }
@@ -388,7 +388,7 @@ struct FrameData {
 
 
 
-ClassImp(MyMainFrame);
+ClassImp(MyMainFrame)
 
 
 MyMainFrame::MyMainFrame(const TGWindow *p)
