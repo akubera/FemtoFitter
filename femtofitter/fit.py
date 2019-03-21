@@ -35,6 +35,7 @@ def run_fit(fitter_classname: str,
             fsi_args: Tuple[Any],
             query: PathQuery,
             fit_range: float,
+            minimum: float = 0.0,
             fit_chi2: bool = False,
             mrc_path: str = None,
             subset: str = None,
@@ -110,10 +111,10 @@ def run_fit(fitter_classname: str,
 
             # print(f"Loaded MRC from file {mrc_filename} {mrc_rootpath}", )
 
-        data = Data3D.FromDirectory(tdir, mrc, fit_range)
+        data = Data3D.FromDirectory(tdir, mrc, fit_range, minimum)
         # apply_momentum_resolution_correction(fitter.data, mrc)
     else:
-        data = Data3D.FromDirectory(tdir, fit_range)
+        data = Data3D.FromDirectory(tdir, fit_range, minimum)
 
     if subset == 'sailor':
         data = data.cowboy_subset()
@@ -202,6 +203,7 @@ def pfit_all(args):
                             args.fitter_t,
                             args.mrc,
                             args.fitrange,
+                            args.ratio_min,
                             args.chi2,
                             args.limit,
                             args.threads)
@@ -219,6 +221,7 @@ def parallel_fit_all(tfile,
                      threads=None):
     """
     """
+    print("MINIMUM", ratio_min)
 
     from stumpy.utils import walk_matching
     from datetime import datetime
@@ -273,8 +276,8 @@ def parallel_fit_all(tfile,
     # results = pool.starmap(run_fit_gauss, ((filename, p, fitrange) for p in paths[:4]))
 
     work = chain(
-        ((fitter_t, filename, *fsi, p, fitrange, chi2) for p in paths),
-        ((fitter_t, filename, *fsi, p, fitrange, chi2, m) for p, m in mrc_paths),
+        ((fitter_t, filename, *fsi, p, fitrange, ratio_min, chi2) for p in paths),
+        ((fitter_t, filename, *fsi, p, fitrange, ratio_min, chi2, m) for p, m in mrc_paths),
     )
 
     results = pool.starmap(run_fit, work)

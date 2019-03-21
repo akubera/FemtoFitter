@@ -7,6 +7,8 @@
 #include <TH3.h>
 #include <TDirectory.h>
 
+#include <iostream>
+
 
 void store_into(std::vector<double> &v, std::vector<double> &dest)
   { dest = std::move(v); }
@@ -161,6 +163,46 @@ Data3D::FromDirectory(TDirectory &tdir, double limit)
   return data;
 }
 
+std::unique_ptr<Data3D>
+Data3D::FromDirectory(TDirectory &tdir, double limit, double minimum)
+{
+  const auto n = std::unique_ptr<TH3>((TH3*)tdir.Get("num")),
+             d = std::unique_ptr<TH3>((TH3*)tdir.Get("den")),
+             q = std::unique_ptr<TH3>((TH3*)tdir.Get("qinv"));
+
+  if (!n or !d or !q) {
+    return nullptr;
+  }
+
+  int skipcount = 0;
+
+  const TAxis
+    &xaxis = *n->GetXaxis(),
+    &yaxis = *n->GetYaxis(),
+    &zaxis = *n->GetZaxis();
+
+  for (int k=zaxis.GetFirst(); k <= zaxis.GetLast(); ++k)
+  for (int j=yaxis.GetFirst(); j <= yaxis.GetLast(); ++j)
+  for (int i=xaxis.GetFirst(); i <= xaxis.GetLast(); ++i) {
+
+    double nval = n->GetBinContent(i,j,k);
+    double dval = d->GetBinContent(i,j,k);
+
+    if (dval && nval / dval < minimum) {
+      ++skipcount;
+      d->SetBinContent(i, j, k, 0.0);
+    }
+  }
+
+  if (skipcount) {
+    std::cout << Form("Threw out %d points (min=%g)\n", skipcount, minimum);
+  }
+
+  auto data = std::make_unique<Data3D>(*n, *d, *q, limit);
+  data->gamma = calc_gamma_from_dir(tdir.GetMotherDir());
+
+  return data;
+}
 
 
 std::unique_ptr<Data3D>
@@ -214,6 +256,71 @@ Data3D::FromDirectory(TDirectory &tdir, const TH3 &mrc, double limit)
     if (mrc.GetBinContent(i,j,k) == 0) {
       d->SetBinContent(i, j, k, 0);
     }
+  }
+
+  auto data = std::make_unique<Data3D>(*n, *d, *q, limit);
+  data->gamma = calc_gamma_from_dir(tdir.GetMotherDir());
+
+  return data;
+}
+
+std::unique_ptr<Data3D>
+FromDirectory(TDirectory &tdir, const TH3 &mrc, double limit, double minimum)
+{
+  const auto n = std::unique_ptr<TH3>((TH3*)tdir.Get("num")),
+             d = std::unique_ptr<TH3>((TH3*)tdir.Get("den")),
+             q = std::unique_ptr<TH3>((TH3*)tdir.Get("qinv"));
+
+  if (!n or !d or !q) {
+    return nullptr;
+  }
+
+  const TAxis
+    &xaxis = *n->GetXaxis(),
+    &yaxis = *n->GetYaxis(),
+    &zaxis = *n->GetZaxis();
+
+  const bool
+    can_simply_multiply = n->GetNbinsX() == mrc.GetNbinsX()
+                       && xaxis.GetXmax() == mrc.GetXaxis()->GetXmax()
+                       && n->GetNbinsY() == mrc.GetNbinsY()
+                       && yaxis.GetXmax() == mrc.GetYaxis()->GetXmax()
+                       && n->GetNbinsZ() == mrc.GetNbinsZ()
+                       && zaxis.GetXmax() == mrc.GetZaxis()->GetXmax();
+
+  int skipcount = 0;
+
+  if (can_simply_multiply) {
+    n->Multiply(&mrc);
+  } else {
+    for (int k=zaxis.GetFirst(); k <= zaxis.GetLast(); ++k)
+    for (int j=yaxis.GetFirst(); j <= yaxis.GetLast(); ++j)
+    for (int i=xaxis.GetFirst(); i <= xaxis.GetLast(); ++i) {
+      const double
+        x = xaxis.GetBinCenter(i),
+        y = yaxis.GetBinCenter(j),
+        z = zaxis.GetBinCenter(k);
+
+      int bin = const_cast<TH3&>(mrc).FindBin(x,y,z);
+      if (mrc.IsBinUnderflow(bin) || mrc.IsBinOverflow(bin)) {
+	      continue;
+      }
+
+      double f = const_cast<TH3&>(mrc).Interpolate(x,y,z);
+
+      double nval = f * n->GetBinContent(i,j,k);
+      double dval = d->GetBinContent(i,j,k);
+      n->SetBinContent(i,j,k, nval);
+
+      if (dval && nval / dval < minimum) {
+        ++skipcount;
+        d->SetBinContent(i, j, k, 0.0);
+      }
+    }
+  }
+
+  if (skipcount) {
+    std::cout << Form("Threw out %d points (min=%g)\n", skipcount, minimum);
   }
 
   auto data = std::make_unique<Data3D>(*n, *d, *q, limit);
