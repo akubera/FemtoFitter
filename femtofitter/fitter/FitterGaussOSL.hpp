@@ -323,7 +323,6 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
       throw std::runtime_error("Could not set Minuit parameters.");
     }
 
-    minuit.mnprin(3, 0.0);
     return errflag;
   }
 
