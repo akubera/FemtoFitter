@@ -202,7 +202,7 @@ struct FrameData {
            TGHSlider *slider = new TGHSlider(frame, 0, kSlider1 | kScaleBoth, -1, kHorizontalFrame);
            slider->SetName(Form("slider_%s", name.Data()));
            slider->SetRange(0, 100);
-           slider->SetPosition(51);
+           slider->SetPosition(50);
            frame->AddFrame(slider, new TGLayoutHints(kLHintsCenterX | kLHintsBottom | kLHintsExpandY| kLHintsExpandX,1,1,0,2));
           // canvas->Connect("ProcessedEvent(Int_t,Int_t,Int_t,TObject*)","MyMainFrame",this,
           //              "EventInfo(Int_t,Int_t,Int_t,TObject*)");
@@ -310,9 +310,9 @@ struct FrameData {
           if (N != M) {
             const Int_t
               n = slider.GetPosition(),
-              val = N * double(n) / M;
+              val = N * double(n) / M + 1;
 
-            slider.SetRange(0, N);
+            slider.SetRange(1, N);
             slider.SetPosition(val);
           }
         };
