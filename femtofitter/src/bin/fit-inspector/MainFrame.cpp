@@ -34,24 +34,24 @@
 #include <fstream>
 
 
+ClassImp(MyMainFrame)
+
+
+
 struct DataQuery {
   std::string cfg;
   std::string cent;
 };
 
 struct DataTree {
-  // std::map<std::string, // cfg
-  //   std::map<std::string, // cent
-  //     std::map<std::string, // kt
-  //      std::map<std::string, // pair
-  //       std::map<std::string, std::string>>>>> root; // mag
 
-  std::vector<std::pair<std::string, // cfg
-    std::vector<std::pair<std::string, // cent
-      std::vector<std::pair<std::string, // kt
-       std::vector<std::pair<std::string, // pair
-        std::vector<std::pair<std::string, std::string //magfield
-        >> >> >> >> >> root;
+  std::vector<std::pair< std::string, // cfg
+  std::vector<std::pair< std::string, // cent
+  std::vector<std::pair< std::string, // kt
+  std::vector<std::pair< std::string, // pair
+  std::vector<std::pair< std::string, // magfield
+                         std::string  // full-path
+                         >> >> >> >> >> root;
 
   void insert_pieces(const std::vector<std::string> &l)
   {
@@ -179,44 +179,44 @@ struct FrameData {
       auto add_labeled_slider = [&self](TGCompositeFrame *p, TString name)
         {
           TGVerticalFrame *frame = new TGVerticalFrame(p,100,50,kVerticalFrame);
-           TGHorizontalFrame *lblframe = new TGHorizontalFrame(frame,318,19,kHorizontalFrame);
-          //  lblframe->SetName("lblframe");
-           TGLabel *axislbl = new TGLabel(lblframe, name);
-             axislbl->SetName(Form("lbl%s", name.Data()));
-             axislbl->SetTextJustify(36);
-             axislbl->SetMargins(0,0,0,0);
-             axislbl->SetWidth(100);
-             axislbl->SetWrapLength(-1);
-             lblframe->AddFrame(axislbl, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,0,2,0));
-          //  TGLabel *lblbin = new TGLabel(lblframe, "47");
-          //    lblbin->SetTextJustify(36);
-          //    lblbin->SetMargins(0,0,0,0);
-          //    lblbin->SetWrapLength(-1);
-          //    lblframe->AddFrame(lblbin, new TGLayoutHints(kLHintsRight | kLHintsTop,2,2,2,0));
-           TGLabel *lblval = new TGLabel(lblframe, "51");
-             lblval->SetTextJustify(36);
-             lblval->SetMargins(40,50,0,0);
-             lblval->SetWrapLength(-1);
-             lblframe->AddFrame(lblval, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,0));
-           frame->AddFrame(lblframe, new TGLayoutHints(kLHintsCenterX | kLHintsTop | kLHintsExpandX,2,2,2,0));
+            TGHorizontalFrame *lblframe = new TGHorizontalFrame(frame,318,19,kHorizontalFrame);
+              TGLabel *axislbl = new TGLabel(lblframe, name);
+                axislbl->SetName(Form("lbl%s", name.Data()));
+                axislbl->SetTextJustify(36);
+                axislbl->SetMargins(0,0,0,0);
+                axislbl->SetWidth(100);
+                axislbl->SetWrapLength(-1);
+                lblframe->AddFrame(axislbl, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,0,2,0));
 
-           TGHSlider *slider = new TGHSlider(frame, 0, kSlider1 | kScaleBoth, -1, kHorizontalFrame);
-           slider->SetName(Form("slider_%s", name.Data()));
-           slider->SetRange(0, 100);
-           slider->SetPosition(50);
-           frame->AddFrame(slider, new TGLayoutHints(kLHintsCenterX | kLHintsBottom | kLHintsExpandY| kLHintsExpandX,1,1,0,2));
-          // canvas->Connect("ProcessedEvent(Int_t,Int_t,Int_t,TObject*)","MyMainFrame",this,
-          //              "EventInfo(Int_t,Int_t,Int_t,TObject*)");
+              TGLabel *lblval = new TGLabel(lblframe, "51");
+                lblval->SetTextJustify(36);
+                lblval->SetMargins(40,50,0,0);
+                lblval->SetWrapLength(-1);
+                lblframe->AddFrame(lblval, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,0));
+              frame->AddFrame(lblframe, new TGLayoutHints(kLHintsCenterX | kLHintsTop | kLHintsExpandX,2,2,2,0));
+
+            TGHSlider *slider = new TGHSlider(frame, 0, kSlider1 | kScaleBoth, -1, kHorizontalFrame);
+              slider->SetName(Form("slider_%s", name.Data()));
+              slider->SetRange(0, 100);
+              slider->SetPosition(50);
+              frame->AddFrame(slider, new TGLayoutHints(kLHintsCenterX | kLHintsBottom | kLHintsExpandY| kLHintsExpandX,1,1,0,2));
+
             slider->Connect("PositionChanged(int)", "MyMainFrame", self, "OnSliderUpdate()");
 
            p->AddFrame(frame, new TGLayoutHints(kLHintsLeft | kLHintsTop | kLHintsExpandX));
            return std::make_tuple(slider, lblval);
         };
 
+      auto add_separator_line = [](TGCompositeFrame *p)
+        {
+          auto vline = new TGVertical3DLine(p);
+          p->AddFrame(vline, new TGLayoutHints(kLHintsExpandY));
+        };
+
       std::tie(slider_x, lbl_xval) = add_labeled_slider(slidergroup, "qOut");
-      { auto vline = new TGVertical3DLine(slidergroup); slidergroup->AddFrame(vline, new TGLayoutHints(kLHintsExpandY)); }
+      add_separator_line(slidergroup);
       std::tie(slider_y, lbl_yval) = add_labeled_slider(slidergroup, "qSide");
-      { auto vline = new TGVertical3DLine(slidergroup); slidergroup->AddFrame(vline, new TGLayoutHints(kLHintsExpandY)); }
+      add_separator_line(slidergroup);
       std::tie(slider_z, lbl_zval) = add_labeled_slider(slidergroup, "qLong");
 
       parent->AddFrame(slidergroup, new TGLayoutHints(kLHintsLeft | kLHintsExpandX | kLHintsTop,2,2,2,2));
@@ -234,9 +234,6 @@ struct FrameData {
             parent->AddFrame(lbl, new TGLayoutHints(kLHintsLeft | kLHintsTop, 2,2,0,0));
 
           TGComboBox *cbox = new TGComboBox(parent, id, kHorizontalFrame | kSunkenFrame | kOwnBackground);
-            // cbox->SetName("cent_box");
-            // fComboBox687->AddEntry("00_05", 0);
-            // fComboBox687->AddEntry("05_10", 1);
             cbox->Resize(247,25);
             parent->AddFrame(cbox, new TGLayoutHints(kLHintsNormal, 10));
             cbox->Connect("Selected(int, int)", "MyMainFrame", self, "OnDropdownSelection(int, int)");
@@ -374,22 +371,8 @@ struct FrameData {
         }
       }
     }
-
-  for (auto &ddown : {cfg_ddown,
-    cent_ddown,
-    kt_ddown,
-    pair_ddown,
-    magfield_ddown}) {
-    std::cout << "/" << ddown->GetSelected();
-  }
-  std::cout << "\n";
-
   }
 };
-
-
-
-ClassImp(MyMainFrame)
 
 
 MyMainFrame::MyMainFrame(const TGWindow *p)
@@ -645,14 +628,11 @@ MyMainFrame::LoadJsonFile(TString filename)
   auto vv = load_string_vec_vec("[(list(l) + ['/'.join(l)])"
                                 " for l in df[['cfg', 'cent', 'kt', 'pair', 'magfield', 'analysis']].drop_duplicates().values]");
 
-// std::cout << "Loaded: " << vv.size();
   for (auto &l : vv) {
     tree.insert_pieces(l);
   }
 
   data->reset_datatree(tree);
-  std::cout << "Done.\n";
-  // data->update_choices(cent, kt);
 
   return JsonLoadResult::Ok(Form("Loaded file '%s'", filename.Data()));
 }
