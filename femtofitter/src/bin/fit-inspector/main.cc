@@ -3,6 +3,7 @@
 
 #include <TGClient.h>
 #include <TApplication.h>
+#include <TH1.h>
 
 #include <iostream>
 #include <memory>
@@ -16,6 +17,8 @@ main(int argc, char **argv)
   if (argc > 1) {
     json_filename = argv[1];
   }
+
+  TH1::AddDirectory(false);
 
   auto app = new TApplication("FitInspector", &argc, argv);
   std::cout << "[fit-inspector]\n";
