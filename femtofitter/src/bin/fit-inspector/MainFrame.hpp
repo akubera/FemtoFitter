@@ -20,6 +20,8 @@
 #include <iostream>
 #include <memory>
 
+#include "JsonLoader.hpp"
+
 
 class FrameData;
 
@@ -38,7 +40,7 @@ public:
   virtual void OnSliderUpdate();
   virtual void OnDropdownSelection(int, int);
 
-  virtual void LoadJsonFile(TString);
+  virtual JsonLoadResult LoadJsonFile(TString);
 
   void DoExit()
     {

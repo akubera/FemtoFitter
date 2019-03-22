@@ -6,6 +6,7 @@
 #include "FileManager.hpp"
 
 
+#include <TGMsgBox.h>
 #include <TGStatusBar.h>
 #include <TGFileDialog.h>
 #include <TGComboBox.h>
@@ -22,7 +23,6 @@
 #include <TPython.h>
 #include <Python.h>
 
-// #include <TGLayoutHints.h>
 
 #include <TString.h>
 
@@ -31,6 +31,7 @@
 #include <vector>
 #include <string>
 #include <list>
+#include <fstream>
 
 
 struct DataQuery {
@@ -500,39 +501,100 @@ MyMainFrame::OnOpen()
   std::cout << "OnOpen\n";
 
   TGFileInfo fi;
-  // fi.fFileTypes = dnd_types;
+  static const char* filetypes[] = {
+    "JSON files", "*.json",
+    "All files", "*",
+    nullptr, nullptr
+    };
 
-  // auto filepicker = std::make_unique<TGFileDialog>(
-  auto filepicker = new TGFileDialog(
+  fi.fFileTypes = filetypes;
+
+  new TGFileDialog(
     gClient->GetRoot(),
     this,
     kFDOpen,
     &fi);
 
   TString selected_filename(fi.fFilename);
+
+  // no selection
   if (selected_filename.IsWhitespace()) {
     return;
   }
 
-  LoadJsonFile(selected_filename);
+  auto result = LoadJsonFile(selected_filename);
+  if (result.is_error) {
+    std::cerr << result.err.reason << "\n";
+    new TGMsgBox(gClient->GetRoot(),
+                 gClient->GetRoot(),
+                 "Error",
+                 result.err.reason.Data(),
+                 EMsgBoxIcon::kMBIconExclamation);
+  }
 }
 
-
-void
+JsonLoadResult
 MyMainFrame::LoadJsonFile(TString filename)
 {
-  TPython::Exec("import json");
-  TPython::Exec("import pandas as pd");
+  // try open-file
+  std::ifstream file(filename);
+  if (!file.is_open()) {
+    return JsonLoadResult::Error(Form("Could not open file '%s'", filename.Data()));
+  }
 
-  TPython::Exec(Form("data = json.load(open('%s'))", filename.Data()));
+  if (!TPython::Exec("import json; from pathlib import Path")) {
+    return JsonLoadResult::Error("Could not import modules from standard libray");
+  }
 
-  std::cout << "Loading filename: " << filename << "\n";
+  if (!TPython::Exec("import pandas as pd")) {
+    return JsonLoadResult::Error("Could not import pandas");
+  }
 
-  char *root_file = TPython::Eval("data['filename']");
+  const char *cmd = Form("data = json.loads(Path('%s').read_text())", filename.Data());
+  if (!TPython::Exec(cmd)) {
+    return JsonLoadResult::Error("Error Reading " + filename + " -- Expected valid JSON file");
+  }
 
-  data->open_file(root_file);
+  const PyObject *data_res = TPython::Eval("data");
+  if (data_res == nullptr) {
+    return JsonLoadResult::Error("Error Reading " + filename + " -- Expected valid JSON file");
+  }
 
-  TPython::Exec("df = pd.DataFrame(data['df'])");
+  auto *df_res = PyDict_GetItemString(const_cast<PyObject*>(data_res), "df");
+  if (df_res == nullptr) {
+    return JsonLoadResult::Error("Invalid file " + filename + " -- missing 'df' key");
+  }
+
+  auto *filename_res = PyDict_GetItemString(const_cast<PyObject*>(data_res), "filename");
+  if (filename_res == nullptr) {
+    return JsonLoadResult::Error("Invalid file " + filename + " -- missing 'filename' key");
+  }
+
+  if (!PyUnicode_Check(filename_res)) {
+    return JsonLoadResult::Error("Path to rootfile not a string");
+  }
+
+  std::string root_file;
+
+  {
+    Py_ssize_t len = 0;
+    const char *s = PyUnicode_AsUTF8AndSize(filename_res, &len);
+    root_file = std::string(s, s+len);
+  }
+
+  std::shared_ptr<TFile> rfile = data->open_file(root_file);
+  if (rfile == nullptr) {
+    return JsonLoadResult::Error("Could not read data-file " + root_file + " -- is it a valid ROOT file?");
+  }
+
+  if (!TPython::Exec("df = pd.DataFrame(data['df'])")) {
+    return JsonLoadResult::Error("Could not read dataframe in file " + root_file);
+  }
+
+  // remove "bad" entries
+  if (!TPython::Exec("df = df[~df.kt.isnull()]")) {
+    return JsonLoadResult::Error("Bad dataframe in file " + root_file);
+  }
 
   data->SetSourceFilename(root_file);
   data->SetFitResultFilename(filename.Data());
@@ -570,7 +632,6 @@ MyMainFrame::LoadJsonFile(TString filename)
       auto count = PyList_Size(pylist);
       for (int i=0; i<count; ++i) {
         auto pylist_inner = PyList_GetItem(pylist, i);
-        auto inner_count = PyList_Size(pylist_inner);
 
         std::vector<std::string> inresult = pyobj_to_vec_str(pylist_inner);
         result.emplace_back(std::move(inresult));
@@ -586,18 +647,20 @@ MyMainFrame::LoadJsonFile(TString filename)
 
   DataTree tree;
 
+
   auto vv = load_string_vec_vec("[(list(l) + ['/'.join(l)])"
-                                " for l in df[['cfg', 'cent', 'kt', 'pair', 'magfield']].drop_duplicates().values]");
+                                " for l in df[['cfg', 'cent', 'kt', 'pair', 'magfield', 'analysis']].drop_duplicates().values]");
 
 // std::cout << "Loaded: " << vv.size();
   for (auto &l : vv) {
-
     tree.insert_pieces(l);
   }
 
   data->reset_datatree(tree);
   std::cout << "Done.\n";
   // data->update_choices(cent, kt);
+
+  return JsonLoadResult::Ok(Form("Loaded file '%s'", filename.Data()));
 }
 
 void
@@ -642,4 +705,5 @@ MyMainFrame::OnDropdownSelection(int id, int entry)
   data->projection_manager.add_tdir(path, *tdir);
   data->update_sliders();
   OnSliderUpdate();
+
 }
