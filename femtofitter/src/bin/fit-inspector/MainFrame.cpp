@@ -536,69 +536,6 @@ MyMainFrame::OnOpen()
 JsonLoadResult
 MyMainFrame::LoadJsonFile(TString filename)
 {
-  // try open-file
-  std::ifstream file(filename);
-  if (!file.is_open()) {
-    return JsonLoadResult::Error(Form("Could not open file '%s'", filename.Data()));
-  }
-
-  if (!TPython::Exec("import json; from pathlib import Path")) {
-    return JsonLoadResult::Error("Could not import modules from standard libray");
-  }
-
-  if (!TPython::Exec("import pandas as pd")) {
-    return JsonLoadResult::Error("Could not import pandas");
-  }
-
-  const char *cmd = Form("data = json.loads(Path('%s').read_text())", filename.Data());
-  if (!TPython::Exec(cmd)) {
-    return JsonLoadResult::Error("Error Reading " + filename + " -- Expected valid JSON file");
-  }
-
-  const PyObject *data_res = TPython::Eval("data");
-  if (data_res == nullptr) {
-    return JsonLoadResult::Error("Error Reading " + filename + " -- Expected valid JSON file");
-  }
-
-  auto *df_res = PyDict_GetItemString(const_cast<PyObject*>(data_res), "df");
-  if (df_res == nullptr) {
-    return JsonLoadResult::Error("Invalid file " + filename + " -- missing 'df' key");
-  }
-
-  auto *filename_res = PyDict_GetItemString(const_cast<PyObject*>(data_res), "filename");
-  if (filename_res == nullptr) {
-    return JsonLoadResult::Error("Invalid file " + filename + " -- missing 'filename' key");
-  }
-
-  if (!PyUnicode_Check(filename_res)) {
-    return JsonLoadResult::Error("Path to rootfile not a string");
-  }
-
-  std::string root_file;
-
-  {
-    Py_ssize_t len = 0;
-    const char *s = PyUnicode_AsUTF8AndSize(filename_res, &len);
-    root_file = std::string(s, s+len);
-  }
-
-  std::shared_ptr<TFile> rfile = data->open_file(root_file);
-  if (rfile == nullptr) {
-    return JsonLoadResult::Error("Could not read data-file " + root_file + " -- is it a valid ROOT file?");
-  }
-
-  if (!TPython::Exec("df = pd.DataFrame(data['df'])")) {
-    return JsonLoadResult::Error("Could not read dataframe in file " + root_file);
-  }
-
-  // remove "bad" entries
-  if (!TPython::Exec("df = df[~df.kt.isnull()]")) {
-    return JsonLoadResult::Error("Bad dataframe in file " + root_file);
-  }
-
-  data->SetSourceFilename(root_file);
-  data->SetFitResultFilename(filename.Data());
-
   auto pyobj_to_str = [] (PyObject *obj)
     {
       Py_ssize_t len = 0;
@@ -641,6 +578,63 @@ MyMainFrame::LoadJsonFile(TString filename)
       Py_DECREF(pylist);
       return result;
     };
+
+  // try open-file
+  std::ifstream file(filename);
+  if (!file.is_open()) {
+    return JsonLoadResult::Error(Form("Could not open file '%s'", filename.Data()));
+  }
+
+  if (!TPython::Exec("import json; from pathlib import Path")) {
+    return JsonLoadResult::Error("Could not import modules from standard libray");
+  }
+
+  if (!TPython::Exec("import pandas as pd")) {
+    return JsonLoadResult::Error("Could not import pandas");
+  }
+
+  const char *cmd = Form("data = json.loads(Path('%s').read_text())", filename.Data());
+  if (!TPython::Exec(cmd)) {
+    return JsonLoadResult::Error("Error Reading " + filename + " -- Expected valid JSON file");
+  }
+
+  const PyObject *data_res = TPython::Eval("data");
+  if (data_res == nullptr) {
+    return JsonLoadResult::Error("Error Reading " + filename + " -- Expected valid JSON file");
+  }
+
+  auto *df_res = PyDict_GetItemString(const_cast<PyObject*>(data_res), "df");
+  if (df_res == nullptr) {
+    return JsonLoadResult::Error("Invalid file " + filename + " -- missing 'df' key");
+  }
+
+  auto *filename_res = PyDict_GetItemString(const_cast<PyObject*>(data_res), "filename");
+  if (filename_res == nullptr) {
+    return JsonLoadResult::Error("Invalid file " + filename + " -- missing 'filename' key");
+  }
+
+  if (!PyUnicode_Check(filename_res)) {
+    return JsonLoadResult::Error("Path to rootfile not a string");
+  }
+
+  std::string root_file = pyobj_to_str(filename_res);
+
+  std::shared_ptr<TFile> rfile = data->open_file(root_file);
+  if (rfile == nullptr) {
+    return JsonLoadResult::Error("Could not read data-file " + root_file + " -- is it a valid ROOT file?");
+  }
+
+  if (!TPython::Exec("df = pd.DataFrame(data['df'])")) {
+    return JsonLoadResult::Error("Could not read dataframe in file " + root_file);
+  }
+
+  // remove "bad" entries
+  if (!TPython::Exec("df = df[~df.kt.isnull()]")) {
+    return JsonLoadResult::Error("Bad dataframe in file " + root_file);
+  }
+
+  data->SetSourceFilename(root_file);
+  data->SetFitResultFilename(filename.Data());
 
   std::vector<std::string> cent = load_string_vec("list(df.cent.unique())");
   std::vector<std::string> kt = load_string_vec("list(df.kt.unique())");
