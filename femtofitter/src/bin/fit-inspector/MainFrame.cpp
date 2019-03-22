@@ -55,14 +55,15 @@ struct DataTree {
 
   void insert_pieces(const std::vector<std::string> &l)
   {
-    auto cfg = l[0],
-         cent = l[1],
-         kt = l[2],
-         pair = l[3],
-         magfield = l[4],
-         path = l[5];
+    auto analysis = l[0],
+         cfg = l[1],
+         cent = l[2],
+         kt = l[3],
+         pair = l[4],
+         magfield = l[5],
+         path = l.back();
 
-    path = "Q3DLCMS/" + cfg + "/" + pair + "/" + cent + "/" + kt + "/" + magfield;
+    path = analysis + "/" + cfg + "/" + pair + "/" + cent + "/" + kt + "/" + magfield;
     // tree.root[cfg][cent][kt][pair][magfield] = path;
 
     // auto found = std::find(root.begin(), root.end(), [cfg] (auto key) { return key->first == cfg; });
@@ -624,9 +625,8 @@ MyMainFrame::LoadJsonFile(TString filename)
 
   DataTree tree;
 
-
   auto vv = load_string_vec_vec("[(list(l) + ['/'.join(l)])"
-                                " for l in df[['cfg', 'cent', 'kt', 'pair', 'magfield', 'analysis']].drop_duplicates().values]");
+                                " for l in df[['analysis', 'cfg', 'cent', 'kt', 'pair', 'magfield']].drop_duplicates().values]");
 
   for (auto &l : vv) {
     tree.insert_pieces(l);
@@ -663,14 +663,12 @@ MyMainFrame::OnSliderUpdate()
 void
 MyMainFrame::OnDropdownSelection(int id, int entry)
 {
-  std::cout << "DropdownSelection (" << id << ", " << entry << ")\n";
-
   auto path = data->get_selected_path();
   std::cout << " loading " << path << "\n";
 
   auto file = data->files.current_file;
 
-  auto tdir = (TDirectory*)file->Get(path.c_str());
+  auto *tdir = dynamic_cast<TDirectory*>(file->Get(path.c_str()));
   if (!tdir) {
     std::cerr << "ERROR: Could not load path '" << path << "'\n";
     return;
@@ -679,5 +677,4 @@ MyMainFrame::OnDropdownSelection(int id, int entry)
   data->projection_manager.add_tdir(path, *tdir);
   data->update_sliders();
   OnSliderUpdate();
-
 }
