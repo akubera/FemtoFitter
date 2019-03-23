@@ -139,6 +139,7 @@ target_link_libraries(quick-fit FemtoFitter ${LIB_FEMTO})
 add_library(fitinspector
             STATIC fitinspector_dict
             src/bin/fit-inspector/MainFrame.cpp
+            src/bin/fit-inspector/PanelFitResult.cpp
             src/bin/fit-inspector/Projectionist.cpp)
 add_executable(fit-inspector src/bin/fit-inspector/main.cc)
 target_link_libraries(fit-inspector fitinspector

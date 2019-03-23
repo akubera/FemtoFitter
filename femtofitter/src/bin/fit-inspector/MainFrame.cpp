@@ -249,17 +249,6 @@ struct FrameData {
       magfield_ddown = add_combo_box(5, "Magnetic Field");
     }
 
-  void build_fitparam_box(MyMainFrame *self, TGCompositeFrame *parent)
-    {
-      TGLabel *fLabel639 = new TGLabel(parent, "Ro");
-        fLabel639->SetTextJustify(36);
-        fLabel639->SetMargins(0,0,0,0);
-        fLabel639->SetWrapLength(-1);
-        parent->AddFrame(fLabel639, new TGLayoutHints(kLHintsLeft | kLHintsTop, 2,2,2,2));
-      parent->SetLayoutManager(new TGVerticalLayout(parent));
-      // parent->Resize(500, 96);
-    }
-
   void UpdateLabels()
     {
       const Int_t
@@ -408,9 +397,7 @@ MyMainFrame::MyMainFrame(const TGWindow *p)
       data->build_data_select_box(this, databox);
       leftbar->AddFrame(databox);
 
-      TGGroupFrame *parambox = new TGGroupFrame(leftbar, "Fit Parameters");
-      data->build_fitparam_box(this, parambox);
-      leftbar->AddFrame(parambox, new TGLayoutHints(kLHintsLeft | kLHintsTop | kLHintsExpandX));
+      fitresult_panel = std::make_unique<PanelFitResult>(*leftbar, kLHintsLeft | kLHintsTop | kLHintsExpandX);
 
       mainframe->AddFrame(leftbar, new TGLayoutHints(kLHintsLeft | kLHintsTop | kLHintsExpandY, 2,2,2,2));
 
@@ -672,6 +659,53 @@ MyMainFrame::OnDropdownSelection(int id, int entry)
   if (!tdir) {
     std::cerr << "ERROR: Could not load path '" << path << "'\n";
     return;
+  }
+
+  if (id == 1) {
+    std::cout << "Updating cut configuration\n";
+  } else {
+    std::cout << "Updating data selection\n";
+  }
+
+  auto &tree = data->available_data.root;
+  auto &cfg_node = tree[data->cfg_ddown->GetSelected()];
+  auto &cent_node = cfg_node.second[data->cent_ddown->GetSelected()];
+  auto &kt_node = cent_node.second[data->kt_ddown->GetSelected()];
+  auto &pair_node = kt_node.second[data->pair_ddown->GetSelected()];
+  auto &magfield_node = pair_node.second[data->magfield_ddown->GetSelected()];
+
+  const std::string
+    &cfg = cfg_node.first,
+    &cent = cent_node.first,
+    &kt = kt_node.first,
+    &pair = pair_node.first,
+    &mag = magfield_node.first;
+
+  auto *cmd = Form("series = df[(df.cfg=='%s')&(df.cent=='%s')&(df.kt=='%s')&(df.pair=='%s')&(df.magfield=='%s')&df.mrc.isnull()].iloc[0]",
+                   cfg.c_str(),
+                   cent.c_str(),
+                   kt.c_str(),
+                   pair.c_str(),
+                   mag.c_str());
+
+  // std::cout << "> " << cmd << "\n";
+  if (!TPython::Exec(cmd)) {
+    std::cerr << "ERROR: Could not load fit results from selected data" << cmd << "\n";
+  } else {
+    auto *series = static_cast<PyObject*>(TPython::Eval("dict(series)"));
+    std::cout << "Loaded series " << series << "\n";
+
+    std::vector<std::pair<std::string, double>> values;
+    std::vector<const char*> keys = {"Ro", "Rs", "Rl", "lam", "norm"};
+    for (auto &key : keys) {
+      auto *pyval = PyDict_GetItemString(series, key);
+      if (PyFloat_Check(pyval)) {
+        double value = PyFloat_AS_DOUBLE(pyval);
+        values.emplace_back(key, value);
+      }
+    }
+
+    fitresult_panel->Update(values);
   }
 
   data->projection_manager.add_tdir(path, *tdir);

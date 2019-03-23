@@ -21,6 +21,8 @@
 #include <memory>
 
 #include "JsonLoader.hpp"
+#include "PanelCutConfig.hpp"
+#include "PanelFitResult.hpp"
 
 
 class FrameData;
@@ -29,6 +31,8 @@ class MyMainFrame : public TGMainFrame {
   TRootEmbeddedCanvas *fCanvas; //!
 
   FrameData *data; //!
+
+  std::unique_ptr<PanelFitResult> fitresult_panel;
 
 public:
 
