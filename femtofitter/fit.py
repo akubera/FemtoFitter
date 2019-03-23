@@ -221,7 +221,6 @@ def parallel_fit_all(tfile,
                      threads=None):
     """
     """
-    print("MINIMUM", ratio_min)
 
     from stumpy.utils import walk_matching
     from datetime import datetime
