@@ -1,0 +1,25 @@
+#!/usr/bin/env python
+#
+# save-jdls
+#
+
+import sys
+
+
+def arg_parser():
+    from argparse import ArgumentParser
+    parser = ArgumentParser()
+    parser.add_argument("masterjob")
+    return parser 
+
+
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
+    args = arg_parser().parse_args()
+    import sh
+
+
+if __name__ == '__main__':
+    exit(main())
+
