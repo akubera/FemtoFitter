@@ -188,8 +188,8 @@ def stat_mean(vals, errs):
 
 
 def extract_values(df, ykey, ekey=None, xkey='kT', ):
-    # ensure x
-    odf = df.cent_data.sort_values(xkey)
+    # ensure x-variable is ordered
+    odf = df.sort_values(xkey)
     if ekey is None:
         ekey = ykey + "_err"
 
@@ -267,9 +267,9 @@ class QuadPlot:
                     plot_ops['label'] = cent
                     plot_ops['lw'] = 2
 
-                    ax.errorbar(X, Y, E, label=cent, **plot_ops)
+                    ax.errorbar(X, Y, E, **plot_ops)
                     X += shift
-                    eb = ax.errorbar(X, Y, yerr=E, label=cent, lw=2, **plot_ops)
+                    eb = ax.errorbar(X, Y, yerr=E, **plot_ops)
                     eb[-1][0].set_linestyle('--')
 
                     ax.set_title(title)
@@ -288,8 +288,10 @@ class QuadPlot:
             return fig
 
         if groups:
-            result = [(group_val, _do_makeplot(pair_data))
-                      for group_val, pair_data in map(self.df.groupby, groups)]
+            result = []
+            for group in groups:
+                for grp_val, grp_data in self.df.groupby(group):
+                    result.append((grp_val, _do_makeplot(grp_data)))
         else:
             result = _do_makeplot(df)
 
