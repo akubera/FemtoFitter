@@ -33,6 +33,7 @@ class MyMainFrame : public TGMainFrame {
   FrameData *data; //!
 
   std::unique_ptr<PanelFitResult> fitresult_panel;
+  std::unique_ptr<PanelCutConfig> cutconfig_panel;
 
 public:
 

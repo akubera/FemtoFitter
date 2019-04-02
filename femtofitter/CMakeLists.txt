@@ -140,11 +140,14 @@ add_library(fitinspector
             STATIC fitinspector_dict
             src/bin/fit-inspector/MainFrame.cpp
             src/bin/fit-inspector/PanelFitResult.cpp
+            src/bin/fit-inspector/PanelCutConfig.cpp
             src/bin/fit-inspector/Projectionist.cpp)
+target_include_directories(fitinspector PUBLIC $ENV{ALICE_PHYSICS}/include)
 add_executable(fit-inspector src/bin/fit-inspector/main.cc)
 target_link_libraries(fit-inspector fitinspector
     ROOT::Hist
     ROOT::Gui
     ROOT::PyROOT
     /usr/lib/x86_64-linux-gnu/libpython3.6m.so.1.0
+    ${LIB_FEMTO}
     )

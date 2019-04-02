@@ -398,6 +398,7 @@ MyMainFrame::MyMainFrame(const TGWindow *p)
       leftbar->AddFrame(databox);
 
       fitresult_panel = std::make_unique<PanelFitResult>(*leftbar, kLHintsLeft | kLHintsTop | kLHintsExpandX);
+      cutconfig_panel = std::make_unique<PanelCutConfig>(*leftbar);
 
       mainframe->AddFrame(leftbar, new TGLayoutHints(kLHintsLeft | kLHintsTop | kLHintsExpandY, 2,2,2,2));
 
@@ -706,6 +707,19 @@ MyMainFrame::OnDropdownSelection(int id, int entry)
     }
 
     fitresult_panel->Update(values);
+  }
+
+  std::cout << "ID: " << id << ", " << entry << "\n";
+
+  // update configuration panel
+  if (id == 5 || id == 1) {
+    const TString cfg_path = "Q3DLCMS/" + cfg;
+    if (auto *dir = dynamic_cast<TDirectory*>(file->Get(cfg_path))) {
+      cutconfig_panel->Update(*dir);
+    }
+    else {
+      std::cout << "Could not find directory " << cfg_path << "\n";
+    }
   }
 
   data->projection_manager.add_tdir(path, *tdir);
