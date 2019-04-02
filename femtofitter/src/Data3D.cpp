@@ -265,7 +265,7 @@ Data3D::FromDirectory(TDirectory &tdir, const TH3 &mrc, double limit)
 }
 
 std::unique_ptr<Data3D>
-FromDirectory(TDirectory &tdir, const TH3 &mrc, double limit, double minimum)
+Data3D::FromDirectory(TDirectory &tdir, const TH3 &mrc, double limit, double minimum)
 {
   const auto n = std::unique_ptr<TH3>((TH3*)tdir.Get("num")),
              d = std::unique_ptr<TH3>((TH3*)tdir.Get("den")),
