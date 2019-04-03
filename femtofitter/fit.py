@@ -31,11 +31,11 @@ def run_fitter(fitter, *args, **kwargs):
 
 @dataclass
 class FitArgs:
-    tfile: str
+    filename: str
+    query: PathQuery
     fitter_classname: str
     fsi_classname: str
     fsi_args: Tuple[Any]
-    query: PathQuery
     fit_range: float
     minimum: float = 0.0
     fit_chi2: bool = False
@@ -43,14 +43,41 @@ class FitArgs:
     subset: str = None
 
     @classmethod
-    def BuildFrom(cls, stuffer):
-        for thing in stuffer:
-            yield cls(thing)
+    def BuildFrom(cls, datalist):
+        for data in datalist:
+            yield cls(data)
+
+    def keys(self):
+        from dataclasses import fields
+        yield from (f.name for f in fields(self))
+
+    def values(self):
+        from dataclasses import astuple
+        yield from astuple(self)
+
+    def items(self):
+        yield from vars(self).items()
+
+    def __iter__(self):
+        yield from self.keys()
+
+    def __len__(self):
+        from dataclasses import fields
+        return len(fields(self))
+
+    def __getitem__(self, key):
+        try:
+            return getattr(self, key)
+        except AttributeError as e:
+            raise KeyError() from e
+
+    def run_fit(self):
+        return run_fit(**self)
 
 
 def run_fit(fitter_classname: str,
             filename: str,
-            fsi_class: str,
+            fsi_classname: str,
             fsi_args: Tuple[Any],
             query: PathQuery,
             fit_range: float,
@@ -76,12 +103,14 @@ def run_fit(fitter_classname: str,
     else:
         raise TypeError(f"Unexpected type {type(fitter_classname)}")
 
-    if isinstance(fsi_class, str):
-        fsi_class = getattr(ROOT, fsi_class)
+    if isinstance(fsi_classname, str):
+        fsi_class = getattr(ROOT, fsi_classname)
     elif fsi_class is None:
         fsi_class = getattr(ROOT, 'FsiGamov')
-    elif not isinstance(fsi_class, type):
-        raise TypeError(f"Unexpected type of FSI calculator: {type(fsi_class)}")
+    elif isinstance(fsi_classname, type):
+        fsi_class = fsi_classname
+    else:
+        raise TypeError(f"Unexpected name of FSI calculator: {type(fsi_class)}")
 
     tfile = TFile.Open(filename)
     if not tfile:
@@ -135,12 +164,16 @@ def run_fit(fitter_classname: str,
     else:
         data = Data3D.FromDirectory(tdir, fit_range, minimum)
 
-    if subset.startswith("sail"):
+    if not subset:
+        pass
+    elif subset.startswith("sail"):
         data = data.sailor_subset()
         subset = 'sailor'
     elif subset.startswith("cow"):
         data = data.sailor_subset()
         subset = 'cowboy'
+    else:
+        raise ValueError("Unexpected subset value: %r" % subset)
 
     fitter = fitter_class(data)
     fitter.fsi = fsi_class.new_shared_ptr(*fsi_args)
@@ -162,7 +195,7 @@ def run_fit(fitter_classname: str,
     results['subset'] = subset
 
     results['cent'] = query.cent
-    results['kT'] = mean(map(float, query.kt.split("_")))
+    results['kT'] = float('%g' % mean(map(float, query.kt.split("_"))))
     results['chi2'] = fitter.resid_chi2(fit_results)
     results['ndof'] = fitter.degrees_of_freedom()
     results['rchi2'] = results['chi2'] / results['ndof']
@@ -176,10 +209,10 @@ def run_fit(fitter_classname: str,
 @dataclass
 class ParallelFitArgs:
     tfile: str
-    fsi: str
-    fsi_args: Tuple[any] = ()
     output_path: str = None
-    fitter_t: str ='FitterGausOSL'
+    fsi_classname: str = 'FsiKFile'
+    fsi_args: Tuple[any] = ('KFile2.root', )
+    fitter_t: str = 'FitterGausOSL'
     mrc: bool = False
     fitrange: float = 0.11
     subset: Optional[str] = None
@@ -199,16 +232,16 @@ class ParallelFitArgs:
             import ast
             try:
                 fsi_args = ast.literal_eval(fsi_args)
-            except :
+            except Exception:
                 pass
 
         if not isinstance(fsi_args, tuple):
             fsi_args = (fsi_args, )
 
         return cls(tfile,
+                   cli_args.output,
                    cli_args.fsi,
                    fsi_args,
-                   cli_args.output,
                    cli_args.fitter,
                    cli_args.mrc_path,
                    cli_args.fitrange,
@@ -221,8 +254,8 @@ class ParallelFitArgs:
 
 def pfit_all(args):
     return parallel_fit_all(args.tfile,
-                            (args.fsi, args.fsi_args),
                             args.output_path,
+                            (args.fsi_classname, args.fsi_args),
                             args.fitter_t,
                             args.mrc,
                             args.fitrange,
@@ -234,11 +267,12 @@ def pfit_all(args):
 
 
 def parallel_fit_all(tfile,
-                     fsi: Tuple[str, Tuple[Any]],
                      output_path=None,
+                     fsi: Tuple[str, Tuple[Any]]=('FsiKFile', 'KFile2.root'),
                      fitter_t='FitterGausOSL',
                      mrc=False,
                      fitrange=0.21,
+                     subset=None,
                      ratio_min=0.0,
                      chi2=False,
                      limit=None,
@@ -294,15 +328,32 @@ def parallel_fit_all(tfile,
     configuration_information = get_configuration_json(tfile, paths)
 
     filename = str(filename.absolute())
-    pool = Pool(threads)
     # results = pool.starmap(run_fit_gauss, ((filename, p, fitrange) for p in paths[:4]))
 
-    work = chain(
-        ((fitter_t, filename, *fsi, p, fitrange, ratio_min, chi2) for p in paths),
-        ((fitter_t, filename, *fsi, p, fitrange, ratio_min, chi2, m) for p, m in mrc_paths),
-    )
+    # work = chain(
+    #     ((fitter_t, filename, *fsi, p, fitrange, ratio_min, chi2) for p in paths),
+    #     ((fitter_t, filename, *fsi, p, fitrange, ratio_min, chi2, m) for p, m in mrc_paths),
+    # )
 
-    results = pool.starmap(run_fit, work)
+    from dataclasses import replace
+    fit_args = FitArgs(filename=filename,
+                       query=None,
+                       fitter_classname=fitter_t,
+                       fsi_classname=fsi[0],
+                       fsi_args=fsi[1],
+                       fit_range=fitrange,
+                       minimum=ratio_min,
+                       fit_chi2=chi2,
+                       mrc_path=None,
+                       subset=subset)
+
+    nomrc_fits = (replace(fit_args, query=p) for p in paths)
+    mrc_fits = (replace(fit_args, query=p, mrc_path=m) for p, m in mrc_paths)
+
+    work = chain(nomrc_fits, mrc_fits)
+
+    with Pool(threads) as pool:
+        results = pool.map(FitArgs.run_fit, work)
 
     df = pd.DataFrame(results)
     output_data = {
