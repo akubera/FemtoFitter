@@ -102,7 +102,7 @@ PanelCutConfig::Update(TDirectory &tdir)
     labels[i]->ChangeText("");
   }
 
-  if (_needs_remap) {
+  // if (_needs_remap) {
     parent->MapSubwindows();
-  }
+  // }
 }
