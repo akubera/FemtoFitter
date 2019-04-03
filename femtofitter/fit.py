@@ -287,7 +287,6 @@ def parallel_fit_all(tfile,
                      threads=None):
     """
     """
-
     from stumpy.utils import walk_matching
     from datetime import datetime
     from pathlib import Path
