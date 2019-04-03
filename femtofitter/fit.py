@@ -29,6 +29,25 @@ def run_fitter(fitter, *args, **kwargs):
     return run_fit(Fitter, *args, **kwargs)
 
 
+@dataclass
+class FitArgs:
+    tfile: str
+    fitter_classname: str
+    fsi_classname: str
+    fsi_args: Tuple[Any]
+    query: PathQuery
+    fit_range: float
+    minimum: float = 0.0
+    fit_chi2: bool = False
+    mrc_path: str = None
+    subset: str = None
+
+    @classmethod
+    def BuildFrom(cls, stuffer):
+        for thing in stuffer:
+            yield cls(thing)
+
+
 def run_fit(fitter_classname: str,
             filename: str,
             fsi_class: str,
@@ -116,10 +135,12 @@ def run_fit(fitter_classname: str,
     else:
         data = Data3D.FromDirectory(tdir, fit_range, minimum)
 
-    if subset == 'sailor':
-        data = data.cowboy_subset()
-    elif subset == 'cowboy':
+    if subset.startswith("sail"):
         data = data.sailor_subset()
+        subset = 'sailor'
+    elif subset.startswith("cow"):
+        data = data.sailor_subset()
+        subset = 'cowboy'
 
     fitter = fitter_class(data)
     fitter.fsi = fsi_class.new_shared_ptr(*fsi_args)
@@ -161,6 +182,7 @@ class ParallelFitArgs:
     fitter_t: str ='FitterGausOSL'
     mrc: bool = False
     fitrange: float = 0.11
+    subset: Optional[str] = None
     ratio_min: float = 0.0
     chi2: bool = False
     limit: Optional[int] = None
@@ -190,6 +212,7 @@ class ParallelFitArgs:
                    cli_args.fitter,
                    cli_args.mrc_path,
                    cli_args.fitrange,
+                   cli_args.subset,
                    cli_args.ratio_minimum,
                    cli_args.chi2,
                    cli_args.limit,
@@ -203,6 +226,7 @@ def pfit_all(args):
                             args.fitter_t,
                             args.mrc,
                             args.fitrange,
+                            args.subset,
                             args.ratio_min,
                             args.chi2,
                             args.limit,
@@ -221,8 +245,6 @@ def parallel_fit_all(tfile,
                      threads=None):
     """
     """
-    print("MINIMUM", ratio_min)
-
     from stumpy.utils import walk_matching
     from datetime import datetime
     from pathlib import Path

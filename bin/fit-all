@@ -31,6 +31,10 @@ def arg_parser():
                         type=float,
                         default=0.11,
                         help="symmetric limit to fit")
+    parser.add_argument("--subset",
+                        type=str,
+                        default=None,
+                        help="Optional subset selection")
     parser.add_argument("--mrc-path",
                         nargs='?',
                         default=False,
@@ -103,37 +107,6 @@ def main(argv=None):
     pfit_all(fit_args)
 
     print(f"Output written to {args.output}")
-    return 0
-
-    fsi_args = args.fsi_args
-    if isinstance(args.fsi_args, str):
-        # try interpreting as python literal
-        import ast
-        try:
-            fsi_args = ast.literal_eval(args.fsi_args)
-        except Exception:
-            pass
-
-    if not isinstance(fsi_args, tuple):
-        fsi_args = (fsi_args, )
-
-    mrc_path = args.mrc_path
-    print(f"Using MRC {mrc_path!r}" if mrc_path else "No Momentum Resolution Correction")
-    print(f"Using FSI: {fsi_class.__name__}{fsi_args}")
-    print(f"Output will be written to {dest}")
-
-    parallel_fit_all(tfile,
-                     (args.fsi, fsi_args),
-                     dest,
-                     args.fitter,
-                     mrc_path,
-                     args.fitrange,
-                     args.ratio_minimum,
-                     args.chi2,
-                     args.limit,
-                     args.threads)
-
-    print(f"Output written to {dest}")
     return 0
 
 
