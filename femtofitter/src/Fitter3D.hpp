@@ -279,16 +279,6 @@ public:
         minuit.mnparm(Impl::RLONG_PARAM_IDX, "Rl", paramhints->GenRl(), 0.1, 0.0, 0.0, errflag);
         */
 
-        if (++recursive_count < 2) {
-          // std::cout << "Retrying (" << recursive_count << ") with random params\n";
-          // auto res = do_fit_minuit(minuit, sigma, recursive_count);
-          auto &self = static_cast<Impl&>(*this);
-          self.fit_with_random_inits(minuit, result, recursive_count);
-          // std::cout << "done .";
-        }
-        else {
-          std::cout << "giving up.\n";
-        }
         break;
         }
       }
