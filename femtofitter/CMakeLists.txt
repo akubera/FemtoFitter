@@ -84,10 +84,10 @@ set(INCS
   src/Data1D.hpp
   src/Data3D.hpp
   fitter/FitterGaussOSL.hpp
-  # fitter/FitterGaussOSL3.hpp
-  # fitter/FitterGaussFull.hpp
-  # fitter/FitterLevy3D.hpp
-  # fitter/FitterLevyFull.hpp
+  fitter/FitterGaussOSL3.hpp
+  fitter/FitterGaussFull.hpp
+  fitter/FitterLevy3D.hpp
+  fitter/FitterLevyFull.hpp
   fitter/Levy1D.hh
   fsi/FsiKFile.hpp
   fsi/FsiGamov.hpp

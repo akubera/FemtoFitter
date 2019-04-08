@@ -11,17 +11,17 @@
 #pragma link C++ class FitterGaussOSL::FitParams;
 #pragma link C++ class FitterGaussOSL::FitResult;
 
-// #pragma link C++ class Fitter3D<FitterGaussFull>;
-// #pragma link C++ class FitterGaussFull::FitParams;
-// #pragma link C++ class FitterGaussFull::FitResult;
+#pragma link C++ class Fitter3D<FitterGaussFull>;
+#pragma link C++ class FitterGaussFull::FitParams;
+#pragma link C++ class FitterGaussFull::FitResult;
 
-// #pragma link C++ class Fitter3D<FitterLevy3D>;
-// #pragma link C++ class FitterLevy3D::FitParams;
-// #pragma link C++ class FitterLevy3D::FitResult;
+#pragma link C++ class Fitter3D<FitterLevy3D>;
+#pragma link C++ class FitterLevy3D::FitParams;
+#pragma link C++ class FitterLevy3D::FitResult;
 
-// #pragma link C++ class Fitter3D<FitterLevyFull>;
-// #pragma link C++ class FitterLevyFull::FitParams;
-// #pragma link C++ class FitterLevyFull::FitResult;
+#pragma link C++ class Fitter3D<FitterLevyFull>;
+#pragma link C++ class FitterLevyFull::FitParams;
+#pragma link C++ class FitterLevyFull::FitResult;
 
 #pragma link C++ function apply_momentum_resolution_correction;
 
