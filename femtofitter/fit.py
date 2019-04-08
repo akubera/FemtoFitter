@@ -165,7 +165,7 @@ def run_fit(fitter_classname: str,
         data = Data3D.FromDirectory(tdir, fit_range, minimum)
 
     if not subset:
-        pass
+        subset = None
     elif subset.startswith("sail"):
         data = data.sailor_subset()
         subset = 'sailor'
@@ -279,7 +279,7 @@ def parallel_fit_all(tfile,
                      fsi: Tuple[str, Tuple[Any]]=('FsiKFile', 'KFile2.root'),
                      fitter_t='FitterGausOSL',
                      mrc=False,
-                     fitrange=0.21,
+                     fitrange=0.11,
                      subset=None,
                      ratio_min=0.0,
                      chi2=False,
