@@ -5,6 +5,10 @@
 import numpy as np
 import pandas as pd
 
+from dataclasses import dataclass
+
+from typing import Optional
+
 
 def projections3D():
     from ROOT import TH3
@@ -32,17 +36,17 @@ def plot_projected_cf(num, den,
     if c is None:
         c = TCanvas()
         c.SetCanvasSize(800, 800)
-        c.Divide(2,2)
+        c.Divide(2, 2)
 
     lb, hb = map(num.GetXaxis().FindBin, (-lim, lim))
-    l = (lb,hb)*2
+    l = (lb, hb)*2
 
     projections = ((p(num, "pn", *l), p(den, "pd", *l))
                    for p in projections3D())
 
 #     normrange = tuple(map(num.GetXaxis().FindBin, (-.11, -0.08)))
 
-    for i, (n,d) in enumerate(projections, 1):
+    for i, (n, d) in enumerate(projections, 1):
         c.cd(i)
         if n.GetSumw2N() == 0:
             n.Sumw2()
@@ -187,17 +191,27 @@ def stat_mean(vals, errs):
     return value, error
 
 
-def extract_values(df, ykey, ekey=None, xkey='kT', ):
+def extract_values(df, ykey, ekey=None, xkey='kT', combine=True):
     # ensure x-variable is ordered
     odf = df.sort_values(xkey)
     if ekey is None:
         ekey = ykey + "_err"
+
+    if not combine:
+        return np.array(odf[[xkey, ykey, ekey]]).T
 
     res = np.array([(x, *stat_mean(d[ykey], d[ekey])) for x, d in odf.groupby(xkey)])
     return res.T
 
 
 class QuadPlot:
+
+    @dataclass
+    class ShowParams:
+        linestyle: str = '--'
+        xlim = (0.2, 1.2)
+        legend_axis = ''
+        capstyle: str = 'butt'
 
     def __init__(self, fr):
         from . import FitResults
@@ -206,7 +220,19 @@ class QuadPlot:
         else:
             self.df = fr
 
-    def show(self, *groups, limit_alpha=True, cfg=None, sysdf=None, xshift=None):
+    def show(self,
+             *groups,
+             limit_alpha=True,
+             cfg=None,
+             sysdf=None,
+             xshift=None,
+             combine=True,
+             params: Optional[ShowParams] = None,
+             ):
+        """
+        Create and display quad-plot
+        """
+
         import matplotlib.pyplot as plt
         from itertools import repeat
 
@@ -215,13 +241,16 @@ class QuadPlot:
         else:
             df = self.df
 
+        if params is None:
+            params = self.ShowParams()
+
         default_plot_ops = {
-            "linestyle": "--",
-            'marker': 's',
+            'linestyle': params.linestyle,
+            'marker': '.',
             'fmt': '',
             'capsize': 4,
-#             'solid_capstyle': 'butt',
-            'xlim': (0.2, 1.0),
+            'solid_capstyle': params.capstyle,
+            'xlim': params.xlim,
         }
 
         plt.close()
@@ -230,7 +259,7 @@ class QuadPlot:
         if 'alpha' in df.columns:
             keys.append('alpha')
 
-        legend_key = 'lam'
+        legend_key = params.legend_axis
 
         if xshift is None:
             xshift = repeat(0)
@@ -257,7 +286,7 @@ class QuadPlot:
                     else:
                         title = key
 
-                    X, Y, E = extract_values(cent_data, key)
+                    X, Y, E = extract_values(cent_data, key, combine=combine)
 
                     if sysdf is not None:
                         subsysdf = sysdf[sysdf.cent == cent]
