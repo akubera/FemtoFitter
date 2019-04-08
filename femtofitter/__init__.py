@@ -67,7 +67,8 @@ class PathQuery:
             return cls.from_path(str(obj))
 
         if isinstance(obj, pd.Series):
-            return cls(*obj[list(cls._fields)])
+            from dataclasses import fields
+            return cls(*obj[[f.name for f in fields(cls)]])
 
         from ROOT import TDirectory
         if isinstance(obj, TDirectory):
