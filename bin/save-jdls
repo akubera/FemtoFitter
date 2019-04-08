@@ -1,0 +1,231 @@
+#!/usr/bin/env python
+#
+# save-jdls
+#
+
+import re
+import sys
+from pathlib import Path
+from itertools import islice
+
+import sh
+from tqdm import tqdm
+from toolz.itertoolz import partition_all
+
+
+from multiprocessing import Pool
+from zipfile import ZipFile, ZIP_BZIP2
+from pprint import pprint
+
+
+def arg_parser():
+    from argparse import ArgumentParser
+    parser = ArgumentParser()
+    parser.add_argument("--limit",
+                        type=int,
+                        default=None,
+                        help='Limit number of jdls to load')
+    parser.add_argument("--rm",
+                        action='store_true',
+                        help='Remove saved jobs')
+    parser.add_argument("--rm-all",
+                        action='store_true',
+                        help='Remove saved jobs')
+    parser.add_argument('-o', "--output",
+                        default=None,
+                        type=Path,
+                        help='')
+    parser.add_argument("masterjob",
+                        default=None,
+                        type=int,
+                        help='the masterjob')
+    return parser
+
+
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
+    args = arg_parser().parse_args()
+
+    class Match:
+        PAT = r"""(?P<user>[a-z]+)\s+
+                 -(?P<jobid>[0-9]+)\s+
+                  (?P<status>[A-Z]+)\s+
+                  (?P<received>[^\s]+)\s+
+                  (?P<started>[^\s]+)\s+
+                  (?P<finished>[^\s]+)\s+
+                  (?P<jobname>[^\s]+)
+              """
+
+        # -T  : <user> <jobId> <status> <received> <started> <finished> <jobname>
+        def __init__(self, m):
+            # self.pid = m.group(2)
+            self.match = m
+
+        def __getattr__(self, key):
+            return self.match.groupdict()[key]
+
+        @classmethod
+        def IterFrom(cls, thing):
+            for line in re.finditer(cls.PAT, thing, re.X):
+                result = cls(line)
+                #print("result.status:", result.status)
+                if result.status in ("D", "D_WARN"):
+                    yield result
+
+    masterjob = args.masterjob or 1439941561
+    jdl_archive = args.output or Path('jdls-%d.bz2' % masterjob)
+
+    index_path = Path('jdls-%s-index.txt' % masterjob)
+
+    try:
+        #ps_cmd = sh.gbbox.ps('-s', '-d', '-T', '-id=%d' % masterjob)
+        ps_cmd = sh.gbbox.ps('-TAs', '-id=%d' % masterjob)
+    except sh.ErrorReturnCode_1 as e:
+        ps_cmd = e
+    txt = ps_cmd.stdout.decode()
+
+    if jdl_archive.suffix == '.bz2':
+        compression = ZIP_BZIP2
+    else:
+        compression = None  # default
+
+    done_pids = {a.jobid for a in Match.IterFrom(txt)}
+    print("Found %d DONE jobs under masterjob %d" %
+          (len(done_pids), masterjob))
+
+    with open(index_path, 'a') as f:
+        f.write(txt)
+
+    with ZipFile(jdl_archive, 'a', compression=compression) as jdlindex:
+        saved_pids = set(jdlindex.namelist())
+
+        limit = args.limit
+
+        missing_jdls = done_pids - saved_pids
+        if limit:
+            requested_jdls = set(islice(missing_jdls, limit))
+            print("Fetching %d of the %d missing jdls"
+                  % (len(requested_jdls), len(missing_jdls)))
+        else:
+            requested_jdls = set(missing_jdls)
+            print(f"Fetching all of the missing {len(requested_jdls)} jdls")
+
+        # with Pool(40) as pool:
+        #     job_iter = pool.imap_unordered(get_jdl_info, requested_jdls)
+        #     progressbar = tqdm(job_iter, total=len(requested_jdls))
+        #     jdl_txt = list(progressbar)
+        jdl_txts = parallel_call(get_jdl_info, requested_jdls)
+
+        # jdl_dict = dict(jdl_txts)
+
+        print("Saving %d new jdls" % len(jdl_txts))
+        for pid, jjdl in jdl_txts:
+            jdlindex.writestr(pid, jjdl)
+
+    # regex = re.compile(rb'MasterJobId = "([\d]+)"')
+    trace_archive = jdl_archive.with_suffix('.traces' + jdl_archive.suffix)
+
+    # from functools import partial
+    # matchin_masterjob = partial(filter_jdl_masterjob, masterjob)
+
+    # subjobs = []
+    # with ZipFile(jdl_archive, 'r', compression=compression) as jdlindex:
+    #     for jdlname in jdlindex.namelist():
+    #         jdltxt = jdlindex.read(jdlname)
+    #         if b'MasterJobId = "%d"' % masterjob in jdltxt:
+    #             subjobs.append(jdlname)
+
+    # print("found %d jobs" % len(jdl_dict))
+    # requested_jdls
+
+    # pids_to_download = list(islice(missing_jdls, limit))
+
+    with ZipFile(trace_archive, 'a', compression=compression) as tracefile:
+        saved_traces = set(tracefile.namelist())
+        missing_traces = requested_jdls - saved_traces
+
+        print("Fetching %d traces" % len(missing_traces))
+
+        traces = parallel_call(get_job_trace, missing_traces)
+
+        for pid, trace in traces:
+            tracefile.writestr(pid, trace)
+
+    # print('pids', len(missing_traces))
+    if args.rm or args.rm_all:
+
+        if args.rm_all:
+            rm_these_jdls = done_pids
+        else:
+            rm_these_jdls = requested_jdls
+
+        print("Killing requested DONE jobs")
+        for runs_to_kill in partition_all(8, rm_these_jdls):
+            try:
+                sh.alien_kill(*runs_to_kill)
+            except sh.ErrorReturnCode_1:
+                for r in runs_to_kill:
+                    sh.alien_kill(r)
+
+    return
+    if False:
+        with Pool(40) as pool:
+            pool
+            # for regex = jdlindex.getname
+        trace_dest = dest.with_suffix('.traces' + dest.suffix)
+        print("Loaded %d new jdls" % len(jdl_txt))
+        for pid, jjdl in jdl_txt:
+            jdlindex.writestr(pid, jjdl)
+
+
+def get_jdl_info(pid):
+    import sh
+    cmd = sh.alien_ps('-jdl', pid)
+    txt: bytes = cmd.stdout
+    ss = txt[txt.find(b'[', 2):txt.find(b']') + 1]
+    return pid, ss
+
+
+def get_job_trace(pid):
+    import sh
+    import os
+    env = os.environ.copy()
+    env['alien_NOCOLOR_TERMINAL'] = '1'
+    cmd = sh.alien_ps('-trace', pid, _env=env)
+    txt: bytes = cmd.stdout
+    # ss = txt[txt.find(b'[', 2):txt.find(b']') + 1]
+    return pid, txt
+
+
+def filter_jdl_masterjob(masterjob):
+    pass
+
+
+def parallel_call(func,
+                  items,
+                  threads=50,
+                  ordered=False,
+                  show_progressbar=True):
+    """
+    Call function func in parallel with other
+    """
+
+    with Pool(40) as pool:
+        call = pool.imap if ordered else pool.imap_unordered
+
+        job_iter = call(func, items)
+
+        if show_progressbar:
+            try:
+                total = len(items)
+            except TypeError:
+                total = None
+
+            job_iter = tqdm(job_iter, total=total)
+
+        return list(job_iter)
+
+
+if __name__ == '__main__':
+    exit(main())

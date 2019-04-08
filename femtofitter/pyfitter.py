@@ -24,7 +24,7 @@ from scipy.interpolate import interp2d
 CoulombHist = None
 
 HBAR_C = 0.19732697
-ETA_PION = 1.0 / 388.0;
+ETA_PION = 1.0 / 388.0
 
 
 try:
@@ -56,7 +56,7 @@ def estimate_gamma_from_tdir(tdir):
         if ktdir:
             try:
                 ktlo, kthi = map(float, ktdir.GetName().split('_'))
-            except Execption:
+            except Exception:
                 pass
             else:
                 kt_mean = (ktlo + kthi) / 2.0
@@ -118,32 +118,41 @@ class PyData3D:
 
     @classmethod
     def From(cls, tdir, mrc=None, fit_range=None):
+        """
+        Build from TDirectory
+        """
+
+        def iter_space(h):
+            for k in range(h.GetNbinsZ()):
+                z = h.GetZaxis().GetBinCenter(k)
+                for j in range(h.GetNbinsY()):
+                    y = h.GetYaxis().GetBinCenter(j)
+                    for i in range(h.GetNbinsX()):
+                        x = h.GetXaxis().GetBinCenter(i)
+                        yield (i, j, k), (x, y, z)
+
         from ROOT import TDirectory, TH3
         num, den, qinv = map(tdir.Get, ('num', 'den', 'qinv'))
         if isinstance(mrc, TDirectory):
             mrc = mrc.Get("mrc")
         if isinstance(mrc, TH3):
             if num.GetNbinsX() == mrc.GetNbinsX():
-               num.Multiply(mrc)
-               for i in range(mrc.GetNcells()):
-                   if mrc.GetBinContent(i) == 0 or num.GetBinContent(i) < 0:
-                       den.SetBinContent(i, 0)
+                num.Multiply(mrc)
+                for i in range(mrc.GetNcells()):
+                    if mrc.GetBinContent(i) == 0 or num.GetBinContent(i) < 0:
+                        den.SetBinContent(i, 0)
             # elif num.GetXaxis().GetBinWidth(1) == :
             else:
-                for k in range(num.GetNbinsZ()):
-                  z = num.GetZaxis().GetBinCenter(k)
-                  for j in range(num.GetNbinsY()):
-                    y = num.GetYaxis().GetBinCenter(j)
-                    for i in range(num.GetNbinsX()):
-                        x = num.GetXaxis().GetBinCenter(i)
-                        fact = mrc.Interpolate(x,y,z)
-                        if fact <=0 or np.isnan(fact):
-                           print(x,y,z,'->',fact)
-                        if fact == 0:
-                            den.SetBinContent(i,j,k,0)
-                        else:
-                            n = num.GetBinContent(i,j,k)
-                            num.SetBinContent(i,j,k, n * fact)
+                for (i, j, k), (x, y, z) in iter_space(num):
+                    fact = mrc.Interpolate(x, y, z)
+                    if fact <= 0 or np.isnan(fact):
+                        print(x, y, z, '->', fact)
+
+                    if fact == 0:
+                        den.SetBinContent(i, j, k, 0)
+                    else:
+                        n = num.GetBinContent(i, j, k)
+                        num.SetBinContent(i, j, k, n * fact)
 
         gamma = estimate_gamma_from_tdir(tdir)
         self = cls(num, den, qinv, fit_range, gamma)
@@ -158,8 +167,9 @@ class PyData3D:
                      np.int32 if isinstance(h, TH3I) else
                      np.int16 if isinstance(h, TH3S) else
                      np.float64)
-            buffer = np.frombuffer(h.GetArray(), count=h.GetNcells(), dtype=dtype).astype(np.float32)
-            return buffer.reshape(h.GetNbinsZ()+2, h.GetNbinsY()+2, h.GetNbinsX()+2)
+            buf = np.frombuffer(h.GetArray(), count=h.GetNcells(), dtype=dtype)
+            shape = (h.GetNbinsZ() + 2, h.GetNbinsY() + 2, h.GetNbinsX() + 2)
+            return buf.astype(np.float32).reshape(*shape)
 
         def get_bin_centers(axis):
             nbins = axis.GetNbins()
@@ -261,11 +271,17 @@ class PyData3D:
 
         def _calc(c):
             # if ne:
-            #     return ne.evaluate("""(-2 * (where(a == 0.0, 0.0, a * log((a+b)*c/(a*(c+1)))
-            #                                + where(b == 0.0, 0.0, b * log((a+b)/(b*(c+1))))""")
+            #     return ne.evaluate("""(-2 * (where(a == 0.0,
+            #                                        0.0,
+            #                                        a * log((a+b)*c/(a*(c+1)))
+            #                                + where(b == 0.0,
+            #                                        0.0,
+            #                                        b * log((a+b)/(b*(c+1))))""")
             if ne:
-                return ne.evaluate("""-2 * ( where(a == 0.0, 0.0, a * log(a_plus_b_over_a * c / (c+1)))
-                                           + where(b == 0.0, 0.0, b * log(a_plus_b_over_b / (c+1))) )""")
+                return ne.evaluate("""-2 * ( where(a == 0.0, 0.0,
+                                                   a * log(a_plus_b_over_a * c / (c+1)))
+                                           + where(b == 0.0, 0.0,
+                                                   b * log(a_plus_b_over_b / (c+1))) )""")
 
             if np.any(c < 0):
                 print("c < 0")
@@ -325,7 +341,7 @@ class FemtoFitter3D:
 
     @staticmethod
     def get_fsi_gamov(qinv, R):
-        x = 2 * np.pi * HBAR_C * ETA_PION / qinv;
+        x = 2 * np.pi * HBAR_C * ETA_PION / qinv
         return x / (np.exp(x) - 1)
 
     def chi2_minimizer(self, data=None, gamma=None, fsi=None, **kwds) -> Minimizer:
@@ -732,7 +748,7 @@ class FitterLevy2(FemtoFitter3D):
         settings = {"value": 1.90}
         if limit_alpha:
             settings['min'] = 0.0
-            #settings['max'] = 2.0
+            settings['max'] = 2.0
 
         q3d_params = FitterGauss.default_parameters()
         q3d_params.add('alpha_ol', **settings)
