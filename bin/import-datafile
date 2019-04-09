@@ -241,6 +241,39 @@ class AnalysisQinv(AnalysisResults):
 
 
 @register_analysis_class
+class AnalysisTrueQinv(AnalysisResults):
+
+    KT_CONTAINER_NAME = "KT_TrueQinv"
+
+    @classmethod
+    def From(cls, container) -> Optional['AnalysisTrueQinv']:
+
+        qgqr = get_tobject(container, "QgenQrec")
+        h = qgqr.Clone("NormQgenQrec")
+
+        for y in range(1, qgqr.GetNbinsY()+1):
+            s = 0.0
+            for x in range(1, qgqr.GetNbinsX()+1):
+                s += qgqr.GetBinContent(x, y)
+
+            for x in range(1, qgqr.GetNbinsX()+1):
+                h.SetBinContent(x, y, h.GetBinContent(x, y) / s)
+
+        self = cls(h)
+        return self
+
+    def __init__(self, mrcmatrix):
+        self.mrc = mrcmatrix
+
+    def write_to_file(self, dest):
+        dest.mkdir(self.storage_key)
+        self.write_config(dest)
+
+        dest.cd(self.storage_key)
+        self.mrc.Write("mrc")
+
+
+@register_analysis_class
 class AnalysisQ3D(AnalysisResults):
 
     KT_CONTAINER_NAME = "KT_Q3D"
