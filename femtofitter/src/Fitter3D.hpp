@@ -17,7 +17,8 @@
 
 #include <TMinuit.h>
 #include <TFile.h>
-
+#include <TPython.h>
+#include <Python.h>
 
 #include <iostream>
 #include <typeinfo>
@@ -64,7 +65,7 @@ public:
 
   Fitter3D(Data3D &&data_)
     : data(std::move(data_))
-  { }
+    { }
 
   void SetParamHintsFromDir(const TDirectory &tdir)
     {
@@ -298,6 +299,35 @@ public:
 
   void SetFsi(std::shared_ptr<FsiCalculator> ptr)
     { fsi = ptr; }
+
+  /// Extract a number from a python object and store in dest
+  ///
+  static
+  bool
+  ExtractPythonNumber(PyObject *pyobj,
+                      const char* key,
+                      double &dest,
+                      std::vector<std::string> &missing)
+    {
+      if (!PyMapping_HasKeyString(pyobj, key)) {
+        missing.emplace_back(key);
+        return false;
+      }
+
+      auto *item = PyMapping_GetItemString(pyobj, key);
+      if (PyFloat_Check(item)) {
+        dest = PyFloat_AS_DOUBLE(item);
+        return true;
+      }
+
+      if (PyLong_Check(item)) {
+        dest = PyLong_AsDouble(item);
+        return true;
+      }
+
+      missing.emplace_back(key);
+      return false;
+    }
 };
 
 #endif
