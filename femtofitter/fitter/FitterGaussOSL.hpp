@@ -150,6 +150,32 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
     {
     }
 
+    FitParams(PyObject *pyobj)
+      {
+        std::vector<std::string> missing_keys;
+
+        if (!PyMapping_Check(pyobj)) {
+          TPython::Exec(Form("raise TypeError('Object not a collection!')"));
+          throw std::runtime_error("Object not a python collection");
+        }
+
+        ExtractPythonNumber(pyobj, "norm", norm, missing_keys);
+        ExtractPythonNumber(pyobj, "lam", lam, missing_keys);
+        ExtractPythonNumber(pyobj, "Ro", Ro, missing_keys);
+        ExtractPythonNumber(pyobj, "Rs", Rs, missing_keys);
+        ExtractPythonNumber(pyobj, "Rl", Rl, missing_keys);
+
+        if (!missing_keys.empty()) {
+          std::string msg = "Python object missing required items:";
+          for (const auto &key : missing_keys) {
+            msg += " ";
+            msg += key;
+          }
+          TPython::Exec(Form("raise ValueError('%s')", msg.c_str()));
+          throw std::runtime_error(msg);
+        }
+      }
+
     bool is_invalid() const
     {
       return Ro < 0
@@ -231,8 +257,7 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
           qo = qout.GetBinCenter(i),
           qs = qside.GetBinCenter(j),
           ql = qlong.GetBinCenter(k),
-          q = qinv.GetBinContent(i, j, k),
-          K = 1.0;// coulomb_factor.Interpolate(q);
+          K = 1.0;
 
         hist.SetBinContent(i,j,k, hist.GetBinContent(i,j,k) * gauss({qo, qs, ql}, K));
       }
