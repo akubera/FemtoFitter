@@ -1,0 +1,245 @@
+#!/usr/bin/env python
+#
+# fit-1d
+#
+"""
+Fits 1D histograms
+"""
+
+
+import sys
+
+if sys.path[0] != '':
+    sys.path.insert(0, '')
+
+from pathlib import Path
+from dataclasses import dataclass
+
+from femtofitter import PathQuery
+from multiprocessing.pool import Pool
+import asyncio
+
+from typing import Optional, Tuple, List
+from pprint import pprint
+
+
+from tqdm import tqdm
+
+
+def arg_parser():
+    from argparse import ArgumentParser
+    parser = ArgumentParser()
+    parser.add_argument("input",
+                        help="file to fit")
+    parser.add_argument("-o", "--output",
+                        nargs='?',
+                        default=None,
+                        help="Output fitresult json file")
+    parser.add_argument("--chi2",
+                        action='store_true',
+                        help="Fit with chi2 instead of LogLikelihood")
+    parser.add_argument("--limit",
+                        type=int,
+                        default=None,
+                        help="limit input count")
+    parser.add_argument("--ratio-minimum",
+                        type=float,
+                        default=0.0,
+                        help="Limit correlation function")
+    parser.add_argument("--fitrange",
+                        type=float,
+                        default=0.40,
+                        help="Qinv limit of the fit")
+    parser.add_argument("--mrc-path",
+                        nargs='?',
+                        default=False,
+                        help="Path to Momentum Resolution Correction, format is <filename:cfg>")
+    parser.add_argument("--fitter",
+                        default='FitterGauss1D',
+                        help="Name of fitter class")
+    parser.add_argument("--fsi",
+                        default='FsiKFile',
+                        help="Name of fsi class")
+    parser.add_argument("--fsi-args",
+                        default=(),
+                        help="Arguments used to build fsi object")
+    parser.add_argument("--threads",
+                        default=None,
+                        type=int,
+                        help="Number of parallel processes to run")
+    return parser
+
+
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
+    args = arg_parser().parse_args(argv)
+    import ROOT
+
+    try:
+        getattr(ROOT, args.fitter)
+    except AttributeError:
+        print(f"Could not load fitter class {args.fitter!r}", file=sys.stderr)
+        return 1
+
+    from ROOT import TFile
+    from stumpy.utils import walk_matching
+
+    tfile = TFile(args.input)
+    # walk_matching()
+
+    pathquery = PathQuery('*', 'cfg*', '*', '*', '*', '*')
+    pattern = pathquery.as_path()
+
+    paths = []
+    for path, _ in walk_matching(tfile, pattern):
+        query = PathQuery.From(path)
+        paths.append(query)
+
+    params = RunFitParams.From(args)
+    params = [params(pathquery=p) for p in paths]
+
+    loop = asyncio.get_event_loop()
+
+    from functools import partial
+    from concurrent.futures import ProcessPoolExecutor
+    from asyncio import FIRST_COMPLETED
+
+    executor = ProcessPoolExecutor()
+
+    # paths = get_build_params(args.input)
+    # print(paths)
+    # return
+
+    # calls = (() for _ in range(5))
+
+    async def run_fits(pending):
+        from asyncio import wait
+        finished = set()
+
+        with tqdm(total=len(pending)) as pbar:
+            while pending:
+                done, pending = await wait(pending,
+                                           loop=loop,
+                                           return_when=FIRST_COMPLETED)
+                finished |= done
+                pbar.update(len(done))
+
+        print([d.result() for d in finished])
+
+    coros = [loop.run_in_executor(executor, run_fit, p) for p in params]
+    results = loop.run_until_complete(run_fits(coros))
+    print(results)
+
+
+def tcall():
+    from time import sleep
+    from random import random
+
+    t = random() * 8
+    sleep(t)
+    return t
+
+
+@dataclass
+class RunFitParams:
+    filename: Path
+    pathquery: PathQuery
+    fitter_classname: str
+    fsi_classname: str
+    fsi_args: Tuple[str]
+    mrc_path: Optional[str] = None
+    fit_chi2: bool = False
+
+    @classmethod
+    def From(cls, args):
+        if isinstance(args, list):
+            return [cls.From(a) for a in args]
+
+        return cls(
+            filename=args.input,
+            pathquery=None,
+            fitter_classname=args.fitter,
+            fsi_classname=args.fsi,
+            fsi_args=args.fsi_args,
+            mrc_path=None,
+            fit_chi2=args.chi2,
+        )
+
+    def __call__(self, **kwargs):
+        from copy import copy
+        p = copy(self)
+
+        for k, v in kwargs.items():
+            setattr(p, k, v)
+
+        return p
+
+
+
+def run_fit(params: RunFitParams) -> Optional[dict]:
+    """
+    Run 1D fit
+    """
+    import ROOT
+
+    # tfile = ROOT.TFile.Open(str(params.filename.absolute()))
+    tfile = ROOT.TFile.Open(params.filename)
+    tdir = tfile.Get(params.pathquery.as_path())
+
+    try:
+        fittercls = getattr(ROOT, params.fitter_classname)
+    except AttributeError:
+        msg = f"Could not find fitter class {params.fitter_classname!r}"
+        raise TypeError(msg)
+
+    try:
+        fsi_class = getattr(ROOT, params.fsi_classname)
+    except AttributeError:
+        raise TypeError(f"Could not find fsi class {params.fsi_classname!r}")
+
+    if params.mrc_path:
+        mrc_filename, _, cfg = params.mrc_path.partition(':')
+        if not mrc_filename:
+            mrctfile = tfile
+        else:
+            mrc_file = TFile.Open(mrc_filename)
+            if not mrc_file:
+                mrc_file
+
+        mrc_query = params.pathquery(cent='00_90')
+        if cfg.startswith('cfg'):
+            mrc_query.cfg = cfg
+        else:
+            mrc_query.analysis = 'AnalysisTrueQinv'
+
+
+    print(tdir)
+    data = ROOT.Data1D.FromDirectory(tdir)
+
+    fitter = fittercls(data)
+    fitter.fsi = fsi_class.new_shared_ptr(*params.fsi_args)
+    fitter.SetParamHintsFromDir(tdir)
+
+    fit_results = fitter.fit_chi2() if params.fit_chi2 else fitter.fit_pml()
+    if not fit_results:
+        return None
+
+    results = fit_results.as_map()
+
+    results["fsi"] = str(fitter.fsi.ClassName())
+    results["cent"] = params.pathquery.cent
+    results["mrc"] = params.mrc_path
+    results["gamma"] = fitter.gamma.data
+    results["ndof"] = fitter.degrees_of_freedom()
+    results["chi2"] = fitter.resid_chi2(fit_results)
+    results["rchi2"] = results["chi2"] / results["ndof"]
+
+    return results
+
+
+# def get_build_params(file) -> List[RunFitParams]:
+
+
+if __name__ == "__main__":
+    exit(main())
