@@ -7,6 +7,14 @@
 #pragma link C++ class Data3D;
 #pragma link C++ class Value;
 
+#pragma link C++ class Fitter1D<FitterGauss1D>;
+#pragma link C++ class FitterGauss1D::FitParams;
+#pragma link C++ class FitterGauss1D::FitResult;
+
+#pragma link C++ class Fitter1D<FitterLevy1D>;
+#pragma link C++ class FitterLevy1D::FitParams;
+#pragma link C++ class FitterLevy1D::FitResult;
+
 #pragma link C++ class Fitter3D<FitterGaussOSL>;
 #pragma link C++ class FitterGaussOSL::FitParams;
 #pragma link C++ class FitterGaussOSL::FitResult;
