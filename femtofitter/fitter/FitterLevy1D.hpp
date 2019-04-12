@@ -1,19 +1,21 @@
 ///
-/// \file femtofitter/fitter/Levy1D.hh
+/// \file femtofitter/fitter/FitterLevy1D.hpp
 ///
 
 
 #include "Fitter1D.hpp"
 #include "Value.hpp"
-
-#ifndef LEVY1D_HH_
-#define LEVY1D_HH_
+#include "math/constants.hh"
 
 
-/// \class Levy1D
-/// \brief Fill
+#ifndef LEVY1D_HPP
+#define LEVY1D_HPP
+
+
+/// \class FitterLevy1D
+/// \brief
 ///
-struct Levy1D : Fitter1D<Levy1D> {
+struct FitterLevy1D : Fitter1D<FitterLevy1D> {
 
   enum {
     DATA_PARAM_IDX = 0,
@@ -26,6 +28,17 @@ struct Levy1D : Fitter1D<Levy1D> {
 
   int degrees_of_freedom() const
     { return data.size() - 4; }
+
+  static double
+  levy(double qinv, double RinvSq, double lam, double alpha, double K=1.0, double norm=1.0)
+    {
+      const double
+        E = std::pow(qinv * qinv * RinvSq, alpha / 2),
+        gauss = 1.0 + std::exp(-E/HBAR_C_SQ),
+        result = (1.0 - lam) + lam * K * gauss;
+
+      return norm * result;
+    }
 
   /// \class Fit results from TMinuit
   ///
@@ -134,20 +147,20 @@ struct Levy1D : Fitter1D<Levy1D> {
       }
   };
 
-  Levy1D(const TH1 &num, const TH1 &den, double limit)
+  FitterLevy1D(const TH1 &num, const TH1 &den, double limit)
     : Fitter1D(num, den, limit)
     { }
 
-  Levy1D(TDirectory &tdir, double limit)
+  FitterLevy1D(TDirectory &tdir, double limit)
     : Fitter1D(tdir, limit)
     { }
 
-  Levy1D(const Data1D &data)
+  FitterLevy1D(const Data1D &data)
     : Fitter1D(data)
     { }
 
   int
-  setup_minuit(TMinuit &minuit)
+  setup_minuit(TMinuit &minuit) const override
     {
       int errflag = 0;
       minuit.mnparm(NORM_PARAM_IDX, "Norm", 0.25, 0.02, 0.0, 0.0, errflag);
