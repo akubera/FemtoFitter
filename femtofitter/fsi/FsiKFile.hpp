@@ -140,7 +140,7 @@ struct FsiKFile : public FsiCalculator {
   std::string ClassName() const override
     { return "FsiKFile[" + filename + "]"; }
 
-  static std::shared_ptr<FsiCalculator> new_shared_ptr(std::string fname="KFile.root")
+  static std::shared_ptr<FsiCalculator> new_shared_ptr(std::string fname="KFile2.root")
     { return std::make_shared<FsiKFile>(fname); }
 };
 
