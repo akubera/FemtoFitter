@@ -36,7 +36,10 @@ struct Data1D {
          gamma;
 
   /// Build out of standard tdirectory;
-  static std::unique_ptr<Data1D> FromDirectory(TDirectory &, double limit=0.0);
+  static std::unique_ptr<Data1D> From(TDirectory &data, double limit=0.0);
+
+  /// Build from TDirectories of data and momentum resolution correction
+  static std::unique_ptr<Data1D> From(TDirectory &data, TDirectory &mrc, double limit=0.0);
 
   /// Construct from histograms
   ///

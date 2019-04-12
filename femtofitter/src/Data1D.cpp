@@ -80,7 +80,7 @@ Data1D::Data1D(TDirectory &dir, double limit_)
 
 
 std::unique_ptr<Data1D>
-Data1D::FromDirectory(TDirectory &dir, double limit)
+Data1D::From(TDirectory &dir, double limit)
 {
   const auto n = std::unique_ptr<TH1>((TH1*)dir.Get("num")),
              d = std::unique_ptr<TH1>((TH1*)dir.Get("den"));
@@ -90,4 +90,28 @@ Data1D::FromDirectory(TDirectory &dir, double limit)
   }
 
   return std::unique_ptr<Data1D>(new Data1D(*n, *d, limit));
+}
+
+
+std::unique_ptr<Data1D>
+Data1D::From(TDirectory &dir, TDirectory &mrc, double limit)
+{
+  auto n = std::unique_ptr<TH1>((TH1*)dir.Get("num")),
+       d = std::unique_ptr<TH1>((TH1*)dir.Get("den")),
+       nr = std::unique_ptr<TH1>((TH1*)mrc.Get("NumTrue")),
+       dr = std::unique_ptr<TH1>((TH1*)mrc.Get("Den")),
+       ng = std::unique_ptr<TH1>((TH1*)mrc.Get("NumTrueIdeal")),
+       dg = std::unique_ptr<TH1>((TH1*)mrc.Get("DenIdeal"));
+
+
+  if (!n || !d || !nr || !dr || !ng || !dg) {
+    return nullptr;
+  }
+
+  n->Multiply(ng.get());
+  n->Multiply(dr.get());
+  n->Divide(dg.get());
+  n->Divide(nr.get());
+
+  return std::make_unique<Data1D>(*n, *d, limit);
 }
