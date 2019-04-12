@@ -243,7 +243,7 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
                 J = hist.GetNbinsY(),
                 K = hist.GetNbinsZ();
 
-      const double phony_r = PseudoRinv(gamma);
+      // const double phony_r = PseudoRinv(gamma);
       // auto coulomb_factor = CoulombHist::GetHistWithRadius(phony_r);
 
       const TAxis &qout = *hist.GetXaxis(),
@@ -364,7 +364,6 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
       std::cerr << "Unknown parameter '" << name << "'\n";
       return;
     }
-
 
     double stepsize = (idx == LAM_PARAM_IDX) ? 0.1 : 1.0;
 
