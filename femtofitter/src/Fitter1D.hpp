@@ -8,6 +8,7 @@
 #define FITTER1D_HPP
 
 #include "CalculatorResid.hpp"
+#include "CalculatorFsi.hpp"
 
 #include "./Data1D.hpp"
 
@@ -18,7 +19,9 @@
 
 #include "CoulombHist.hpp"
 
-
+/// \class Fitter1D
+/// \brief Generic 1D
+///
 template <typename Impl>
 class Fitter1D {
 public:
@@ -27,6 +30,9 @@ public:
 
   /// The associated fit data
   Data1D data;
+
+  /// The final-state-interaction calculator
+  std::shared_ptr<FsiCalculator> fsi = nullptr;
 
   Fitter1D(const TH1 &num, const TH1 &den, double limit)
     : data(num, den, limit)
@@ -43,18 +49,17 @@ public:
     {
     }
 
+  virtual ~Fitter1D() = default;
+
   template <typename ResidFunc, typename FitParams>
   double resid_calc(const FitParams &p, ResidFunc resid_calc) const
     {
       double retval = 0;
 
-      // FitParams
-      auto coulomb_factor = CoulombHist::GetHistWithRadius(p.radius);
-
-      // auto Kfsi = [&coulomb_factor] (double q) {
-      //   return coulomb_factor.Interpolate(q);
-      // };
-      auto Kfsi = coulomb_factor.Interpolate;
+      const std::function<double(double)>
+        Kfsi = fsi
+             ? fsi->ForRadius(p.Rinv)
+             : [] (double qinv) { return 1.0; };
 
       for (const auto &datum : data) {
         const double
@@ -69,6 +74,8 @@ public:
 
       return retval;
     }
+
+  virtual int setup_minuit(TMinuit &minuit) const = 0;
 
   void setup_chi2_fitter(TMinuit &minuit)
     {
@@ -87,6 +94,43 @@ public:
 
   auto num_as_vec() const -> std::vector<double>
     { return data.size(); }
+
+  auto do_fit_minuit(TMinuit &minuit)
+    {
+      double strat_args[] = {1.0};
+      double migrad_args[] = {2000.0, 1.0};
+      double hesse_args[] = {2000.0, 1.0};
+
+      int errflag;
+      minuit.mnexcm("SET STRategy", strat_args, 1, errflag);
+      minuit.mnexcm("MIGRAD", migrad_args, 2, errflag);
+
+      strat_args[0] = 2.0;
+      minuit.mnexcm("SET STRategy", strat_args, 1, errflag);
+      minuit.mnexcm("MIGRAD", migrad_args, 2, errflag);
+
+      minuit.mnexcm("HESSE", hesse_args, 1, errflag);
+
+      auto result = typename Impl::FitResult(minuit);
+
+      return result;
+    }
+
+  auto fit_chi2()
+    {
+      TMinuit minuit;
+      minuit.SetPrintLevel(-1);
+      setup_chi2_fitter(minuit);
+      return do_fit_minuit(minuit);
+    }
+
+  auto fit_pml()
+    {
+      TMinuit minuit;
+      minuit.SetPrintLevel(-1);
+      setup_pml_fitter(minuit);
+      return do_fit_minuit(minuit);
+    }
 
 };
 
