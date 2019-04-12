@@ -7,6 +7,9 @@ fit-results/
 *.yaml
 *.txt
 *.feather
+*.bz2
+*.zip
+*.svg*
 
 # default build destination
 /build/
