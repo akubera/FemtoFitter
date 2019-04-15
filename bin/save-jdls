@@ -47,33 +47,17 @@ def main(argv=None):
         argv = sys.argv[1:]
     args = arg_parser().parse_args()
 
-    class Match:
-        PAT = r"""(?P<user>[a-z]+)\s+
-                 -(?P<jobid>[0-9]+)\s+
-                  (?P<status>[A-Z]+)\s+
-                  (?P<received>[^\s]+)\s+
-                  (?P<started>[^\s]+)\s+
-                  (?P<finished>[^\s]+)\s+
-                  (?P<jobname>[^\s]+)
-              """
 
-        # -T  : <user> <jobId> <status> <received> <started> <finished> <jobname>
-        def __init__(self, m):
-            # self.pid = m.group(2)
-            self.match = m
+    from ROOT import TGrid
 
-        def __getattr__(self, key):
-            return self.match.groupdict()[key]
+    alien = TGrid.Connect("alien://")
+    if not alien.IsConnected() or alien.GetPort() == 0:
+        print("Could not connect to alien", file=sys.stderr)
+        return 1
 
-        @classmethod
-        def IterFrom(cls, thing):
-            for line in re.finditer(cls.PAT, thing, re.X):
-                result = cls(line)
-                #print("result.status:", result.status)
-                if result.status in ("D", "D_WARN"):
-                    yield result
+    return 0
 
-    masterjob = args.masterjob or 1439941561
+    masterjob = args.masterjob
     jdl_archive = args.output or Path('jdls-%d.bz2' % masterjob)
 
     index_path = Path('jdls-%s-index.txt' % masterjob)
@@ -225,6 +209,32 @@ def parallel_call(func,
             job_iter = tqdm(job_iter, total=total)
 
         return list(job_iter)
+
+
+class Match:
+    PAT = r"""(?P<user>[a-z]+)\s+
+             -(?P<jobid>[0-9]+)\s+
+              (?P<status>[A-Z]+)\s+
+              (?P<received>[^\s]+)\s+
+              (?P<started>[^\s]+)\s+
+              (?P<finished>[^\s]+)\s+
+              (?P<jobname>[^\s]+)
+          """
+
+    # -T  : <user> <jobId> <status> <received> <started> <finished> <jobname>
+    def __init__(self, m):
+        # self.pid = m.group(2)
+        self.match = m
+
+    def __getattr__(self, key):
+        return self.match.groupdict()[key]
+
+    @classmethod
+    def IterFrom(cls, thing):
+        for line in re.finditer(cls.PAT, thing, re.X):
+            result = cls(line)
+            if result.status in ("D", "D_WARN"):
+                yield result
 
 
 if __name__ == '__main__':
