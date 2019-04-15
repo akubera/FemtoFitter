@@ -10,25 +10,218 @@ Implementation of equation (36) in the paper
 (http://www.ujk.edu.pl/strony/mrow/papers/PRC-femto.pdf)
 
 """
+
+import os
 import sys
+from pathlib import Path
 from mpmath import hyp2f2
 from numpy import exp, sqrt, pi
-
 
 HBAR_C = 0.197327
 HBAR_C_SQR = HBAR_C * HBAR_C
 ETA = 1.0 / 388
 
 
+MACRO_SOURCE = """
+
+#include <AliFemtoModelHiddenInfo.h>
+#include <AliFemtoPair.h>
+#include <TRandom2.h>
+#include <TFile.h>
+#include <TProfile2D.h>
+#include <vector>
+#include <AliFemtoModelWeightGeneratorLednicky.h>
+
+void
+FillTProfile(int seed, int counts, TProfile2D* result)
+{{
+  TRandom2 *rng = new TRandom2();
+  rng->SetSeed(seed);
+
+  double MaxQ = result->GetXaxis()->GetXmax();
+  double MaxR = result->GetYaxis()->GetXmax();
+
+
+  auto fill_hidden_info = [&] (AliFemtoParticle &particle,
+                               const AliFemtoThreeVector &p,
+                               const AliFemtoLorentzVector &r)
+    {{
+      auto &trk = *particle.Track();
+      AliFemtoModelHiddenInfo &info = static_cast<AliFemtoModelHiddenInfo&>(*trk.GetHiddenInfo());
+
+      info.SetTrueMomentum(p);
+      info.SetEmissionPoint(r);
+
+      double e = p.MassHypothesis(0.139);
+      AliFemtoLorentzVector fourvec(p, e);
+      particle.ResetFourMomentum(fourvec);
+    }};
+
+  auto fill_pair = [&rng, &MaxQ, &fill_hidden_info] (AliFemtoPair &pair, double Rinv)
+    {{
+      double qmag = rng->Uniform(0, MaxQ);
+      AliFemtoThreeVector q;
+      rng->Sphere(q[0], q[1], q[2], qmag);
+
+      AliFemtoThreeVector p1, p2;
+      p1[0] = rng->Gaus(0, 1);
+      p1[1] = rng->Gaus(0, 1);
+      p1[2] = rng->Gaus(0, 1);
+      p2 = p1 - q;
+
+      double rt1 = rng->Landau(2.70996e-01, 4.37993e-01);
+      double rt2 = rng->Landau(2.70996e-01, 4.37993e-01);
+
+      AliFemtoThreeVector rv1, rv2;
+      rv1[0] = rng->Gaus(0, Rinv);
+      rv1[1] = rng->Gaus(0, Rinv);
+      rv1[2] = rng->Gaus(0, Rinv);
+
+      rv2[0] = rng->Gaus(0, Rinv);
+      rv2[1] = rng->Gaus(0, Rinv);
+      rv2[2] = rng->Gaus(0, Rinv);
+
+      AliFemtoLorentzVector r1(rv1, rt1),
+                            r2(rv2, rt2);
+
+      fill_hidden_info(*pair.Track1(), p1, r1);
+      fill_hidden_info(*pair.Track2(), p2, r2);
+    }};
+
+  auto create_particle = [] ()
+    {{
+      auto *info = new AliFemtoModelHiddenInfo();
+
+      info->SetMass(0.139);
+      info->SetPDGPid(211);
+
+      auto *t = new AliFemtoTrack();
+      t->SetHiddenInfo(info);
+      t->SetCharge(1);
+
+      auto *particle = new AliFemtoParticle(t, 0.139);
+      return particle;
+    }};
+
+  auto *p1 = create_particle(),
+       *p2 = create_particle();
+
+  AliFemtoPair pair(p1, p2);
+
+  AliFemtoModelWeightGeneratorLednicky weight_gen;
+  weight_gen.SetPairType(AliFemtoModelWeightGenerator::PionPlusPionPlus());
+  // weight_gen.SetPairType(1);
+  weight_gen.SetQuantumOff();
+  weight_gen.SetStrongOn();
+  weight_gen.Set3BodyOn();
+  weight_gen.SetCoulOn();
+  weight_gen.SetSphere();
+
+  auto *info1 = (AliFemtoModelHiddenInfo*)pair.Track1()->Track()->GetHiddenInfo(),
+       *info2 = (AliFemtoModelHiddenInfo*)pair.Track2()->Track()->GetHiddenInfo();
+
+
+  int skipcount = 0;
+
+  for (int i=0; i < counts && (i+skipcount) < 3*counts; ++i) {{
+
+    pair.ClearWeightCache();
+
+    double R = rng->Uniform(2e-4, MaxR);
+    fill_pair(pair, R);
+
+    double qinv = pair.QInv();
+
+    if (qinv > MaxQ or R > MaxR) {{
+      skipcount += 1;
+      --i;
+      continue;
+    }}
+
+    if (qinv < 1e-9 || R < 1e-9) {{
+      std::cout << "ZERO " << qinv << " " << R << "\\n";
+      skipcount += 1;
+      --i;
+      continue;
+    }}
+
+    double w = weight_gen.GenerateWeight(&pair);
+
+    if (w > 10) {{
+      skipcount += 1;
+      auto Rdiff = *info1->GetEmissionPoint() - *info2->GetEmissionPoint();
+      double RINV = Rdiff.vect().Mag();
+
+      std::cout << Form("Abnormaly-high w=%0.6f qinv=%0.6f  R=%0.6f", w, qinv, RINV) <<"\\n";
+      --i;
+      continue;
+    }}
+
+    result->Fill(qinv, R, w);
+  }}
+
+  if (skipcount) {{
+    std::cout << " Had to skip extra " << skipcount << " out-of-bounds pairs "
+                 "(extra " << 100.0 * skipcount / counts << "%) \\n";
+  }}
+}}
+
+
+void
+Gen(TString filename, TString histname="k2ss")
+{{
+  TFile tfile(filename, "RECREATE");
+
+  const size_t nxbins = {nxbins},
+               nybins = {nybins};
+
+  const double
+    xlo = {qlo},
+    xhi = {qhi},
+    ylo = 0.0,
+    yhi = {radius_max};
+
+  std::vector<double> xbins(nxbins), ybins(nybins);
+
+  // log
+  const double factor = std::pow(xhi / xlo, 1.0 / (nxbins - 2));
+  for (size_t i=0; i<nxbins; ++i) {{
+    xbins[i] = (i == 0) ? 0.0 : (i == 1) ? xlo : xbins[i-1] * factor;
+  }}
+
+  ybins[nybins-1] = yhi;
+
+  // linear
+  for (size_t i=0; i<nybins; ++i) {{
+    ybins[i] = ylo + i * (yhi - ylo) / (nybins - 1);
+  }}
+
+  auto *result = new TProfile2D(
+    histname,
+    "Profile of femto-weight versus qinv and Rinv; q_{{inv}} (Gev); R_{{inv}}",
+    nxbins-1, xbins.data(),
+    nybins-1, ybins.data()
+    );
+
+  result->SetStats(false);
+
+  FillTProfile(0, {count}, result);
+
+  result->Write();
+  tfile.Close();
+}}
+"""
+
+
 def arg_parser():
     from argparse import ArgumentParser
     parser = ArgumentParser()
     parser.add_argument("-o", "--output",
-                        default='KFile.root',
-                        help='Argument')
+                        default='KFile3.root',
+                        help='Output ROOT file')
     parser.add_argument("-Q", "--qinv-max",
                         type=float,
-                        default=0.5,
+                        default=0.35,
                         help='Maximum q-inv')
     parser.add_argument("-R", "--radius-max",
                         type=float,
@@ -40,34 +233,72 @@ def arg_parser():
     return parser
 
 
+def run(filename):
+    import sh
+    print("running:", filename)
+    # from time import sleep
+    # from random import random
+    # sleep(random() * 5)
+    sh.aliroot("-x", "-q", "-b", "-l", 'Gen.C+("%s")' % filename)
+    # return filename
+
+
 def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
-    args = arg_parser().parse_args()
+    args = arg_parser().parse_args(argv)
 
     from ROOT import TFile, TH2D
 
-    nbins_qinv = 140
+    nbins_qinv = 40
     nbins_R = 60
-    
+
     max_qinv = args.qinv_max
     max_R = args.radius_max
- 
-    k2ss = TH2D("k2ss", "K_{coul}(q_{inv}, R)",
-                nbins_qinv, 0, max_qinv,
-                nbins_R, 0, max_R)
-    k2ss.SetStats(False)
 
-    for y_bin in range(1, k2ss.GetNbinsY()+1):
-        R = k2ss.GetYaxis().GetBinCenter(y_bin)
-        for x_bin in range(1, k2ss.GetNbinsX()+1):
-            qinv = k2ss.GetXaxis().GetBinCenter(x_bin)
-            k = calculate(qinv, R)
-            k2ss.SetBinContent(x_bin, y_bin, k)
+    from tempfile import TemporaryDirectory
+    from multiprocessing.pool import Pool
+    import sh
 
-    outfile = TFile.Open(args.output, "RECREATE") 
-    k2ss.Write()
-    outfile.Close()
+    orig_dir = Path(os.getcwd())
+    print("Output file:", args.output)
+
+    with TemporaryDirectory() as tmpdir:
+        os.chdir(tmpdir)
+        with open("Gen.C", "w") as tmp:
+            tmp.write(MACRO_SOURCE.format(nxbins=nbins_qinv,
+                                          qlo=1e-3,
+                                          qhi=max_qinv,
+                                          nybins=nbins_R,
+                                          radius_max=max_R,
+                                          count=2e6))
+
+        sh.cp("Gen.C", orig_dir)
+
+        # precompile
+        sh.aliroot("-q", "-b", "-l", "-e", '.L Gen.C+')
+
+        files = ["f%0d.root" % i for i in range(15)]
+        with Pool() as pool:
+            pool.map(run, files)
+
+        sh.hadd('-f', orig_dir / args.output, *files)
+
+    # k2ss = TH2D("k2ss", "K_{{coul}}(q_{{inv}}, R)",
+    #             nbins_qinv, 0, max_qinv,
+    #             nbins_R, 0, max_R)
+    # k2ss.SetStats(False)
+
+    # for y_bin in range(1, k2ss.GetNbinsY()+1):
+    #     R = k2ss.GetYaxis().GetBinCenter(y_bin)
+    #     for x_bin in range(1, k2ss.GetNbinsX()+1):
+    #         qinv = k2ss.GetXaxis().GetBinCenter(x_bin)
+    #         k = calculate(qinv, R)
+    #         k2ss.SetBinContent(x_bin, y_bin, k)
+
+    # outfile = TFile.Open(args.output, "RECREATE")
+    # k2ss.Write()
+    # outfile.Close()
 
 
 def gamov(qinv):
@@ -77,7 +308,7 @@ def gamov(qinv):
 
 def calculate(qinv, R):
     z = -4 * qinv**2 * R ** 2 / HBAR_C_SQR
-    h = hyp2f2(.5,1, 1.5,1.5, z)
+    h = hyp2f2(.5, 1, 1.5, 1.5, z)
     h = float(h)
     k = gamov(qinv) * (1 + 8 * ETA * R / sqrt(pi) * h)
     if abs(k) > 2:
@@ -87,4 +318,3 @@ def calculate(qinv, R):
 
 if __name__ == "__main__":
     sys.exit(main())
-
