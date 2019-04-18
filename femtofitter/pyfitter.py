@@ -123,20 +123,23 @@ class PyData3D:
         """
 
         def iter_space(h):
-            for k in range(h.GetNbinsZ()):
-                z = h.GetZaxis().GetBinCenter(k)
-                for j in range(h.GetNbinsY()):
-                    y = h.GetYaxis().GetBinCenter(j)
-                    for i in range(h.GetNbinsX()):
-                        x = h.GetXaxis().GetBinCenter(i)
+            xax, yax, zax = h.GetXaxis(), h.GetYaxis(), h.GetZaxis()
+
+            for k in range(zax.GetFirst(), zax.GetLast()+1):
+                z = zax.GetBinCenter(k)
+                for j in range(yax.GetFirst(), yax.GetLast()+1):
+                    y = yax.GetBinCenter(j)
+                    for i in range(xax.GetFirst(), xax.GetLast()+1):
+                        x = xax.GetBinCenter(i)
                         yield (i, j, k), (x, y, z)
 
         from ROOT import TDirectory, TH3
         num, den, qinv = map(tdir.Get, ('num', 'den', 'qinv'))
         if isinstance(mrc, TDirectory):
             mrc = mrc.Get("mrc")
+
         if isinstance(mrc, TH3):
-            if num.GetNbinsX() == mrc.GetNbinsX():
+            if False and num.GetNbinsX() == mrc.GetNbinsX():
                 num.Multiply(mrc)
                 for i in range(mrc.GetNcells()):
                     if mrc.GetBinContent(i) == 0 or num.GetBinContent(i) < 0:
@@ -148,7 +151,7 @@ class PyData3D:
                     if fact <= 0 or np.isnan(fact):
                         print(x, y, z, '->', fact)
 
-                    if fact == 0:
+                    if fact == 0.0:
                         den.SetBinContent(i, j, k, 0)
                     else:
                         n = num.GetBinContent(i, j, k)
@@ -284,7 +287,7 @@ class PyData3D:
                                                    b * log(a_plus_b_over_b / (c+1))) )""")
 
             if np.any(c < 0):
-                print("c < 0")
+                print("c < 0", c[0], (c < 0).sum(), c.shape, np.argwhere(c <= 0))
 
             c_plus_1 = c + 1.0
 
@@ -546,8 +549,7 @@ class FitterGauss(FemtoFitter3D):
 
         Ro, Rs, Rl = (value[k] / HBAR_C for k in ('Ro', 'Rs', 'Rl'))
         lam = value['lam']
-        if norm is None:
-            norm = value['norm']
+        norm = 1.0 if norm is None else value['norm']
 
         k = fsi(pseudo_Rinv) if callable(fsi) else fsi
 
@@ -572,11 +574,15 @@ class FitterGauss(FemtoFitter3D):
         e -= np.power(tmp, 2, out=tmp)
 
         np.exp(e, out=tmp)
-        np.add(tmp, 1.0, out=tmp)
-        np.multiply(tmp, k, out=tmp)
+        # np.add(tmp, 1.0, out=tmp)
+        # np.multiply(tmp, k, out=tmp)
+        tmp += 1.0
+        tmp *= k
         tmp *= lam
         tmp += (1.0 - lam)
-        return np.multiply(norm, tmp, out=tmp)
+        # return np.multiply(norm, tmp, out=tmp)
+        tmp *= norm
+        return tmp
 
 
 class FitterGauss4(FemtoFitter3D):
