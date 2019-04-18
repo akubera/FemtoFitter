@@ -154,7 +154,7 @@ def normalize_canvas(c, d=0.02):
 
 
 def normalize_subcanvases(c, d=0.02):
-    from ROOT import TH1
+    from ROOT import TH1, TH2
     mins, maxs = [], []
     for pad in c.GetListOfPrimitives():
         for obj in pad.GetListOfPrimitives():
@@ -167,7 +167,9 @@ def normalize_subcanvases(c, d=0.02):
 
     for pad in c.GetListOfPrimitives():
         for obj in pad.GetListOfPrimitives():
-            if isinstance(obj, TH1):
+            if isinstance(obj, TH2):
+                obj.GetZaxis().SetRangeUser(gmin, gmax)
+            elif isinstance(obj, TH1):
                 obj.GetYaxis().SetRangeUser(gmin, gmax)
 
 
