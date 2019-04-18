@@ -14,8 +14,8 @@ Implementation of equation (36) in the paper
 import os
 import sys
 from pathlib import Path
-from mpmath import hyp2f2
-from numpy import exp, sqrt, pi
+#from mpmath import hyp2f2
+#from numpy import exp, sqrt, pi
 
 HBAR_C = 0.197327
 HBAR_C_SQR = HBAR_C * HBAR_C
@@ -38,9 +38,10 @@ FillTProfile(int seed, int counts, TProfile2D* result)
   TRandom2 *rng = new TRandom2();
   rng->SetSeed(seed);
 
-  double MaxQ = result->GetXaxis()->GetXmax();
-  double MaxR = result->GetYaxis()->GetXmax();
-
+  const double
+    MinQ = 1e-6,
+    MaxQ = result->GetXaxis()->GetXmax(),
+    MaxR = result->GetYaxis()->GetXmax();
 
   auto fill_hidden_info = [&] (AliFemtoParticle &particle,
                                const AliFemtoThreeVector &p,
@@ -57,9 +58,9 @@ FillTProfile(int seed, int counts, TProfile2D* result)
       particle.ResetFourMomentum(fourvec);
     }};
 
-  auto fill_pair = [&rng, &MaxQ, &fill_hidden_info] (AliFemtoPair &pair, double Rinv)
+  auto fill_pair = [&rng, &MinQ, &MaxQ, &fill_hidden_info] (AliFemtoPair &pair, double Rinv)
     {{
-      double qmag = rng->Uniform(0, MaxQ);
+      double qmag = rng->Uniform(MinQ, MaxQ);
       AliFemtoThreeVector q;
       rng->Sphere(q[0], q[1], q[2], qmag);
 
@@ -166,11 +167,15 @@ FillTProfile(int seed, int counts, TProfile2D* result)
   }}
 }}
 
+#include <cstdlib>
 
 void
 Gen(TString filename, TString histname="k2ss")
 {{
   TFile tfile(filename, "RECREATE");
+
+  int seed = rand();
+  // std::cout << "Seeding with " << seed << "\\n";
 
   const size_t nxbins = {nxbins},
                nybins = {nybins};
@@ -205,7 +210,7 @@ Gen(TString filename, TString histname="k2ss")
 
   result->SetStats(false);
 
-  FillTProfile(0, {count}, result);
+  FillTProfile(seed, {count}, result);
 
   result->Write();
   tfile.Close();
@@ -236,10 +241,13 @@ def arg_parser():
 def run(filename):
     import sh
     print("running:", filename)
-    # from time import sleep
-    # from random import random
-    # sleep(random() * 5)
+    #from subprocess import run
+    #from time import sleep
+    #from random import random
+    #sleep(random() * 5)
     sh.aliroot("-x", "-q", "-b", "-l", 'Gen.C+("%s")' % filename)
+    #proc = run(["aliroot", "-x", "-q", "-b", "-l", 'Gen.C+("%s")' % filename])
+    #proc.wait()
     # return filename
 
 
@@ -250,7 +258,7 @@ def main(argv=None):
 
     from ROOT import TFile, TH2D
 
-    nbins_qinv = 40
+    nbins_qinv = 30
     nbins_R = 60
 
     max_qinv = args.qinv_max
@@ -282,7 +290,9 @@ def main(argv=None):
         with Pool() as pool:
             pool.map(run, files)
 
+        print("Beginning merge")
         sh.hadd('-f', orig_dir / args.output, *files)
+        print("Done.")
 
     # k2ss = TH2D("k2ss", "K_{{coul}}(q_{{inv}}, R)",
     #             nbins_qinv, 0, max_qinv,
