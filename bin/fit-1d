@@ -6,24 +6,28 @@
 Fits 1D histograms
 """
 
+from typing import Optional, Tuple, List
+
 
 import sys
-
-if sys.path[0] != '':
-    sys.path.insert(0, '')
-
-from pathlib import Path
-from dataclasses import dataclass
-
-from femtofitter import PathQuery
-from multiprocessing.pool import Pool
 import asyncio
 
-from typing import Optional, Tuple, List
+from pathlib import Path
 from pprint import pprint
+from datetime import datetime
+from dataclasses import dataclass
+from multiprocessing.pool import Pool
+from concurrent.futures import ProcessPoolExecutor
 
-
+from stumpy.utils import walk_matching
+import pandas as pd
 from tqdm import tqdm
+
+if '' not in sys.path:
+    sys.path.insert(0, '')
+
+from femtofitter import PathQuery
+from femtofitter.fit import get_configuration_json
 
 
 def arg_parser():
@@ -70,10 +74,25 @@ def arg_parser():
     return parser
 
 
+def find_fit_data(tfile, args):
+    pathquery = PathQuery('*', 'cfg*', '*', '*', '*', '*')
+    pattern = pathquery.as_path()
+
+    paths = []
+    for path, _ in walk_matching(tfile, pattern):
+        query = PathQuery.From(path)
+        paths.append(query)
+
+    params = RunFitParams.From(args)
+    for p in paths:
+        yield params(pathquery=p)
+
+
 def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
     args = arg_parser().parse_args(argv)
+
     import ROOT
 
     try:
@@ -85,60 +104,61 @@ def main(argv=None):
     from ROOT import TFile
     from stumpy.utils import walk_matching
 
+    output_path = args.output
+
     tfile = TFile(args.input)
-    # walk_matching()
-
-    pathquery = PathQuery('*', 'cfg*', '*', '*', '*', '*')
-    pattern = pathquery.as_path()
-
-    paths = []
-    for path, _ in walk_matching(tfile, pattern):
-        query = PathQuery.From(path)
-        paths.append(query)
-
-    params = RunFitParams.From(args)
-    params = [params(pathquery=p) for p in paths]
+    data = find_fit_data(tfile, args)
 
     loop = asyncio.get_event_loop()
-
-    from functools import partial
-    from concurrent.futures import ProcessPoolExecutor
-    from asyncio import FIRST_COMPLETED
-
     executor = ProcessPoolExecutor()
 
-    # paths = get_build_params(args.input)
-    # print(paths)
-    # return
+    timestamp = datetime.now()
+    results = loop.run_until_complete(run_fits(data, executor))
+    duration = datetime.now() - timestamp
 
-    # calls = (() for _ in range(5))
+    df = pd.DataFrame(results)
+    output_data = {
+            'filename': args.input,
+            'timestamp': timestamp.isoformat(timespec='milliseconds'),
+            'duration': duration.total_seconds() / 60,
+            'command': sys.argv,
+            'df': df.to_dict(orient='records'),
+            'config': get_configuration_json(tfile, data),
+            }
 
-    async def run_fits(pending):
-        from asyncio import wait
-        finished = set()
+    if output_path:
+        with open(output_path, 'w') as outfile:
+            json.dump(output_data, outfile, indent=True)
+        print("Output written to", output_path)
+    else:
+        from pprint import pprint
+        pprint(output_data)
 
-        with tqdm(total=len(pending)) as pbar:
-            while pending:
-                done, pending = await wait(pending,
-                                           loop=loop,
-                                           return_when=FIRST_COMPLETED)
-                finished |= done
-                pbar.update(len(done))
 
-        print([d.result() for d in finished])
+async def run_fits(params, executor, loop=None, cb=None):
+    from asyncio import wait, FIRST_COMPLETED
+
+    if loop is None:
+        loop = asyncio.get_event_loop()
 
     coros = [loop.run_in_executor(executor, run_fit, p) for p in params]
-    results = loop.run_until_complete(run_fits(coros))
-    print(results)
 
+    finished = set()
 
-def tcall():
-    from time import sleep
-    from random import random
+    pending = list(params)
 
-    t = random() * 8
-    sleep(t)
-    return t
+    with tqdm(total=len(pending)) as pbar:
+        while pending:
+            done, pending = await wait(pending,
+                                       loop=loop,
+                                       return_when=FIRST_COMPLETED)
+            finished |= done
+            if cb:
+                for job in done:
+                    cb(job)
+            pbar.update(len(done))
+
+    return finished
 
 
 @dataclass
