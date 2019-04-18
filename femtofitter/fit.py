@@ -172,6 +172,14 @@ def run_fit(fitter_classname: str,
     elif subset.startswith("cow"):
         data = data.sailor_subset()
         subset = 'cowboy'
+    elif subset.startswith("cone"):
+        mf = query.magfield
+        pr = query.pair
+
+        same = ((mf == '--' and pr == 'pim') or
+                (mf == '++' and pr == 'pip'))
+        data = data.cone_subset(same)
+        subset = 'cone'
     else:
         raise ValueError("Unexpected subset value: %r" % subset)
 
