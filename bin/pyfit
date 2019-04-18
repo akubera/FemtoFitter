@@ -67,7 +67,7 @@ def arg_parser():
                         default=None,
                         help="Source of momentum resolution correction")
     parser.add_argument("--fitter",
-                        default='FitterGauss6',
+                        default='FitterGauss',
                         help="Name of the fitter class to use")
     parser.add_argument("--subset",
                         default=None,
@@ -118,12 +118,11 @@ def main(argv=None):
     fitter = getattr(pyfitter, args.fitter)
 
     paths = chain(
-            walk_matching(tfile, "Q3DLCMS/cfg*/*/*/*/*"),
-            walk_matching(tfile, "AnalysisQ3D/cfg*/*/*/*/*"))
+            walk_matching(tfile, "Q3DLCMS/cfg*/*/*/*/*"))
+            # walk_matching(tfile, "AnalysisQ3D/cfg*/*/*/*/*"))
 
     work = (PyFitterParams(fitter, filename, path, args.chi2, fit_range, args.subset, mrc_path)
             for path, _ in paths)
-
 
     # only take first few work units
     if args.count:
@@ -154,7 +153,7 @@ def main(argv=None):
             tmp['ndof'] = fit_results.nfree
             tmp['chi2'] = fit_results.chisqr
             tmp['rchi2'] = fit_results.redchi
-            tmp['kT'] = sum(map(float, tmp['kt'].split('_'))) / 2
+            tmp['kT'] = float('%g' % (sum(map(float, tmp['kt'].split('_'))) / 2))
             df = pd.DataFrame([tmp])
 
             configs = []
@@ -237,16 +236,6 @@ def do_fit(params: PyFitterParams) -> Optional[PyFitterResults]:
     if not tdir:
         return None
 
-    if False and mrc_path:
-        if mrc_path == filename:
-            mrc_tfile = tfile
-        else:
-            mrc_tfile = TFile.Open(str(mrc_path))
-
-        mrc = MomentumResolutionCorrector(filename=mrc_tfile)
-    else:
-        mrc = None
-
     query = PathQuery.from_path(params.path)
     print("Fitting:", filename, query.as_path())
 
@@ -255,6 +244,7 @@ def do_fit(params: PyFitterParams) -> Optional[PyFitterResults]:
 
     if mrc_path:
         mrcfile, _, mrc_cfg = mrc_path.partition(':')
+        print("MRC:", mrcfile, mrc_cfg)
 
         if mrcfile == '' or mrcfile == filename:
             mrc_tfile = tfile
@@ -273,6 +263,8 @@ def do_fit(params: PyFitterParams) -> Optional[PyFitterResults]:
         else:
             print("Could not load MRC at %r" % mrc_query.as_path())
             return None
+
+        print("  :", mrchist)
 
         data = PyData3D.From(tdir, mrchist, fit_range)
     else:
