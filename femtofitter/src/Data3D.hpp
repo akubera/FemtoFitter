@@ -164,4 +164,24 @@ struct Data3D {
 
       return std::make_unique<Data3D>(subset, limit, true_limit);
     }
+
+  std::unique_ptr<Data3D> cone_subset(bool same_sign=true, double alpha=0.46) const
+    {
+      const double ratio = std::tan(alpha) * (same_sign ? -1 : 1);
+
+      std::vector<Datum> subset;
+      for (auto &dat : data) {
+
+        bool accept = std::fabs(dat.ql) > 0.01
+                   || (same_sign ? (dat.qs * dat.qo > 0.0) : (dat.qs * dat.qo < 0.0))
+                   || std::abs(dat.qs / dat.qo) > ratio;
+
+        if (accept) {
+          subset.emplace_back(dat);
+        }
+      }
+
+      return std::make_unique<Data3D>(subset, limit, true_limit);
+    }
+
 };
