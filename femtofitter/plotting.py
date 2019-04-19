@@ -212,7 +212,7 @@ class QuadPlot:
     class ShowParams:
         linestyle: str = '--'
         xlim = (0.2, 1.2)
-        legend_axis = ''
+        legend_axis = 'lam'
         capstyle: str = 'butt'
 
     def __init__(self, fr):
@@ -298,10 +298,8 @@ class QuadPlot:
                     plot_ops['label'] = cent
                     plot_ops['lw'] = 2
 
-                    ax.errorbar(X, Y, E, **plot_ops)
                     X += shift
-                    eb = ax.errorbar(X, Y, yerr=E, **plot_ops)
-                    eb[-1][0].set_linestyle('--')
+                    ax.errorbar(X, Y, yerr=E, **plot_ops)
 
                     ax.set_title(title)
                     ax.set_xlim(*xlim)
@@ -311,11 +309,11 @@ class QuadPlot:
                         if leg:
                             leg.set_title("Centrality", prop={"size": 16, 'weight': 'bold'})
 
-            # for ax, key in zip(axs.flat, ("Ro", "Rs", "Rl", 'lam')):
-            #     if key.startswith("R"):
-            #         ax.set_ylim(2.0, 8.0)
-            #     else:
-            #         ax.set_ylim(0.2, 0.8)
+                for ax, key in zip(axs.flat, ("Ro", "Rs", "Rl", 'lam')):
+                    if key.startswith("R"):
+                        ax.set_ylim(2.0, 8.0)
+                    else:
+                        ax.set_ylim(0.2, 0.8)
             return fig
 
         if groups:
