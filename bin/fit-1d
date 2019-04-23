@@ -6,7 +6,7 @@
 Fits 1D histograms
 """
 
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Generator
 
 
 import sys
@@ -74,20 +74,6 @@ def arg_parser():
     return parser
 
 
-def find_fit_data(tfile, args):
-    pathquery = PathQuery('*', 'cfg*', '*', '*', '*', '*')
-    pattern = pathquery.as_path()
-
-    paths = []
-    for path, _ in walk_matching(tfile, pattern):
-        query = PathQuery.From(path)
-        paths.append(query)
-
-    params = RunFitParams.From(args)
-    for p in paths:
-        yield params(pathquery=p)
-
-
 def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
@@ -135,13 +121,32 @@ def main(argv=None):
         pprint(output_data)
 
 
+def find_fit_data(tfile, args) -> Generator[RunFitParams]:
+    """
+    Load data file and find available analyses results
+    """
+
+    pathquery = PathQuery('*', 'cfg*', '*', '*', '*', '*')
+    pattern = pathquery.as_path()
+
+    paths = []
+    for path, _ in walk_matching(tfile, pattern):
+        query = PathQuery.From(path)
+        paths.append(query)
+
+    params = RunFitParams.From(args)
+    for p in paths:
+        yield params(pathquery=p)
+
+
+
 async def run_fits(params, executor, loop=None, cb=None):
     from asyncio import wait, FIRST_COMPLETED
 
     if loop is None:
         loop = asyncio.get_event_loop()
 
-    coros = [loop.run_in_executor(executor, run_fit, p) for p in params]
+    coros = [await loop.run_in_executor(executor, run_fit, p) for p in params]
 
     finished = set()
 
