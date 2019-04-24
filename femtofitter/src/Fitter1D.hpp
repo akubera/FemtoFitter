@@ -93,7 +93,7 @@ public:
     { return data.size(); }
 
   auto num_as_vec() const -> std::vector<double>
-    { return data.size(); }
+    { return numerator_as_vec(*this); }
 
   auto do_fit_minuit(TMinuit &minuit)
     {
