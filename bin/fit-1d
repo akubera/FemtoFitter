@@ -139,7 +139,6 @@ def find_fit_data(tfile, args) -> Generator[RunFitParams]:
         yield params(pathquery=p)
 
 
-
 async def run_fits(params, executor, loop=None, cb=None):
     from asyncio import wait, FIRST_COMPLETED
 
