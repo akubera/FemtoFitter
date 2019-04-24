@@ -41,6 +41,8 @@ message(STATUS "cmake module path: ${CMAKE_MODULE_PATH}")
 # Dependencies
 #
 find_package(ROOT REQUIRED COMPONENTS PyROOT MathMore Minuit vdt)
+find_package(Python3 COMPONENTS Development)
+
 include(${ROOT_USE_FILE})
 message(STATUS "Found ROOT v${ROOT_VERSION} at ${ROOT_DIR}")
 set(ROOTCLING "${ROOT_rootcling_CMD}")
@@ -49,8 +51,6 @@ set(ROOTCLING "${ROOT_rootcling_CMD}")
 # include_directories(${FEMTOFITTER_INCLUDE_DIR})
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(src)
-
-message(STATUS "VDT: ${VDT_INCLUDE_DIRS}")
 
 if(NOT TARGET Vdt::Vdt)
   add_library(Vdt::Vdt INTERFACE IMPORTED)
@@ -64,22 +64,9 @@ root_generate_dictionary(
   LINKDEF src/bin/fit-inspector/LinkDef.h
   MODULE fitinspector_dict)
 
-
-include_directories(
-  /usr/include/python3.6m
-  /usr/include/x86_64-linux-gnu/python3.6m
-)
-
-
-# find_package(Vdt)
-# find_package()
+include_directories(${Python3_INCLUDE_DIRS})
 
 # Build Headers
-# set(INCS
-#   ${CMAKE_CURRENT_SOURCE_DIR}/femtofitter/inc/fitter.h
-#   ${CMAKE_CURRENT_SOURCE_DIR}/femtofitter/MomentumResolutionCorrector.hpp
-# )
-
 set(INCS
   src/Data1D.hpp
   src/Data3D.hpp
@@ -109,13 +96,11 @@ set(SRCS
   src/CoulombHist.cpp
   src/MinimizerMinuit.cpp
   src/ParamHints.cpp
-#   ${CMAKE_CURRENT_SOURCE_DIR}/femtofitter/MomentumResolutionCorrector.cxx
 )
 
 ROOT_GENERATE_DICTIONARY(femfit_dict ${INCS}
                          LINKDEF Linkdef.h
                          MODULE FemtoFitter)
-# set_target_properties(femfit_dict PROPERTIES)
 
 set(ROOT_LIBS
   ROOT::Hist
@@ -149,6 +134,6 @@ target_link_libraries(fit-inspector fitinspector
     ROOT::Hist
     ROOT::Gui
     ROOT::PyROOT
-    /usr/lib/x86_64-linux-gnu/libpython3.6m.so.1.0
+    Python3::Python
     ${LIB_FEMTO}
     )
