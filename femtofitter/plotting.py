@@ -154,7 +154,7 @@ def normalize_canvas(c, d=0.02):
 
 
 def normalize_subcanvases(c, d=0.02):
-    from ROOT import TH1, TH2
+    from ROOT import TH1
     mins, maxs = [], []
     for pad in c.GetListOfPrimitives():
         for obj in pad.GetListOfPrimitives():
@@ -167,9 +167,7 @@ def normalize_subcanvases(c, d=0.02):
 
     for pad in c.GetListOfPrimitives():
         for obj in pad.GetListOfPrimitives():
-            if isinstance(obj, TH2):
-                obj.GetZaxis().SetRangeUser(gmin, gmax)
-            elif isinstance(obj, TH1):
+            if isinstance(obj, TH1):
                 obj.GetYaxis().SetRangeUser(gmin, gmax)
 
 
@@ -212,7 +210,7 @@ class QuadPlot:
     class ShowParams:
         linestyle: str = '--'
         xlim = (0.2, 1.2)
-        legend_axis = 'lam'
+        legend_axis = ''
         capstyle: str = 'butt'
 
     def __init__(self, fr):
@@ -298,8 +296,10 @@ class QuadPlot:
                     plot_ops['label'] = cent
                     plot_ops['lw'] = 2
 
+                    ax.errorbar(X, Y, E, **plot_ops)
                     X += shift
-                    ax.errorbar(X, Y, yerr=E, **plot_ops)
+                    eb = ax.errorbar(X, Y, yerr=E, **plot_ops)
+                    eb[-1][0].set_linestyle('--')
 
                     ax.set_title(title)
                     ax.set_xlim(*xlim)
@@ -308,19 +308,12 @@ class QuadPlot:
                         leg = ax.legend(numpoints=1, loc='best', fontsize=16)
                         if leg:
                             leg.set_title("Centrality", prop={"size": 16, 'weight': 'bold'})
-
-                for ax, key in zip(axs.flat, ("Ro", "Rs", "Rl", 'lam')):
-                    if key.startswith("R"):
-                        ax.set_ylim(2.0, 8.0)
-                    else:
-                        ax.set_ylim(0.2, 0.8)
             return fig
 
         if groups:
-            result = []
-            for group in groups:
-                for grp_val, grp_data in self.df.groupby(group):
-                    result.append((grp_val, _do_makeplot(grp_data)))
+            result = [(grp_val, _do_makeplot(grp_data))
+                      for group in groups
+                      for grp_val, grp_data in self.df.groupby(group)]
         else:
             result = _do_makeplot(df)
 
