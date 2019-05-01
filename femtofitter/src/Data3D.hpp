@@ -73,6 +73,9 @@ struct Data3D {
   /// Data3D with applied momentum resolution correction
   static std::unique_ptr<Data3D> FromDirectory(TDirectory &, const TH3 &mrc, double limit=0.0);
 
+  /// Construct with advanced MRC
+  static std::unique_ptr<Data3D> FromDirectory(TDirectory &data, TDirectory &mrc, double limit);
+
   /// Data3D with minimum ratio
   static std::unique_ptr<Data3D> FromDirectory(TDirectory &, const TH3 &mrc, double limit, double minimum);
 

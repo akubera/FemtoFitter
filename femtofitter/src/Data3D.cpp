@@ -265,6 +265,141 @@ Data3D::FromDirectory(TDirectory &tdir, const TH3 &mrc, double limit)
 }
 
 std::unique_ptr<Data3D>
+Data3D::FromDirectory(TDirectory &tdir, TDirectory &mrcdir, double limit)
+{
+  const auto n = std::unique_ptr<TH3>((TH3*)tdir.Get("num")),
+             d = std::unique_ptr<TH3>((TH3*)tdir.Get("den")),
+             q = std::unique_ptr<TH3>((TH3*)tdir.Get("qinv"));
+
+  if (!n or !d or !q) {
+    return nullptr;
+  }
+
+  auto nr = std::unique_ptr<TH3>((TH3*)mrcdir.Get("NumRecUnweighted")),
+             dr = std::unique_ptr<TH3>((TH3*)mrcdir.Get("DenRec")),
+             ng = std::unique_ptr<TH3>((TH3*)mrcdir.Get("NumGenUnweighted")),
+             dg = std::unique_ptr<TH3>((TH3*)mrcdir.Get("DenGen"));
+
+  if (!nr or !dr or !ng or !dg) {
+    std::cerr << "Missing expected histograms from mrc directory\n";
+    return nullptr;
+  }
+
+  // symmetrize MRC histograms
+  for (TH3 *h : {nr.get(), dr.get(), ng.get(), dg.get()}) {
+    const int
+      mrc_xzbin = h->GetXaxis()->FindBin(0.0),
+      mrc_yzbin = h->GetYaxis()->FindBin(0.0),
+      mrc_zzbin = h->GetZaxis()->FindBin(0.0),
+
+      Nx = h->GetNbinsX() + 1,
+      Ny = h->GetNbinsY() + 1,
+      Nz = h->GetNbinsZ() + 1;
+
+    for (int k=1; k<mrc_zzbin; ++k)
+    for (int j=1; j<mrc_yzbin; ++j)
+    for (int i=1; i<mrc_xzbin; ++i) {
+      const double
+        vlo = h->GetBinContent(i,j,k),
+        vhi = h->GetBinContent(Nx-i, Ny-j, Nz-k),
+        val = vlo + vhi;
+
+      h->SetBinContent(i,j,k, val);
+      h->SetBinContent(Nx-i, Ny-j, Nz-k, val);
+    }
+  }
+
+  auto mrc = std::unique_ptr<TH3>(static_cast<TH3*>(n->Clone("mrc")));
+  mrc->Reset();
+
+  const TAxis
+    &xaxis = *mrc->GetXaxis(),
+    &yaxis = *mrc->GetYaxis(),
+    &zaxis = *mrc->GetZaxis(),
+
+    &mrcxaxis = *nr->GetXaxis(),
+    &mrcyaxis = *nr->GetYaxis(),
+    &mrczaxis = *nr->GetZaxis();
+
+  const bool posquad = xaxis.GetBinLowEdge(1) == 0.0;
+
+  for (int k=1; k <= mrc->GetNbinsZ(); ++k) {
+    const double
+      zlo = zaxis.GetBinLowEdge(k),
+      zhi = zaxis.GetBinUpEdge(k),
+      zlo_mrcbin = mrczaxis.FindBin(zlo),
+      zhi_mrcbin = mrczaxis.FindBin(zhi),
+      zlo_frac = (mrczaxis.GetBinUpEdge(zlo_mrcbin) - zlo) / mrczaxis.GetBinWidth(zlo_mrcbin),
+      zhi_frac = (zhi - mrczaxis.GetBinLowEdge(zhi_mrcbin)) / mrczaxis.GetBinWidth(zhi_mrcbin);
+
+    for (int j=1; j <= mrc->GetNbinsY(); ++j) {
+      const double
+        ylo = yaxis.GetBinLowEdge(j),
+        yhi = yaxis.GetBinUpEdge(j),
+        ylo_mrcbin = mrcyaxis.FindBin(ylo),
+        yhi_mrcbin = mrcyaxis.FindBin(yhi),
+        ylo_frac = (mrcyaxis.GetBinUpEdge(ylo_mrcbin) - ylo) / mrcyaxis.GetBinWidth(ylo_mrcbin),
+        yhi_frac = (yhi - mrcyaxis.GetBinLowEdge(yhi_mrcbin)) / mrcyaxis.GetBinWidth(yhi_mrcbin);
+
+      for (int i=1; i <= mrc->GetNbinsX(); ++i) {
+        const double
+          xlo = xaxis.GetBinLowEdge(i),
+          xhi = xaxis.GetBinUpEdge(i),
+          xlo_mrcbin = mrcxaxis.FindBin(xlo),
+          xhi_mrcbin = mrcxaxis.FindBin(xhi),
+          xlo_frac = (mrcxaxis.GetBinUpEdge(xlo_mrcbin) - xlo) / mrcxaxis.GetBinWidth(xlo_mrcbin),
+          xhi_frac = (xhi - mrcxaxis.GetBinLowEdge(xhi_mrcbin)) / mrcxaxis.GetBinWidth(xhi_mrcbin);
+
+        auto integrate_bins = [=] (TH3 &h)
+          {
+            double ret = 0.0;
+
+            for (int zz = zlo_mrcbin; zz <= zhi_mrcbin; zz += 1) {
+              for (int yy = ylo_mrcbin; yy <= yhi_mrcbin; yy += 1) {
+                for (int xx = xlo_mrcbin; xx <= xhi_mrcbin; xx += 1) {
+                  const double
+                    value = h.GetBinContent(xx, yy, zz),
+                    zfactor = (zz == zlo_mrcbin ? zlo_frac : zz == zhi_mrcbin ? zhi_frac : 1.0),
+                    yfactor = (yy == ylo_mrcbin ? ylo_frac : yy == yhi_mrcbin ? yhi_frac : 1.0),
+                    xfactor = (xx == xlo_mrcbin ? xlo_frac : xx == xhi_mrcbin ? xhi_frac : 1.0);
+                  ret += value * zfactor * yfactor * xfactor;
+                }
+              }
+            }
+
+            return ret;
+          };
+
+        const double
+          ngfact = integrate_bins(*ng),
+          dgfact = integrate_bins(*dg),
+          nrfact = integrate_bins(*nr),
+          drfact = integrate_bins(*dr),
+
+          mrc_value = (ngfact / dgfact) * (drfact / nrfact);
+
+        mrc->SetBinContent(i, j, k, mrc_value);
+      }
+    }
+  }
+
+  n->Multiply(mrc.get());
+
+  for (int k=1; k <= mrc->GetNbinsZ(); ++k)
+  for (int j=1; j <= mrc->GetNbinsY(); ++j)
+  for (int i=1; i <= mrc->GetNbinsX(); ++i) {
+    if (mrc->GetBinContent(i,j,k) == 0) {
+      d->SetBinContent(i, j, k, 0);
+    }
+  }
+
+  auto data = std::make_unique<Data3D>(*n, *d, *q, limit);
+  data->gamma = calc_gamma_from_dir(tdir.GetMotherDir());
+
+  return data;
+}
+
+std::unique_ptr<Data3D>
 Data3D::FromDirectory(TDirectory &tdir, const TH3 &mrc, double limit, double minimum)
 {
   const auto n = std::unique_ptr<TH3>((TH3*)tdir.Get("num")),
