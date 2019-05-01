@@ -241,6 +241,47 @@ class AnalysisQinv(AnalysisResults):
 
 
 @register_analysis_class
+class AnalysisQlcms(AnalysisResults):
+
+    KT_CONTAINER_NAME = "KT_Qlcms"
+
+    @classmethod
+    def From(cls, container) -> Optional['AnalysisQlcms']:
+
+        key_vec = [
+           ("Num", "Den", "kTDep"),
+           ("Num_qinv", "Den_qinv", "kTDep_qinv"),
+        ]
+
+        for keys in key_vec:
+            num, den, kt = (get_tobject(container, k) for k in keys)
+
+            if all((num, den, kt)):
+                break
+        else:
+            print("Could not find Qinv results in", container)
+            return
+
+        self = cls(num, den, kt)
+        return self
+
+    def __init__(self, num, den, kt=None):
+        self.num = num
+        self.den = den
+        self.kt = kt
+
+    def write_to_file(self, dest):
+        dest.mkdir(self.storage_key)
+        self.write_config(dest)
+
+        dest.cd(self.storage_key)
+        self.num.Write("num")
+        self.den.Write("den")
+        if self.kt:
+            self.kt.Write("kt_dist")
+
+
+@register_analysis_class
 class AnalysisTrueQinv(AnalysisResults):
 
     KT_CONTAINER_NAME = "KT_TrueQinv"
