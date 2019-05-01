@@ -37,6 +37,7 @@ from femtofitter.pyfitter import (
 import ROOT
 from ROOT import gROOT, cppyy, TFile
 from ROOT import TCanvas, TLegend, TLine, TText
+from ROOT import TGraph, TGraphErrors
 from ROOT import TH1, TH3, TF1
 
 from ROOT import AliFemtoConfigObject
