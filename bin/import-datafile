@@ -166,8 +166,16 @@ class AnalysisResults:
     @classmethod
     def FindIn(cls, obj) -> Generator[Optional['AnalysisResults'], None, None]:
         from ROOT import TH1
-        container = get_tobject(obj, cls.KT_CONTAINER_NAME)
-        if container == nullptr:
+        if isinstance(cls.KT_CONTAINER_NAME, str):
+            container_names = [cls.KT_CONTAINER_NAME]
+        else:
+            container_names = tuple(cls.KT_CONTAINER_NAME)
+
+        for container_name in container_names:
+            container = get_tobject(obj, container_name)
+            if container != nullptr:
+                break
+        else:
             return
 
         for kt_container in iter_tobject(container):
@@ -201,10 +209,10 @@ class AnalysisResults:
 @register_analysis_class
 class AnalysisQinv(AnalysisResults):
 
-    KT_CONTAINER_NAME = "KT_Qinv"
+    KT_CONTAINER_NAME = ["KT_QINV", "KT_Qinv"]
 
     @classmethod
-    def From(cls, container) -> Optional['AnalysisFinderQ3D']:
+    def From(cls, container) -> Optional['AnalysisQinv']:
 
         key_vec = [
            ("Num", "Den", "kTDep"),
