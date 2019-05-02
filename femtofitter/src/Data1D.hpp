@@ -37,6 +37,7 @@ struct Data1D {
 
   /// Build out of standard tdirectory;
   static std::unique_ptr<Data1D> From(TDirectory &data, double limit=0.0);
+  static std::unique_ptr<Data1D> From(TDirectory &data, const TH1 &mrc, double limit=0.0);
 
   /// Build from TDirectories of data and momentum resolution correction
   static std::unique_ptr<Data1D> From(TDirectory &data, TDirectory &mrc, double limit=0.0);

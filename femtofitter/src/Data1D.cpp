@@ -94,6 +94,21 @@ Data1D::From(TDirectory &dir, double limit)
 
 
 std::unique_ptr<Data1D>
+Data1D::From(TDirectory &dir, const TH1 &mrc, double limit)
+{
+  auto n = std::unique_ptr<TH1>((TH1*)dir.Get("num")),
+       d = std::unique_ptr<TH1>((TH1*)dir.Get("den"));
+
+
+  if (!n || !d) {
+    return nullptr;
+  }
+
+  n->Multiply(&mrc);
+  return std::make_unique<Data1D>(*n, *d, limit);
+}
+
+std::unique_ptr<Data1D>
 Data1D::From(TDirectory &dir, TDirectory &mrc, double limit)
 {
   auto n = std::unique_ptr<TH1>((TH1*)dir.Get("num")),
