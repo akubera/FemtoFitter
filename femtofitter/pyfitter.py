@@ -74,7 +74,10 @@ class MomentumResolutionCorrector:
     if mrcmap_path.exists():
         with mrcmap_path.open() as f:
             import yaml
-            mrcmap = yaml.load(f, Loader=yaml.FullLoader)
+            if hasattr(yaml, 'FullLoader'):
+                mrcmap = yaml.load(f, Loader=yaml.FullLoader)
+            else:
+                mrcmap = yaml.load(f)
     else:
         print(f'Warning: MRC-Map not found (mrcmap: {mrcmap_path})',
               file=sys.stderr)
