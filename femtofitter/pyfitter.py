@@ -28,7 +28,7 @@ ETA_PION = 1.0 / 388.0
 
 
 try:
-    f = open(environ['COULOMB_DATA'], 'rb')
+    f = open(environ.get('COULOMB_DATA', 'femtofitter/data/coulomb-interpolation.dat'), 'rb')
 except KeyError:
     try:
         from importlib import resources
@@ -36,9 +36,9 @@ except KeyError:
         import importlib_resources as resources
     f = resources.open_binary('femtofitter.data', "coulomb-interpolation.dat")
 
-x = np.load(f)
-y = np.load(f)
-z = np.load(f)
+x = np.load(f, allow_pickle=True)
+y = np.load(f, allow_pickle=True)
+z = np.load(f, allow_pickle=True)
 COULOMB_INTERP = interp2d(x, y, z)
 f.close()
 del x, y, z, f
@@ -74,7 +74,7 @@ class MomentumResolutionCorrector:
     if mrcmap_path.exists():
         with mrcmap_path.open() as f:
             import yaml
-            mrcmap = yaml.load(f)
+            mrcmap = yaml.load(f, Loader=yaml.FullLoader)
     else:
         print(f'Warning: MRC-Map not found (mrcmap: {mrcmap_path})',
               file=sys.stderr)
