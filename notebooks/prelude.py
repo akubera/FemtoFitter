@@ -41,3 +41,6 @@ from ROOT import TGraph, TGraphErrors
 from ROOT import TH1, TH3, TF1
 
 from ROOT import AliFemtoConfigObject
+from ROOT import Data3D, FitterGaussOSL 
+from ROOT import Data1D, FitterGauss1D, FitterLevy1D
+

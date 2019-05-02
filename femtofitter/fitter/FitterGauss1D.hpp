@@ -182,7 +182,6 @@ struct FitterGauss1D : public Fitter1D<FitterGauss1D> {
 
   virtual ~FitterGauss1D() = default;
 
-
   // FitResult fit_chi2()
   //   { return Fitter1D::fit_chi2(); }
 
