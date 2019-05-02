@@ -219,7 +219,7 @@ class AnalysisQinv(AnalysisResults):
                 break
         else:
             print("Could not find Qinv results in", container)
-            return
+            return None
 
         self = cls(num, den, kt)
         return self
@@ -260,6 +260,25 @@ class AnalysisTrueQinv(AnalysisResults):
                 h.SetBinContent(x, y, h.GetBinContent(x, y) / s)
 
         self = cls(h)
+
+        self.nr = numrec = get_tobject(container, "NumTrue")
+        self.dr = denrec = get_tobject(container, "Den")
+        self.ng = numgen = get_tobject(container, "NumTrueIdeal")
+        self.dg = dengen = get_tobject(container, "DenIdeal")
+
+        self.mrc_factor = numgen.Clone("mrc")
+        self.mrc_factor.Multiply(denrec)
+        self.mrc_factor.Divide(numrec)
+        self.mrc_factor.Divide(dengen)
+
+        self.fnr = get_tobject(container, "NumFake")
+        if not self.fnr:
+            self.fnr = None
+
+        self.fng = get_tobject(container, "NumFakeIdeal")
+        if not self.fng:
+            self.fng = None
+
         return self
 
     def __init__(self, mrcmatrix):
@@ -270,7 +289,19 @@ class AnalysisTrueQinv(AnalysisResults):
         self.write_config(dest)
 
         dest.cd(self.storage_key)
-        self.mrc.Write("mrc")
+        self.mrc_factor.Write("mrc_factor")
+        self.mrc.Write("mrc_matrix")
+
+        self.nr.Write("nr")
+        self.dr.Write("dr")
+        self.ng.Write("ng")
+        self.dg.Write("dg")
+
+        if self.fnr:
+            self.fnr.Write("fnr")
+
+        if self.fng:
+            self.fng.Write("fng")
 
 
 @register_analysis_class
@@ -279,7 +310,7 @@ class AnalysisQ3D(AnalysisResults):
     KT_CONTAINER_NAME = "KT_Q3D"
 
     @classmethod
-    def From(cls, container) -> Optional['AnalysisFinderQ3D']:
+    def From(cls, container) -> Optional['AnalysisQ3D']:
         """
         """
         from ROOT import TH3I, TH3D
@@ -376,7 +407,7 @@ class AnalysisTrueQ3D(AnalysisResults):
     KT_CONTAINER_NAME = "KT_TrueQ3D"
 
     @classmethod
-    def From(cls, obj) -> Optional['AnalysisFinderQ3D']:
+    def From(cls, obj) -> Optional['AnalysisTrueQ3D']:
         """
         """
 
@@ -415,6 +446,19 @@ class AnalysisTrueQ3D(AnalysisResults):
         mrc.Divide(nr)
 
         self = cls(mrc)
+        self.nr = nr
+        self.dr = dr
+        self.ng = ng
+        self.dg = dg
+
+        self.fnr = get_tobject(obj, "NumRecUnweighted")
+        if not self.fnr:
+            self.fnr = None
+
+        self.fng = get_tobject(obj, "NumGenUnweighted")
+        if not self.fng:
+            self.fng = None
+
         return self
 
     def __init__(self, mrc):
@@ -427,6 +471,17 @@ class AnalysisTrueQ3D(AnalysisResults):
         dest.cd(self.storage_key)
         self.mrc.Write("mrc")
 
+        self.nr.Write("nr")
+        self.dr.Write("dr")
+        self.ng.Write("ng")
+        self.dg.Write("dg")
+
+        if self.fnr:
+            self.fnr.Write("fnr")
+
+        if self.fng:
+            self.fng.Write("fng")
+
 
 @register_analysis_class
 class DetaDphiSimple(AnalysisResults):
@@ -434,7 +489,7 @@ class DetaDphiSimple(AnalysisResults):
     KT_CONTAINER_NAME = 'KT_DetaDphiSimple'
 
     @classmethod
-    def From(cls, obj) -> Optional['AnalysisFinderQ3D']:
+    def From(cls, obj) -> Optional['DetaDphiSimple']:
         """
         """
         from itertools import product
