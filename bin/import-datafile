@@ -115,11 +115,10 @@ def find_analyses(file, pattern):
             if not config:
                 continue
 
+            cent_range = AliFemtoConfigObject.RangeValue_t()
             cent_range_keys = ('event_cut.cent_range', 'event_cut.centrality_range')
             for cent_range_key in cent_range_keys:
-                cent_range = AliFemtoConfigObject.RangeValue_t()
-                config.find_and_load(cent_range_key, cent_range)
-                if not (cent_range.first == 0 and cent_range.second == 0):
+                if config.find_and_load(cent_range_key, cent_range):
                     break
             else:
                 print("warning: centrality range could not be determined for", name)
