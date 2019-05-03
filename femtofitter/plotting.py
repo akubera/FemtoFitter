@@ -308,6 +308,13 @@ class QuadPlot:
                         leg = ax.legend(numpoints=1, loc='best', fontsize=16)
                         if leg:
                             leg.set_title("Centrality", prop={"size": 16, 'weight': 'bold'})
+
+                # for ax, key in zip(axs.flat, ("Ro", "Rs", "Rl", 'lam')):
+                #     if key.startswith("R"):
+                #         ax.set_ylim(2.0, 8.0)
+                #     else:
+                #         ax.set_ylim(0.2, 0.8)
+
             return fig
 
         if groups:
@@ -318,3 +325,118 @@ class QuadPlot:
             result = _do_makeplot(df)
 
         return result
+
+
+def ratio_tree_canvas(*args, sli='z', width=0, plotsize=(200, 200)):
+    """
+    Create tree of histogram ratios
+    """
+
+    if len(args) == 0:
+        pass
+
+    c = TCanvas()
+
+    pairs0 = [iter(args)] * 2
+
+    ratios0 = []
+
+    zbin = ng.GetXaxis().FindBin(0.0)
+    start = zbin + width
+    stop = ng.GetNbinsX() + width
+
+    def _plot_2d_projection(h, title='', zrange=None):
+        zax = h.GetZaxis()
+        zax.SetRange(zbin, zbin)
+        zz = h.Project3D("yx")
+        zz.SetStats(False)
+        zz.SetTitle(title)
+        if zrange:
+            zz.GetZaxis().SetRangeUser(*zrange)
+        zz.DrawCopy("COLZ")
+
+    for num, den in zip(*pairs0):
+
+        ratios0.append(num.Clone("ratio_%s" % num.GetName()))
+        ratios0[-1].Divide(den)
+
+    s = "abc"
+    s.upper()
+
+
+    ratios
+
+    ng, nr, dg, dr = map(datadir.Get, ("NumGen", "NumRec", "DenGen",  "DenRec"))
+#     for i in range(start, stop):
+#         obin = zbin - (i - zbin)
+#         for j in range(1, stop):
+#             oj = zbin - (j - zbin)
+#             for h in (ng, nr, dg, dr):
+#                 ls = h.GetBinContent(i, j, zbin)
+#                 rs = h.GetBinContent(obin, oj, zbin)
+#                 h.SetBinContent(i, j, zbin, ls + rs)
+#                 h.SetBinContent(obin, oj, zbin, ls + rs)
+
+
+    cf_g = ng.Clone("cfg_%d" % i)
+    cf_g.Divide(dg)
+
+    cf_r = nr.Clone("cfr_%d" % i)
+    cf_r.Divide(dr)
+
+    c = TCanvas()
+    c.Divide(3, 1)
+    c.SetCanvasSize(1200, 700)
+    canvases.append(c)
+
+
+    llpad = c.cd(1)
+    llpad.Divide(1, 4)
+    for i, h in enumerate((ng, dg, nr,dr), 1):
+        llpad.cd(i)
+        _plot_2d_projection(h)
+
+
+    leftpad = c.cd(2)
+    leftpad.Divide(1, 2)
+    leftpad.cd(1)
+    _plot_2d_projection(cf_g)
+
+    leftpad.cd(2)
+    _plot_2d_projection(cf_r)
+
+    normalize_subcanvases(leftpad)
+
+    rpad = c.cd(3)
+    mrc = cf_g.Clone("mrc_%d" % i)
+    mrc.Divide(cf_r)
+#     rpad.SetBBoxY1(150)
+    rpad.SetBBoxY1(200)
+    rpad.SetBBoxCenterY(250)
+
+#     rpad.SetBBoxY2(200)
+#     rpad.SetBBoxY1(int(350*0.5))
+#     rpad.SetBBoxCenterY(350)
+#     rpad.SetBBoxCenterY(4300 - 350//2)
+
+    _plot_2d_projection(mrc, 'MRC (#Delta#eta: %g, #Delta#phi: %g)' % cut, (0.6, 1.2))
+
+    canvases.append(TCanvas())
+
+    d_ratio = dg.Clone()
+    d_ratio.Divide(dr)
+    _plot_2d_projection(d_ratio, 'Denominator Ratio (Gen / Rec)')
+
+    canvases.append(TCanvas())
+
+    n_ratio = datadir.Get("DenGenWeight")
+    n_ratio.Divide(dg)
+    n_ratio.Divide(dr)
+    n_ratio.Multiply(datadir.Get("DenRecWeight"))
+
+#     n_ratio = ng.Clone()
+#     n_ratio.Divide(nr)
+    _plot_2d_projection(n_ratio, '"Fake" MRC', (.0, 1.2))
+
+
+    return c
