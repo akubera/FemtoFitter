@@ -82,6 +82,9 @@ struct FitterGauss1D : public Fitter1D<FitterGauss1D> {
         #undef OUT
       }
 
+    double evaluate(const double q, const double K) const
+      { return FitterGauss1D::gauss(q, Rinv * Rinv, lam, K, norm); }
+
     FitParams as_params() const;
   };
 
@@ -116,6 +119,8 @@ struct FitterGauss1D : public Fitter1D<FitterGauss1D> {
     double gauss(const double q, const double K) const
       { return FitterGauss1D::gauss(q, Rinv * Rinv, lam, K, norm); }
 
+    double evaluate(const double q, const double K) const
+      { return gauss(q, K); }
 
     void fill(TH1 &h) const
       {
