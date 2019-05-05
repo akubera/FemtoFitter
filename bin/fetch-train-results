@@ -16,12 +16,18 @@ KV_REGEX = re.compile(r"export (?P<key>\w+)='(?P<value>[^']+)'")
 DEST_DIR = Path("~/alice/data").expanduser()
 
 
+DEFAULT_DATA_TRAIN = "CF_PbPb"
+DEFAULT_MC_TRAIN = "CF_PbPb_MC_AOD"
+
 def argparser():
     from argparse import ArgumentParser
     parser = ArgumentParser()
+    parser.add_argument("--mc",
+                        action='store_true',
+                        help="Name of train to search for")
     parser.add_argument("--train",
                         nargs='?',
-                        default='CF_PbPb',
+                        default=None,
                         help="Name of train to search for")
     parser.add_argument("--dest-dir",
                         nargs='?',
@@ -48,10 +54,13 @@ def main(argv=None):
 
     print(f"Connected to ALICE grid. Current path is {pwd!r}")
 
-    train = args.train
+    train = args.train or (DEFAULT_DATA_TRAIN if not args.mc else DEFAULT_MC_TRAIN)
+
     if not args.run_numbers:
         interactive_fetch(cnx, train=train)
     else:
+        print(f"Fetching {set(map(int, args.run_numbers))} from train {train!r}")
+
         for run in map(int, args.run_numbers):
             fetch_train_files(cnx, train, run)
 
