@@ -398,8 +398,8 @@ FitterGaussOSL::fit_with_random_inits(TMinuit &minuit, FitResult &res, int rec)
 {
   int errflag = 0;
 
-  minuit.mnparm(NORM_PARAM_IDX, "NORM", 0.04, 1e1, 0.0, 0.0, errflag);
-  minuit.mnparm(LAM_PARAM_IDX, "Lam", paramhints->GenLam(), 1e1, 0.0, 0.0, errflag);
+  minuit.mnparm(NORM_PARAM_IDX, "NORM", 0.14, 1e-1, 0.0, 0.0, errflag);
+  minuit.mnparm(LAM_PARAM_IDX, "Lam", paramhints->GenLam(), 1e-1, 0.0, 0.0, errflag);
   minuit.mnparm(ROUT_PARAM_IDX, "Ro", paramhints->GenRo(),  1e0, 0.0, 0.0, errflag);
   minuit.mnparm(RSIDE_PARAM_IDX, "Rs", paramhints->GenRs(), 1e0, 0.0, 0.0, errflag);
   minuit.mnparm(RLONG_PARAM_IDX, "Rl", paramhints->GenRl(), 1e0, 0.0, 0.0, errflag);
