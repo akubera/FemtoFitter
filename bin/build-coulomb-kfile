@@ -233,10 +233,18 @@ def arg_parser():
                         type=float,
                         default=0.35,
                         help='Maximum q-inv')
+    parser.add_argument("--nbins-Q",
+                        type=int,
+                        default=30,
+                        help='Bin count in radius')
     parser.add_argument("-R", "--radius-max",
                         type=float,
                         default=20.5,
                         help='Maximum radius')
+    parser.add_argument("--nbins-R",
+                        type=int,
+                        default=60,
+                        help='Bin count in radius')
     parser.add_argument("--hist-name",
                         default='k2ss',
                         help='histogram of ')
@@ -253,8 +261,8 @@ def main(argv=None):
         argv = sys.argv[1:]
     args = arg_parser().parse_args(argv)
 
-    nbins_qinv = 30
-    nbins_R = 60
+    nbins_qinv = args.nbins_Q
+    nbins_R = args.nbins_R
 
     max_qinv = args.qinv_max
     max_R = args.radius_max
@@ -314,7 +322,10 @@ def build_analytic_kfile(dest, nbins_q, max_q, nbins_R, max_R, *,
     from functools import partial
 
     Rvals = np.linspace(0, max_R, nbins_R * 6)
-    qvals = np.logspace(-4, np.log10(max_q), nbins_q * 30)
+    # qvals = np.logspace(-4, np.log10(max_q), nbins_q * 30)
+    qvals = np.concatenate([
+      np.linspace(qbins[i], qbins[i+1], 77)[:-1]
+      for i in range(nbins_q)])
 
     with Pool() as pool:
         zz = pool.map(partial(calc_all, qvals), Rvals)
