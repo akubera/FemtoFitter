@@ -144,8 +144,8 @@ def run_fit(fitter_classname: str,
 
             for analysis in mrc_analyses:
                 mrc_query.analysis = analysis
-                mrc_rootpath = mrc_query.as_path()
-                mrc_path = mrc_rootpath + "/mrc"
+                mrc_path = mrc_query.as_path()
+            #     mrc_path = mrc_rootpath + "/mrc"
 
                 mrc = mrc_tfile.Get(mrc_path)
                 if mrc:
@@ -154,12 +154,12 @@ def run_fit(fitter_classname: str,
                 print(f"Could not find MRC at {mrc_filename}:{mrc_rootpath}")
                 return {}
 
-            if mrc_tfile is not tfile:
-                mrc_tfile.Close()
+            # if mrc_tfile is not tfile:
+            #     mrc_tfile.Close()
 
             # print(f"Loaded MRC from file {mrc_filename} {mrc_rootpath}", )
 
-        data = Data3D.FromDirectory(tdir, mrc, fit_range, minimum)
+        data = Data3D.FromDirectory(tdir, mrc, fit_range)
         # apply_momentum_resolution_correction(fitter.data, mrc)
     else:
         data = Data3D.FromDirectory(tdir, fit_range, minimum)
