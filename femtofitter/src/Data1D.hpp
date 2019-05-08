@@ -52,6 +52,12 @@ struct Data1D {
   /// Build from TDirectory
   Data1D(TDirectory &tdir, double limit);
 
+  /// copy constructor
+  Data1D(const Data1D&) = default;
+
+  /// assignment operator
+  Data1D& operator=(const Data1D&) = default;
+
   size_t size() const
     { return data.size(); }
 

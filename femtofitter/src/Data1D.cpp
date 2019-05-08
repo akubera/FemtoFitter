@@ -99,7 +99,6 @@ Data1D::From(TDirectory &dir, const TH1 &mrc, double limit)
   auto n = std::unique_ptr<TH1>((TH1*)dir.Get("num")),
        d = std::unique_ptr<TH1>((TH1*)dir.Get("den"));
 
-
   if (!n || !d) {
     return nullptr;
   }
