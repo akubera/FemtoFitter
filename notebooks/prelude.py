@@ -39,8 +39,11 @@ from ROOT import gROOT, cppyy, TFile
 from ROOT import TCanvas, TLegend, TLine, TText
 from ROOT import TGraph, TGraphErrors
 from ROOT import TH1, TH3, TF1
+from ROOT import TProfile, TProfile2D
 
 from ROOT import AliFemtoConfigObject
-from ROOT import Data3D, FitterGaussOSL 
+from ROOT import Data3D, FitterGaussOSL, FitterLevy3D
 from ROOT import Data1D, FitterGauss1D, FitterLevy1D
+from ROOT import FsiKFile, FsiGamov, FsiStatic
 
+TH1.AddDirectory(False)
