@@ -317,7 +317,7 @@ def parallel_fit_all(tfile,
     mrc_paths = []
     limit_reached = False
 
-    valid_analysis_keys = {'AnalysisQ3D', 'Q3DLCMS'}
+    valid_analysis_keys = {'AnalysisQ3D', 'Q3DLCMS', 'Q3DPosQuad'}
     for analysis in valid_analysis_keys:
         search = f"{analysis}/{cfg}/{pair}/{cent}/{kt}/{mfield}"
         for path, _ in walk_matching(tfile, search):
