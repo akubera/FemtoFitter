@@ -104,8 +104,8 @@ struct FsiKFile : public FsiCalculator {
       auto hist = std::make_shared<TProfile>(*_qinv_src);
       hist->SetName("fsi_interp");
 
-      double max_R = hist->GetYaxis()->GetXmax() * 0.99;
-      double min_R = hist->GetYaxis()->GetXmin() * 1.01;
+      double max_R = k2.GetYaxis()->GetXmax() * 0.99;
+      double min_R = k2.GetYaxis()->GetXmin() * 1.01;
       if (Rinv > max_R) {
         Rinv = max_R;
       }
