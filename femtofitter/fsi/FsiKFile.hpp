@@ -122,7 +122,8 @@ struct FsiKFile : public FsiCalculator {
         double step = (qhi-qlo) / 39.0;
 
         for (double qinv = qlo; qinv <= qhi; qinv += step) {
-          double K = k2.Interpolate(qinv, Rinv);
+          Int_t bin = k2.FindBin(qinv, Rinv);
+          double K = k2.IsBinOverflow(bin) ? 1.0 : k2.Interpolate(qinv, Rinv);
           hist->Fill(qinv, K);
         }
       }
