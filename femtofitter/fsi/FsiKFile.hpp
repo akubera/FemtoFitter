@@ -10,6 +10,7 @@
 #include "CalculatorFsi.hpp"
 
 #include <TH2F.h>
+#include <TProfile.h>
 #include <TString.h>
 #include <TFile.h>
 
@@ -30,7 +31,7 @@ struct FsiKFile : public FsiCalculator {
   std::string filename;
 
   /// buffer
-  std::shared_ptr<const TH1D> _qinv_src;
+  std::shared_ptr<const TProfile> _qinv_src;
 
   FsiKFile(TString filename)
     : FsiKFile(*std::make_unique<TFile>(filename))
@@ -48,7 +49,26 @@ struct FsiKFile : public FsiCalculator {
       k2ss.reset(hist);
 
       const TAxis &x = *hist->GetXaxis();
-      _qinv_src = std::make_shared<TH1D>("_cache", "", x.GetNbins(), x.GetXmin(), x.GetXmax());
+      _qinv_src = std::make_shared<TProfile>("_cache", "", x.GetNbins(), x.GetXmin(), x.GetXmax());
+    }
+
+  FsiKFile(TFile &tfile, double qbinsize)
+    : k2ss(nullptr)
+    , filename(tfile.GetName())
+    {
+      auto *hist = dynamic_cast<decltype(k2ss.get())>(tfile.Get("k2ss"));
+      if (!hist) {
+        throw std::runtime_error("Invalid TFile: Missing histogram k2ss");
+      }
+      k2ss.reset(hist);
+
+      const TAxis &x = *hist->GetXaxis();
+      Int_t nbins = (x.GetXmax() - x.GetXmin()) / qbinsize + 1;
+      const double
+        qmin = x.GetXmin(),
+        qmax = qmin + nbins * qbinsize;
+
+      _qinv_src = std::make_shared<TProfile>("_cache", "", nbins, qmin, qmax);
     }
 
   FsiKFile(const FsiKFile &orig)
@@ -56,7 +76,7 @@ struct FsiKFile : public FsiCalculator {
     , filename(orig.filename)
     {
       const TAxis &x = *k2ss->GetXaxis();
-      _qinv_src = std::make_shared<TH1D>("_cache", "", x.GetNbins(), x.GetXmin(), x.GetXmax());
+      _qinv_src = std::make_shared<TProfile>("_cache", "", x.GetNbins(), x.GetXmin(), x.GetXmax());
     }
 
   virtual ~FsiKFile();
@@ -81,7 +101,7 @@ struct FsiKFile : public FsiCalculator {
       // because Interpolate is non-const for some reason
       auto &k2 = const_cast<TH2&>(*k2ss);
 
-      auto hist = std::make_shared<TH1D>(*_qinv_src);
+      auto hist = std::make_shared<TProfile>(*_qinv_src);
       hist->SetName("fsi_interp");
 
       double max_R = hist->GetYaxis()->GetXmax() * 0.99;
@@ -94,15 +114,23 @@ struct FsiKFile : public FsiCalculator {
       }
 
       for (int i=1; i <= hist->GetNbinsX(); ++i) {
-        double qinv = hist->GetXaxis()->GetBinCenter(i);
-        double K = k2.Interpolate(qinv, Rinv);
-        hist->SetBinContent(i, K);
+        double shift = 1e-5;
+
+        double qlo = hist->GetXaxis()->GetBinLowEdge(i) + shift;
+        double qhi = hist->GetXaxis()->GetBinUpEdge(i) - shift;
+
+        double step = (qhi-qlo) / 39.0;
+
+        for (double qinv = qlo; qinv <= qhi; qinv += step) {
+          double K = k2.Interpolate(qinv, Rinv);
+          hist->Fill(qinv, K);
+        }
       }
       double max_qinv = hist->GetXaxis()->GetXmax();
       double min_qinv = hist->GetXaxis()->GetXmin();
       // return std::make_unique<KCalc>(hist);
 
-      return [=](double qinv)
+      return [max_qinv, min_qinv, hist](double qinv)
         {
           return __builtin_expect(qinv > max_qinv || qinv < min_qinv, 0)
                ? 1.0
