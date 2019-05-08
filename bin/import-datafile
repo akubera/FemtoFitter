@@ -3,17 +3,15 @@
 # import-datafile
 #
 
+from typing import Optional, Generator
+
 import re
 import sys
 from copy import copy
 from pathlib import Path
 from datetime import datetime
 
-
-from stumpy.utils import walk_matching, iter_tobject, get_tobject
-from cppyy.gbl import nullptr
-
-from typing import Optional, Generator
+from stumpy.utils import walk_matching, iter_tobject, get_tobject, is_null
 
 
 def arg_parser():
@@ -44,8 +42,6 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
     args = arg_parser().parse_args(argv)
-
-    from ROOT import TFile, gSystem
 
     if args.dry_run:
         from unittest.mock import MagicMock
@@ -94,7 +90,7 @@ def register_analysis_class(cls):
 
 
 def find_analyses(file, pattern):
-    from ROOT import AliFemtoConfigObject, std
+    from ROOT import AliFemtoConfigObject
 
     if not file:
         return
@@ -173,7 +169,7 @@ class AnalysisResults:
 
         for container_name in container_names:
             container = get_tobject(obj, container_name)
-            if container != nullptr:
+            if not is_null(container):
                 break
         else:
             return
@@ -361,12 +357,12 @@ class AnalysisQ3D(AnalysisResults):
     def From(cls, container) -> Optional['AnalysisQ3D']:
         """
         """
-        from ROOT import TH3I, TH3D
+        from ROOT import TH3I
 
         keys = ("Num_q3d", "Den_q3d", "NumWqinv_q3d", "DenWqinv_q3d")
         num, den, nqinv, dqinv = (get_tobject(container, k) for k in keys)
 
-        if any(x == nullptr for x in (num, den, nqinv, dqinv)):
+        if any(map(is_null, (num, den, nqinv, dqinv))):
             return
         if isinstance(num, TH3I):
             print("warning TH3I")
