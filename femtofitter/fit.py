@@ -222,6 +222,7 @@ class ParallelFitArgs:
     fsi_args: Tuple[any] = ('KFile2.root', )
     fitter_t: str = 'FitterGausOSL'
     mrc: bool = False
+    mrc_only: bool = False
     fitrange: float = 0.11
     subset: Optional[str] = None
     ratio_min: float = 0.0
@@ -252,6 +253,7 @@ class ParallelFitArgs:
                    fsi_args,
                    cli_args.fitter,
                    cli_args.mrc_path,
+                   cli_args.mrc_only,
                    cli_args.fitrange,
                    cli_args.subset,
                    cli_args.ratio_minimum,
@@ -266,6 +268,7 @@ def pfit_all(args):
                             (args.fsi_classname, args.fsi_args),
                             args.fitter_t,
                             args.mrc,
+                            args.mrc_only,
                             args.fitrange,
                             args.subset,
                             args.ratio_min,
@@ -279,6 +282,7 @@ def parallel_fit_all(tfile,
                      fsi: Tuple[str, Tuple[Any]]=('FsiKFile', 'KFile2.root'),
                      fitter_t='FitterGausOSL',
                      mrc=False,
+                     mrc_only=False,
                      fitrange=0.11,
                      subset=None,
                      ratio_min=0.0,
@@ -355,7 +359,9 @@ def parallel_fit_all(tfile,
                        mrc_path=None,
                        subset=subset)
 
-    nomrc_fits = (replace(fit_args, query=p) for p in paths)
+    nomrc_fits = ()
+    if not mrc_only:
+        nomrc_fits = (replace(fit_args, query=p) for p in paths)
     mrc_fits = (replace(fit_args, query=p, mrc_path=m) for p, m in mrc_paths)
 
     work = chain(nomrc_fits, mrc_fits)

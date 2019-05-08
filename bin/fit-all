@@ -35,6 +35,9 @@ def arg_parser():
                         type=str,
                         default=None,
                         help="Optional subset selection")
+    parser.add_argument("--mrc-only",
+                        action='store_true',
+                        help='Only run fits with mrc corrections')
     parser.add_argument("--mrc-path",
                         nargs='?',
                         default=False,
@@ -102,6 +105,10 @@ def main(argv=None):
         fsi_class = getattr(ROOT, args.fsi)
     except AttributeError as e:
         raise ValueError(f'Could not load FSI class {args.fsi!r}') from e
+
+    if args.mrc_only and not args.mrc_path:
+        print("Warning: No file MRC file specified", file=sys.stderr)
+        return 0
 
     fit_args = ParallelFitArgs.FromCli(tfile, args)
     pfit_all(fit_args)
