@@ -275,10 +275,10 @@ Data3D::FromDirectory(TDirectory &tdir, TDirectory &mrcdir, double limit)
     return nullptr;
   }
 
-  auto nr = std::unique_ptr<TH3>((TH3*)mrcdir.Get("NumRecUnweighted")),
-             dr = std::unique_ptr<TH3>((TH3*)mrcdir.Get("DenRec")),
-             ng = std::unique_ptr<TH3>((TH3*)mrcdir.Get("NumGenUnweighted")),
-             dg = std::unique_ptr<TH3>((TH3*)mrcdir.Get("DenGen"));
+  auto nr = std::unique_ptr<TH3>((TH3*)mrcdir.Get("fnr")),
+       dr = std::unique_ptr<TH3>((TH3*)mrcdir.Get("dr")),
+       ng = std::unique_ptr<TH3>((TH3*)mrcdir.Get("fng")),
+       dg = std::unique_ptr<TH3>((TH3*)mrcdir.Get("dg"));
 
   if (!nr or !dr or !ng or !dg) {
     std::cerr << "Missing expected histograms from mrc directory\n";
