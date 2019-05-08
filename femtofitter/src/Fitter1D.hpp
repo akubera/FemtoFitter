@@ -58,7 +58,7 @@ public:
 
       const std::function<double(double)>
         Kfsi = fsi
-             ? fsi->ForRadius(p.Rinv)
+             ? fsi->ForRadius(p.radius)
              : [] (double qinv) { return 1.0; };
 
       for (const auto &datum : data) {
@@ -67,7 +67,7 @@ public:
           d = datum.den,
           q = datum.qinv,
 
-          CF = p.gauss(q, Kfsi(q));
+          CF = p.evaluate(q, Kfsi(q));
 
         retval += resid_calc(n, d, CF);
       }

@@ -83,7 +83,7 @@ struct FitterGauss1D : public Fitter1D<FitterGauss1D> {
       }
 
     double evaluate(const double q, const double K) const
-      { return FitterGauss1D::gauss(q, Rinv * Rinv, lam, K, norm); }
+      { return FitterGauss1D::gauss(q, radius * radius, lam, K, norm); }
 
     FitParams as_params() const;
   };
@@ -91,12 +91,12 @@ struct FitterGauss1D : public Fitter1D<FitterGauss1D> {
   struct FitParams {
     double norm,
            lam,
-           Rinv;
+           radius;
 
     FitParams(const double *par)
       : norm(par[NORM_PARAM_IDX])
       , lam(par[LAM_PARAM_IDX])
-      , Rinv(par[R_PARAM_IDX])
+      , radius(par[R_PARAM_IDX])
       { }
 
     FitParams(const FitParams &) = default;
@@ -104,7 +104,7 @@ struct FitterGauss1D : public Fitter1D<FitterGauss1D> {
     FitParams(const FitResult &res)
       : norm(res.norm)
       , lam(res.lam)
-      , Rinv(res.radius)
+      , radius(res.radius)
       { }
 
     bool is_invalid() const
@@ -112,12 +112,12 @@ struct FitterGauss1D : public Fitter1D<FitterGauss1D> {
         #define INVALID(__X) (__X <= 0) || std::isnan(__X)
         return INVALID(norm)
             || INVALID(lam)
-            || INVALID(Rinv);
+            || INVALID(radius);
         #undef INVALID
       }
 
     double gauss(const double q, const double K) const
-      { return FitterGauss1D::gauss(q, Rinv * Rinv, lam, K, norm); }
+      { return FitterGauss1D::gauss(q, radius * radius, lam, K, norm); }
 
     double evaluate(const double q, const double K) const
       { return gauss(q, K); }

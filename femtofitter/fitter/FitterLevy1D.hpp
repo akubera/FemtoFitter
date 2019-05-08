@@ -17,6 +17,17 @@
 ///
 struct FitterLevy1D : Fitter1D<FitterLevy1D> {
 
+  using Super = Fitter1D<FitterGauss1D>;
+
+  struct FitParams;
+  struct FitInput;
+
+  static std::string GetName()
+    { return "Levy1D"; }
+
+  static unsigned char CountParams()
+    { return 4; }
+
   enum {
     DATA_PARAM_IDX = 0,
 
@@ -25,9 +36,6 @@ struct FitterLevy1D : Fitter1D<FitterLevy1D> {
     RADIUS_PARAM_IDX = 3,
     ALPHA_PARAM_IDX = 4,
   };
-
-  int degrees_of_freedom() const
-    { return data.size() - 4; }
 
   static double
   levy(double qinv, double RinvSq, double lam, double alpha, double K=1.0, double norm=1.0)
@@ -91,6 +99,8 @@ struct FitterLevy1D : Fitter1D<FitterLevy1D> {
 
         #undef OUT
       }
+
+     FitParams as_params() const;
   };
 
 
@@ -110,6 +120,13 @@ struct FitterLevy1D : Fitter1D<FitterLevy1D> {
       { }
 
     FitParams(const FitParams &) = default;
+
+    FitParams(const FitResult &res)
+      : norm(res.norm)
+      , lam(res.lam)
+      , radius(res.radius)
+      , alpha(res.alpha)
+      { }
 
     bool is_invalid() const
       {
@@ -145,6 +162,20 @@ struct FitterLevy1D : Fitter1D<FitterLevy1D> {
           hist.SetBinContent(i, factor * value);
         }
       }
+
+    void fill(TH1 &h, FsiCalculator *fsi=nullptr) const
+      {
+
+        std::function<double(double)> K = fsi ? fsi->ForRadius(radius)
+                                              : [] (double) { return 1.0; };
+
+        const TAxis &xaxis = *h.GetXaxis();
+        for (int i=1; i <= xaxis.GetLast(); ++i) {
+          double q = xaxis.GetBinCenter(i);
+          double cf = evaluate(q, K(q));
+          h.SetBinContent(i, cf);
+        }
+      }
   };
 
   FitterLevy1D(const TH1 &num, const TH1 &den, double limit)
@@ -166,6 +197,7 @@ struct FitterLevy1D : Fitter1D<FitterLevy1D> {
       minuit.mnparm(NORM_PARAM_IDX, "Norm", 0.25, 0.02, 0.0, 0.0, errflag);
       minuit.mnparm(LAM_PARAM_IDX, "Lam", 0.2, 0.1, 0.0, 1.0, errflag);
       minuit.mnparm(RADIUS_PARAM_IDX, "Radius", 2.0, 1.0, 0.0, 0.0, errflag);
+      minuit.mnparm(ALPHA_PARAM_IDX, "ALPHA", 1.9, 0.01, 0.0, 0.0, errflag);
 
       const double this_dbl = static_cast<double>((intptr_t)this);
       minuit.mnparm(DATA_PARAM_IDX, "DATA_PTR", this_dbl, 0, 0, INTPTR_MAX, errflag);
@@ -178,7 +210,16 @@ struct FitterLevy1D : Fitter1D<FitterLevy1D> {
       return errflag;
     }
 
+  FitResult fit_pml()
+    { return Fitter1D::fit_pml(); }
+
 };
+
+auto
+FitterLevy1D::FitResult::as_params() const -> FitParams
+{
+  return FitParams(*this);
+}
 
 
 #endif
