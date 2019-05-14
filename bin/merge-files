@@ -38,8 +38,8 @@ def main(argv=None):
         pprint(args)
 
     import subprocess
-    
-    #query = ' '.join(map(str, args.train_id)) 
+
+    #query = ' '.join(map(str, args.train_id))
     query = str(args.train_id)
     if args.train:
        query = f'{args.train}-{query}'
@@ -69,12 +69,9 @@ def main(argv=None):
             print("Running:", cmd)
         subprocess.run(' '.join(cmd), shell=True)
 
-
     merge_files('negfield')
     merge_files('posfield')
 
 
-
 if __name__ == "__main__":
     exit(main())
-
