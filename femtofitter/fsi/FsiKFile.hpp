@@ -104,9 +104,28 @@ struct FsiKFile : public FsiCalculator {
 
       return [=](double qinv)
         {
-          return __builtin_expect(qinv > max_qinv || qinv < min_qinv, 0)
-               ? 1.0
-               : hist->Interpolate(qinv);
+          if (__builtin_expect(qinv > max_qinv || qinv < min_qinv, 0)) {
+            return 1.0;
+          }
+
+          const double sigma = 1.478e-3;
+          const int N = 17;
+
+          double result = 0.0;
+          double norm = 0.0;
+
+          /// N points between qinv-sigma -> qinv+sigma
+          for (int i=0; i<N; ++i) {
+            const double
+              q_i = qinv - (2 * i / N - 1) * sigma,
+              dq = (qinv - q_i),
+              w_i = std::exp(-dq * dq / (2.0 * M_PI * sigma));
+
+            result += w_i * hist->Interpolate(q_i);
+            norm += w_i;
+          }
+
+          return result / norm;
         };
     }
 
