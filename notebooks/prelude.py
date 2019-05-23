@@ -8,6 +8,17 @@ from pathlib import Path
 os.chdir(Path(__file__).parent.parent)
 
 import sys
+
+# fix alibuild environment
+pathlist = [
+    '/home/akubera/alice/root-venv/lib/python3.6/site-packages',
+    '/home/akubera/development/physics/stumpy',
+]
+for p in map(Path, pathlist):
+    if p.exists() and str(p) not in sys.path:
+        sys.path.insert(1, str(p))
+del p, pathlist
+
 from itertools import chain, repeat, cycle, islice
 from functools import partial, reduce
 from copy import copy
@@ -41,6 +52,5 @@ from ROOT import TGraph, TGraphErrors
 from ROOT import TH1, TH3, TF1
 
 from ROOT import AliFemtoConfigObject
-from ROOT import Data3D, FitterGaussOSL 
+from ROOT import Data3D, FitterGaussOSL
 from ROOT import Data1D, FitterGauss1D, FitterLevy1D
-
