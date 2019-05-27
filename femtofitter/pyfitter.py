@@ -112,6 +112,30 @@ class MomentumResolutionCorrector:
         data.apply_mrc(mrc)
 
 
+    @classmethod
+    def From(cls, obj):
+        from ROOT import TDirectory
+        if isinstance(obj, TDirectory):
+            return cls.FromDirectory(obj)
+
+    @classmethod
+    def FromDirectory(cls, tdir):
+        names = [
+            ("ng", "dg", "nr", "dr")
+        ]
+
+        for nameset in names:
+            objs = list(map(tdir.Get, nameset))
+            if all(obj != None for obj in objs):
+                break
+        else:
+            print("Could not load MomentumResolutionCorrection histograms from tdir", file=sys.stderr)
+            return None
+
+        self = cls.__new__(cls)
+        self.ng, self.dg, self.nr, self.dr = objs
+
+
 class PyData3D:
     """
     3D correlation function data to be fit.
