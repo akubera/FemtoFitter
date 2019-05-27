@@ -296,7 +296,6 @@ class QuadPlot:
                     plot_ops['label'] = cent
                     plot_ops['lw'] = 2
 
-                    ax.errorbar(X, Y, E, **plot_ops)
                     X += shift
                     eb = ax.errorbar(X, Y, yerr=E, **plot_ops)
                     eb[-1][0].set_linestyle('--')
