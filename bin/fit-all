@@ -19,6 +19,10 @@ def arg_parser():
     parser.add_argument("--chi2",
                         action='store_true',
                         help="file to fit")
+    parser.add_argument("--skip",
+                        type=int,
+                        default=None,
+                        help="skip first N analyses")
     parser.add_argument("--limit",
                         type=int,
                         default=None,
