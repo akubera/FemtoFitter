@@ -17,21 +17,22 @@
 /// Expects a DATA_PARAM_IDX member of ResidCalc_t::Fitter pointing
 /// to the data
 ///
-template <typename ResidCalc_t>
+template <typename ResidCalculator>
 static void minuit_f(Int_t&, Double_t*, Double_t &retval, Double_t *par, Int_t)
 {
-  using Fitter_t = typename ResidCalc_t::Fitter;
+  using Fitter_t = typename ResidCalculator::Fitter;
+  using FitterParams_t = typename ResidCalculator::FitParams;
 
-  static const double BAD_VALUE = 3e99;
+  static const double BAD_VALUE = INFINITY;
   const auto &data = *(const Fitter_t*)(intptr_t)(par[Fitter_t::DATA_PARAM_IDX]);
 
-  typename Fitter_t::FitParams params(par);
+  FitterParams_t params(par);
   if (params.is_invalid()) {
     retval = BAD_VALUE;
     return;
   }
 
-  retval = ResidCalc_t::resid(data, params);
+  retval = ResidCalculator::resid(data, params);
 }
 
 
