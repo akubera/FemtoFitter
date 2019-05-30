@@ -300,8 +300,11 @@ class AnalysisTrueQinv(AnalysisResults):
             for x in range(1, qgqr.GetNbinsX()+1):
                 s += qgqr.GetBinContent(x, y)
 
-            for x in range(1, qgqr.GetNbinsX()+1):
-                h.SetBinContent(x, y, h.GetBinContent(x, y) / s)
+            if s == 0.0:
+               h.SetBinContent(x, y, 1.0)
+            else:
+                for x in range(1, qgqr.GetNbinsX()+1):
+                    h.SetBinContent(x, y, h.GetBinContent(x, y) / s)
 
         self = cls(h)
 
