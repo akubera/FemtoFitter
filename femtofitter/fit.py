@@ -228,6 +228,7 @@ class ParallelFitArgs:
     ratio_min: float = 0.0
     chi2: bool = False
     limit: Optional[int] = None
+    skip: Optional[int] = None
     threads: Optional[int] = None
 
     @classmethod
@@ -259,6 +260,7 @@ class ParallelFitArgs:
                    cli_args.ratio_minimum,
                    cli_args.chi2,
                    cli_args.limit,
+                   cli_args.skip,
                    cli_args.threads)
 
 
@@ -274,6 +276,7 @@ def pfit_all(args):
                             args.ratio_min,
                             args.chi2,
                             args.limit,
+                            args.skip,
                             args.threads)
 
 
@@ -288,6 +291,7 @@ def parallel_fit_all(tfile,
                      ratio_min=0.0,
                      chi2=False,
                      limit=None,
+                     skip=None,
                      threads=None):
     """
     """
@@ -321,12 +325,17 @@ def parallel_fit_all(tfile,
     mrc_paths = []
     limit_reached = False
 
+    skip = skip or 0
+
     valid_analysis_keys = {'AnalysisQ3D', 'Q3DLCMS', 'Q3DPosQuad'}
     for analysis in valid_analysis_keys:
         search = f"{analysis}/{cfg}/{pair}/{cent}/{kt}/{mfield}"
         for path, _ in walk_matching(tfile, search):
             query = PathQuery.from_path(path)
             assert path == query.as_path()
+            if skip > 0:
+                skip -= 1
+                continue
             paths.append(query)
             if mrc_path:
                 mrc_paths.append((query, mrc_path))
