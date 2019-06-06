@@ -427,10 +427,7 @@ class Q3DPosQuad(AnalysisResults):
         if qinv.GetSumw2N() == 0:
             print("Warning: Weighted qinv histogram not weighted")
             qinv.Sumw2()
-        sum_ = num.Clone("sum_")
-        sum_.Add(den)
-        qinv.Divide(sum_)
-        del sum_
+        qinv.Divide(den)
 
         self = cls(num, den, qinv)
         return self
