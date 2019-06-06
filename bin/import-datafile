@@ -301,10 +301,10 @@ class AnalysisTrueQinv(AnalysisResults):
                 s += qgqr.GetBinContent(x, y)
 
             if s == 0.0:
-               h.SetBinContent(x, y, 1.0)
-            else:
-                for x in range(1, qgqr.GetNbinsX()+1):
-                    h.SetBinContent(x, y, h.GetBinContent(x, y) / s)
+                continue
+
+            for x in range(1, qgqr.GetNbinsX()+1):
+                h.SetBinContent(x, y, h.GetBinContent(x, y) / s)
 
         self = cls(h)
 
@@ -422,10 +422,7 @@ class Q3DPosQuad(AnalysisResults):
         if qinv.GetSumw2N() == 0:
             print("Warning: Weighted qinv histogram not weighted")
             qinv.Sumw2()
-        sum_ = num.Clone("sum_")
-        sum_.Add(den)
-        qinv.Divide(sum_)
-        del sum_
+        qinv.Divide(den)
 
         self = cls(num, den, qinv)
         return self
@@ -525,9 +522,9 @@ class AnalysisTrueQ3D(AnalysisResults):
                 break
         else:
             print("Could not find files in", obj)
-            return
+            return None
 
-        nr, ng, dr, dg = hists
+        nr, ng, dr, dg = map(cls.symmetrize_histogram, hists)
 
         mrc = ng.Clone("mrc")
         mrc.SetStats(False)
@@ -548,10 +545,14 @@ class AnalysisTrueQ3D(AnalysisResults):
         self.fnr = get_tobject(obj, "NumRecUnweighted")
         if not self.fnr:
             self.fnr = None
+        else:
+            self.symmetrize_histogram(self.fnr)
 
         self.fng = get_tobject(obj, "NumGenUnweighted")
         if not self.fng:
             self.fng = None
+        else:
+            self.symmetrize_histogram(self.fng)
 
         return self
 
@@ -575,6 +576,41 @@ class AnalysisTrueQ3D(AnalysisResults):
 
         if self.fng:
             self.fng.Write("fng")
+
+    @staticmethod
+    def symmetrize_histogram(h):
+        from itertools import product
+        from math import ceil
+
+        xax, yax, zax = h.GetXaxis(), h.GetYaxis(), h.GetZaxis()
+
+        nx = xax.GetNbins()
+        ny = yax.GetNbins()
+        nz = zax.GetNbins()
+
+        xzbin = xax.FindBin(0.0)
+        yzbin = yax.FindBin(0.0)
+        zzbin = zax.FindBin(0.0)
+
+        # histogram does not need symmetrized
+        if xzbin == 1:
+            return
+
+        if xzbin != ceil(nx / 2):
+            raise ValueError("Histogram axis not centered at zero!")
+
+        for i in range(1, ceil(nx / 2) + 1):
+            for k, j in product(range(1, nz + 1), range(1, ny + 1)):
+                bin1 = h.GetBin(i, j, k)
+                bin2 = h.GetBin(nx - i + 1, ny - j + 1, nz - k + 1)
+                val = h.GetBinContent(bin1) + h.GetBinContent(bin2)
+                h.SetBinContent(bin1, val)
+                h.SetBinContent(bin2, val)
+
+                if i > xzbin and j > yzbin and k > zzbin:
+                    break
+
+        return h
 
 
 @register_analysis_class

@@ -336,41 +336,36 @@ def build_analytic_kfile(dest, nbins_q, max_q, nbins_R, max_R, *,
     for q, r, z in zip(xx.flatten(), yy.flatten(), zz.flatten()):
         k2ss.Fill(q, r, z)
 
-    # for r in Rvals:
-    #     for q in qvals:
-    #         k = calculate(q, r)
-    #         k2ss.Fill(q, r, k)
-
-    # for y_bin in range(1, k2ss.GetNbinsY()+1):
-    #     R = k2ss.GetYaxis().GetBinCenter(y_bin)
-    #     for x_bin in range(1, k2ss.GetNbinsX()+1):
-    #         qinv = k2ss.GetXaxis().GetBinCenter(x_bin)
-    #         proc = run(["aliroot", "-x", "-q", "-b", "-l", 'Gen.C+("%s")' % filename])
-    # proc.wait()
-    # return filenamelculate(qinv, R)
-    #         k2ss.SetBinContent(x_bin, y_bin, k)
-
     outfile = TFile.Open(str(dest), "RECREATE")
     k2ss.Write()
     outfile.Close()
 
 
 def calc_all(qinvs, Rinv):
-    z = -4 * qinvs**2 * Rinv ** 2 / HBAR_C_SQR
-    h = np.array([float(hyp2f2(.5, 1, 1.5, 1.5, _z)) for _z in z])
+    """
+    Calculate Coulomb factor for multiple qinv values
+    """
+    z = -4 * (qinvs * (Rinv / HBAR_C)) ** 2
+    ziter = map(float, (hyp2f2(0.5, 1, 1.5, 1.5, _z) for _z in z))
+    h = np.fromiter(ziter, float)
     k = gamov(qinvs) * (1 + 8 * ETA * Rinv / np.sqrt(np.pi) * h)
     return k
 
 
 def gamov(qinv):
+    """
+    Gamov factor
+    """
     x = 2.0 * np.pi * HBAR_C * ETA / qinv
     return x / (np.exp(x) - 1)
 
 
 def calculate(qinv, R):
-    z = -4 * qinv**2 * R ** 2 / HBAR_C_SQR
-    h = hyp2f2(.5, 1, 1.5, 1.5, z)
-    h = float(h)
+    """
+    Coulomb factor for single (qinv, Rinv) pion pair
+    """
+    z = -4 * (qinv * R / HBAR_C) ** 2
+    h = float(hyp2f2(.5, 1, 1.5, 1.5, z))
     k = gamov(qinv) * (1 + 8 * ETA * R / np.sqrt(np.pi) * h)
     if abs(k) > 2:
         print(qinv, R, z, h)

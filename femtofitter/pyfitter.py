@@ -29,7 +29,7 @@ ETA_PION = 1.0 / 388.0
 
 try:
     f = open(environ.get('COULOMB_DATA', 'femtofitter/data/coulomb-interpolation.dat'), 'rb')
-except KeyError:
+except FileNotFoundError:
     try:
         from importlib import resources
     except ImportError:
