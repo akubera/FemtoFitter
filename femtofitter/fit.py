@@ -185,7 +185,7 @@ def run_fit(fitter_classname: str,
 
     fitter = fitter_class(data)
     fitter.fsi = fsi_class.new_shared_ptr(*fsi_args)
-    fitter.SetParamHintsFromDir(tdir)
+    # fitter.SetParamHintsFromDir(tdir)
 
     results = {
         'fsi': str(fitter.fsi.ClassName()),
