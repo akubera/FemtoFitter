@@ -92,6 +92,9 @@ public:
   std::size_t size() const
     { return data.size(); }
 
+  size_t degrees_of_freedom() const
+    { return data.size() - Impl::CountParams(); }
+
   auto num_as_vec() const -> std::vector<double>
     { return numerator_as_vec(*this); }
 
@@ -131,6 +134,22 @@ public:
       setup_pml_fitter(minuit);
       return do_fit_minuit(minuit);
     }
+
+  template <typename FitResult>
+  double
+  resid_chi2(const FitResult &r) const
+    {
+      const typename Impl::FitParams &params = r;
+      return resid_chi2_calc(params);
+    }
+
+  template <typename FitParams>
+  double
+  resid_chi2_calc(const FitParams &p) const
+    {
+      return resid_calc<ResidCalculatorChi2, FitParams>(p);
+    }
+
 
 };
 
