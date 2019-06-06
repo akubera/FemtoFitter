@@ -46,10 +46,11 @@ from femtofitter.pyfitter import (
 )
 
 import ROOT
-from ROOT import gROOT, cppyy, TFile
+from ROOT import gROOT, gStyle, cppyy, TFile
 from ROOT import TCanvas, TLegend, TLine, TText
 from ROOT import TGraph, TGraphErrors
 from ROOT import TH1, TH3, TF1
+from ROOT import TH1D, TH1F, TH2D, TH2F, TH3D, TH3F
 
 from ROOT import AliFemtoConfigObject
 from ROOT import Data3D, FitterGaussOSL
