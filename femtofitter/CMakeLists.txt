@@ -80,6 +80,7 @@ set(INCS
   fsi/FsiKFile.hpp
   fsi/FsiGamov.hpp
   fsi/FsiStatic.hpp
+  mrc/MrcRatio3D.hpp
   src/CalculatorFsi.hpp
   src/ParamHints.hpp
 )
