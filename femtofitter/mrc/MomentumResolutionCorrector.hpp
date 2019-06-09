@@ -9,11 +9,15 @@
 #define MOMENTUMRESOLUTIONCORRECTOR_HPP_
 
 #include <TNamed.h>
+#include <TH3.h>
 
 #include <array>
 #include <map>
 
 
+/// \class MomentumResolutionCorrector
+/// \brief Uses hypercube-matrix-method to apply the momentum resolution correction
+///
 class MomentumResolutionCorrector : public TNamed {
 public:
 
@@ -33,9 +37,17 @@ public:
 //   std::map<std::array<int, 3>, std::map<int, float>> a;
   Trie<int> data;
 
+  /// Empty Constructor
   MomentumResolutionCorrector();
-  MomentumResolutionCorrector(TString &title, TString &name);
 
+  /// Construct with name and title
+  MomentumResolutionCorrector(TString &name, TString &title);
+
+  /// Smear histogram
+  void Smear(TH3 &hist);
+
+  /// Unsmear histogram (reverse smearing)
+  void Unsmear(TH3 &hist);
 
 protected:
 

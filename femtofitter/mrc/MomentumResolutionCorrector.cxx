@@ -1,8 +1,9 @@
 
 #include "MomentumResolutionCorrector.hpp"
 
-/// \classimp
+/// \cond classimp
 ClassImp(MomentumResolutionCorrector);
+/// \endcond
 
 #include <iostream>
 
@@ -23,5 +24,4 @@ MomentumResolutionCorrector::MomentumResolutionCorrector()
     std::map<u8, u8> val {{5, 5}};
 
     data.emplace(key, val); // {{3, {{3, {{3, 5}}}}}});
-
 }
