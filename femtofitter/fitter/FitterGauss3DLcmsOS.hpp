@@ -1,5 +1,5 @@
 ///
-/// \file fitter/FitterGaussOSL3.hpp
+/// \file fitter/FitterGauss3DLcmsOS.hpp
 ///
 
 #pragma once
@@ -22,10 +22,10 @@
 #include "Data3D.hpp"
 
 
-/// \class FitterGaussOSL3
+/// \class FitterGauss3DLcmsOS
 /// \brief Fit out-side-long with gaussian parameters
 ///
-struct FitterGaussOSL3 : public Fitter3D<FitterGaussOSL3> {
+struct FitterGauss3DLcmsOS : public Fitter3D<FitterGauss3DLcmsOS> {
 
   /// constants used to lookup data from pointer
   enum {
@@ -154,7 +154,6 @@ struct FitterGaussOSL3 : public Fitter3D<FitterGaussOSL3> {
       return Ro < 0
           || Rs < 0
           || Rl < 0
-          || Ros < 0
           || lam < 0
           || norm < 0
           || std::isnan(Ro)
@@ -170,7 +169,7 @@ struct FitterGaussOSL3 : public Fitter3D<FitterGaussOSL3> {
       { return std::sqrt((Ro * Ro * gamma + Rs * Rs + Rl * Rl) / 3.0); }
 
     double gauss(const std::array<double, 3> &q, double K) const
-      { return FitterGaussOSL3::gauss(q, {Ro*Ro, Rs*Rs, Rl*Rl, Ros}, lam, K, norm); }
+      { return FitterGauss3DLcmsOS::gauss(q, {Ro*Ro, Rs*Rs, Rl*Rl, Ros}, lam, K, norm); }
 
     void
     apply_to(TH3 &hist, TH3& qinv, double gamma)
@@ -205,32 +204,32 @@ struct FitterGaussOSL3 : public Fitter3D<FitterGaussOSL3> {
   /// Construct fitter from numerator denominator qinv histograms
   /// and a fit-range limit
   ///
-  FitterGaussOSL3(TH3 &n, TH3 &d, TH3 &q, double limit=0.0)
+  FitterGauss3DLcmsOS(TH3 &n, TH3 &d, TH3 &q, double limit=0.0)
     : Fitter3D(n, d, q, limit)
   {
   }
 
-  static std::unique_ptr<FitterGaussOSL3>
+  static std::unique_ptr<FitterGauss3DLcmsOS>
   FromDirectory(TDirectory &dir, double limit=0.0)
     {
       auto data = Data3D::FromDirectory(dir, limit);
       if (!data) {
         return nullptr;
       }
-      return std::make_unique<FitterGaussOSL3>(std::move(data));
+      return std::make_unique<FitterGauss3DLcmsOS>(std::move(data));
     }
 
-  FitterGaussOSL3(const Data3D &data)
+  FitterGauss3DLcmsOS(const Data3D &data)
     : Fitter3D(data)
   {
   }
 
-  FitterGaussOSL3(Data3D &&data)
+  FitterGauss3DLcmsOS(Data3D &&data)
     : Fitter3D(std::move(data))
   {
   }
 
-  FitterGaussOSL3(std::unique_ptr<Data3D> data)
+  FitterGauss3DLcmsOS(std::unique_ptr<Data3D> data)
     : Fitter3D(std::move(data))
   {
   }

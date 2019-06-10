@@ -73,7 +73,8 @@ set(INCS
   fitter/FitterGauss1D.hpp
   fitter/FitterLevy1D.hpp
   fitter/FitterGaussOSL.hpp
-  fitter/FitterGaussOSL3.hpp
+  fitter/FitterGauss3DLcmsOS.hpp
+  fitter/FitterGauss3DLcmsOL.hpp
   fitter/FitterGaussFull.hpp
   fitter/FitterLevy3D.hpp
   fitter/FitterLevyFull.hpp
