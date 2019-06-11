@@ -8,15 +8,14 @@ Fits 1D histograms
 
 from typing import Optional, Tuple, List, Generator
 
-
 import sys
+import json
 import asyncio
 
 from pathlib import Path
 from pprint import pprint
 from datetime import datetime
 from dataclasses import dataclass
-from multiprocessing.pool import Pool
 from concurrent.futures import ProcessPoolExecutor
 
 from stumpy.utils import walk_matching
@@ -117,11 +116,10 @@ def main(argv=None):
             json.dump(output_data, outfile, indent=True)
         print("Output written to", output_path)
     else:
-        from pprint import pprint
         pprint(output_data)
 
 
-def find_fit_data(tfile, args) -> Generator[RunFitParams]:
+def find_fit_data(tfile, args):
     """
     Load data file and find available analyses results
     """
@@ -145,11 +143,9 @@ async def run_fits(params, executor, loop=None, cb=None):
     if loop is None:
         loop = asyncio.get_event_loop()
 
-    coros = [await loop.run_in_executor(executor, run_fit, p) for p in params]
+    pending = [await loop.run_in_executor(executor, run_fit, p) for p in params]
 
     finished = set()
-
-    pending = list(params)
 
     with tqdm(total=len(pending)) as pbar:
         while pending:
@@ -200,7 +196,6 @@ class RunFitParams:
         return p
 
 
-
 def run_fit(params: RunFitParams) -> Optional[dict]:
     """
     Run 1D fit
@@ -227,7 +222,7 @@ def run_fit(params: RunFitParams) -> Optional[dict]:
         if not mrc_filename:
             mrctfile = tfile
         else:
-            mrc_file = TFile.Open(mrc_filename)
+            mrc_file = ROOT.TFile.Open(mrc_filename)
             if not mrc_file:
                 mrc_file
 
@@ -237,27 +232,26 @@ def run_fit(params: RunFitParams) -> Optional[dict]:
         else:
             mrc_query.analysis = 'AnalysisTrueQinv'
 
-
-    print(tdir)
-    data = ROOT.Data1D.FromDirectory(tdir)
+    data = ROOT.Data1D.From(tdir)
 
     fitter = fittercls(data)
     fitter.fsi = fsi_class.new_shared_ptr(*params.fsi_args)
-    fitter.SetParamHintsFromDir(tdir)
+    # fitter.SetParamHintsFromDir(tdir)
 
     fit_results = fitter.fit_chi2() if params.fit_chi2 else fitter.fit_pml()
     if not fit_results:
         return None
 
-    results = fit_results.as_map()
+    results = dict(fit_results.as_map())
 
     results["fsi"] = str(fitter.fsi.ClassName())
     results["cent"] = params.pathquery.cent
     results["mrc"] = params.mrc_path
-    results["gamma"] = fitter.gamma.data
-    results["ndof"] = fitter.degrees_of_freedom()
-    results["chi2"] = fitter.resid_chi2(fit_results)
+    results["gamma"] = fitter.data.gamma
+    results["ndof"] = 3 # fitter.degrees_of_freedom()
+    results["chi2"] = 1 # fitter.resid_chi2(fit_results)
     results["rchi2"] = results["chi2"] / results["ndof"]
+    print(results)
 
     return results
 
