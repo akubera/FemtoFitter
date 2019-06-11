@@ -54,7 +54,7 @@ struct FitterGauss3DLcmsOL : public Fitter3D<FitterGauss3DLcmsOL> {
       Eo = q[0] * q[0] * RSq[0],
       Es = q[1] * q[1] * RSq[1],
       El = q[2] * q[2] * RSq[2],
-      Eol = q[0] * q[1] * std::fabs(Rol) * Rol,
+      Eol = q[0] * q[2] * std::fabs(Rol) * Rol,
       gauss = 1.0 + std::exp(-(Eo + Es + El + Eol) / HBAR_C_SQ),
       result = (1.0 - lam) + lam * K * gauss;
 
