@@ -167,6 +167,7 @@ class RunFitParams:
     filename: Path
     pathquery: PathQuery
     fitter_classname: str
+    fit_range: float
     fsi_classname: str
     fsi_args: Tuple[str]
     mrc_path: Optional[str] = None
@@ -181,6 +182,7 @@ class RunFitParams:
             filename=args.input,
             pathquery=None,
             fitter_classname=args.fitter,
+            fit_range=args.fitrange,
             fsi_classname=args.fsi,
             fsi_args=args.fsi_args,
             mrc_path=None,
@@ -233,7 +235,7 @@ def run_fit(params: RunFitParams) -> Optional[dict]:
         else:
             mrc_query.analysis = 'AnalysisTrueQinv'
 
-    data = ROOT.Data1D.From(tdir)
+    data = ROOT.Data1D.From(tdir, params.fit_range)
 
     fitter = fittercls(data)
     fitter.fsi = fsi_class.new_shared_ptr(*params.fsi_args)
