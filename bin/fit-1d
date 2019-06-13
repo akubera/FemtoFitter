@@ -102,6 +102,8 @@ def main(argv=None):
     results = loop.run_until_complete(run_fits(data, executor))
     duration = datetime.now() - timestamp
 
+    print("Returned", results)
+
     df = pd.DataFrame(results)
     output_data = {
             'filename': args.input,
@@ -144,16 +146,15 @@ async def run_fits(params, executor, loop=None, cb=None):
     if loop is None:
         loop = asyncio.get_event_loop()
 
-    pending = [await loop.run_in_executor(executor, run_fit, p) for p in params]
-
-    finished = set()
+    pending = [loop.run_in_executor(executor, run_fit, p) for p in params]
+    finished = []
 
     with tqdm(total=len(pending)) as pbar:
         while pending:
             done, pending = await wait(pending,
                                        loop=loop,
                                        return_when=FIRST_COMPLETED)
-            finished |= done
+            finished.extend([r.result() for r in done])
             if cb:
                 for job in done:
                     cb(job)
@@ -185,7 +186,7 @@ class RunFitParams:
             fit_range=args.fitrange,
             fsi_classname=args.fsi,
             fsi_args=args.fsi_args,
-            mrc_path=None,
+            mrc_path=args.mrc_path,
             fit_chi2=args.chi2,
         )
 
@@ -227,15 +228,20 @@ def run_fit(params: RunFitParams) -> Optional[dict]:
         else:
             mrc_file = ROOT.TFile.Open(mrc_filename)
             if not mrc_file:
-                mrc_file
+                return {}
 
-        mrc_query = params.pathquery(cent='00_90')
+        mrc_query = params.pathquery(analysis='AnalysisTrueQinv', cent='00_90')
         if cfg.startswith('cfg'):
             mrc_query.cfg = cfg
-        else:
-            mrc_query.analysis = 'AnalysisTrueQinv'
+        mrc_dir = mrc_file.Get(mrc_query.as_path())
+        assert mrc_dir
+        #print("Loaded", mrc_dir)
 
-    data = ROOT.Data1D.From(tdir, params.fit_range)
+        #mrc_dir.ls()
+
+        data = ROOT.Data1D.From(tdir, mrc_dir, params.fit_range)
+    else:
+        data = ROOT.Data1D.From(tdir, params.fit_range)
 
     fitter = fittercls(data)
     fitter.fsi = fsi_class.new_shared_ptr(*params.fsi_args)
@@ -249,12 +255,20 @@ def run_fit(params: RunFitParams) -> Optional[dict]:
 
     results["fsi"] = str(fitter.fsi.ClassName())
     results["cent"] = params.pathquery.cent
+    results["pair"] = params.pathquery.pair
+    results["magfield"] = params.pathquery.magfield
+    results["kt"] = params.pathquery.kt
+    results["kT"] = params.pathquery.mean_kt()
+    results["cfg"] = params.pathquery.cfg
+
+    results["analysis"] = params.pathquery.analysis
+
     results["mrc"] = params.mrc_path
     results["gamma"] = fitter.data.gamma
-    results["ndof"] = 3 # fitter.degrees_of_freedom()
-    results["chi2"] = 1 # fitter.resid_chi2(fit_results)
+    results["ndof"] = fitter.degrees_of_freedom()
+    results["chi2"] = fitter.resid_chi2(fit_results)
     results["rchi2"] = results["chi2"] / results["ndof"]
-    print(results)
+    #print(results)
 
     return results
 
