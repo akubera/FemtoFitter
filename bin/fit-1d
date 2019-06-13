@@ -65,6 +65,7 @@ def arg_parser():
                         help="Name of fsi class")
     parser.add_argument("--fsi-args",
                         default=(),
+                        nargs='*',
                         help="Arguments used to build fsi object")
     parser.add_argument("--threads",
                         default=None,
