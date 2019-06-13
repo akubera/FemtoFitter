@@ -293,21 +293,27 @@ class AnalysisTrueQinv(AnalysisResults):
     def From(cls, container) -> Optional['AnalysisTrueQinv']:
 
         qgqr = get_tobject(container, "QgenQrec")
-        h = qgqr.Clone("NormQgenQrec")
+        sm = qgqr.Clone("SmearMatrix")
+        sm.SetTitle("Normalized Smearing Matrix; q_{inv,gen}; q_{inv,rec};")
+        um = qgqr.Clone("UnsmearMatrix")
+        um.SetTitle("Normalized Unsmearing Matrix; q_{inv,rec}; q_{inv,gen};")
 
-        for y in range(1, qgqr.GetNbinsY()+1):
-            s = 0.0
-            for x in range(1, qgqr.GetNbinsX()+1):
-                s += qgqr.GetBinContent(x, y)
+        Ny, Nx = qgqr.GetNbinsY() + 2, qgqr.GetNbinsX() + 2
 
-            if s == 0.0:
-                continue
+        for y in range(Ny):
+            s = sum(qgqr.GetBinContent(x, y) for x in range(Nx))
+            for x in range(Nx):
+                um.SetBinContent(y, x, 0 if s == 0.0 else qgqr.GetBinContent(x, y) / s)
 
-            for x in range(1, qgqr.GetNbinsX()+1):
-                h.SetBinContent(x, y, h.GetBinContent(x, y) / s)
+        for x in range(Nx):
+            s = sum(qgqr.GetBinContent(x, y) for y in range(Ny))
+            for y in range(Ny):
+                sm.SetBinContent(x, y, 0 if s == 0.0 else qgqr.GetBinContent(x, y) / s)
 
-        self = cls(h)
+        self = cls(sm)
 
+        self.smear_matrix = sm
+        self.unsmear_matrix = um
         self.nr = numrec = get_tobject(container, "NumTrue")
         self.dr = denrec = get_tobject(container, "Den")
         self.ng = numgen = get_tobject(container, "NumTrueIdeal")
