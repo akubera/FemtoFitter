@@ -82,6 +82,8 @@ set(INCS
   fsi/FsiGamov.hpp
   fsi/FsiStatic.hpp
   mrc/MrcRatio3D.hpp
+  mrc/MrcRatio1D.hpp
+  mrc/MrcMatrix1D.hpp
   src/CalculatorFsi.hpp
   src/ParamHints.hpp
 )
