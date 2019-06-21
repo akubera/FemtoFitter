@@ -50,6 +50,7 @@
 #pragma link C++ class FsiCalculator;
 
 #pragma link C++ class MrcRatio3D;
+#pragma link C++ class MrcHypercube3D;
 
 #pragma link C++ class ParamHints;
 

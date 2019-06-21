@@ -1,15 +1,18 @@
+///
+/// \file MrcHyperCube3D.cpp
+///
 
-#include "MomentumResolutionCorrector.hpp"
+#include "MrcHypercube3D.hpp"
 
 /// \cond classimp
-ClassImp(MomentumResolutionCorrector);
+ClassImp(MrcHypercube3D);
 /// \endcond
 
 #include <iostream>
 
 
-MomentumResolutionCorrector::MomentumResolutionCorrector()
- : TNamed("mrc", "MomentumResolutionCorrection")
+MrcHypercube3D::MrcHypercube3D()
+ : TNamed("mrc", "MrcHypercube3D")
  , data()
 {
     // std::map<int, float> m;
