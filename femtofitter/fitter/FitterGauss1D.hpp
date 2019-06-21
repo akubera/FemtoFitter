@@ -86,10 +86,17 @@ struct FitterGauss1D : public Fitter1D<FitterGauss1D> {
     print() const
       {
         std::string result;
-        result += Form("Radius: %f \n", radius.value);
-        result += Form("Lambda: %f\n", lam.value);
-        result += Form("Norm: %f\n", norm.value);
+        result += Form("Radius: %f ± %f\n", radius.value, radius.error);
+        result += Form("Lambda: %f ± %f\n", lam.value, lam.error);
+        result += Form("Norm: %f ± %f\n", norm.value, norm.error);
         return result;
+      }
+
+    std::string
+    __repr__() const
+      {
+        return Form("<FitterGauss1D::FitResult radius=%f lambda=%f norm=%f>",
+                    radius.value, lam.value, norm.value);
       }
 
     double evaluate(const double q, const double K) const
@@ -134,6 +141,13 @@ struct FitterGauss1D : public Fitter1D<FitterGauss1D> {
         result += Form("Lambda: %f\n", lam);
         result += Form("Norm: %f\n", norm);
         return result;
+      }
+
+    std::string
+    __repr__() const
+      {
+        return Form("<FitterGauss1D::FitParam radius=%f lambda=%f norm=%f>",
+                    radius, lam, norm);
       }
 
     double gauss(const double q, const double K) const
