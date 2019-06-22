@@ -98,6 +98,7 @@ set(SRCS
   src/Data1D.cpp
   src/Value.cpp
   fsi/FsiKFile.cpp
+  mrc/MrcHypercube3D.cpp
   src/CoulombHist.cpp
   src/MinimizerMinuit.cpp
   src/ParamHints.cpp
