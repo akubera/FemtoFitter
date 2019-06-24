@@ -227,7 +227,7 @@ def arg_parser():
                         action='store_true',
                         help='Use confluent hypergeometric function')
     parser.add_argument("-o", "--output",
-                        default='KFile3.root',
+                        default=None,
                         help='Output ROOT file')
     parser.add_argument("-Q", "--qinv-max",
                         type=float,
@@ -247,7 +247,7 @@ def arg_parser():
                         help='Bin count in radius')
     parser.add_argument("--hist-name",
                         default='k2ss',
-                        help='histogram of ')
+                        help='Histogram name')
     return parser
 
 
@@ -268,12 +268,13 @@ def main(argv=None):
     max_R = args.radius_max
 
     orig_dir = Path(os.getcwd())
-    print("Output file:", args.output)
+    output = args.output or input("output file: ")
+    print("Saving to output file:", output)
 
     if args.analytic_method:
-        build_analytic_kfile(orig_dir / args.output, nbins_qinv, max_qinv, nbins_R, max_R)
+        build_analytic_kfile(orig_dir / output, nbins_qinv, max_qinv, nbins_R, max_R)
     else:
-        build_mc_kfile(args.output, nbins_qinv, max_qinv, nbins_R, max_R)
+        build_mc_kfile(output, nbins_qinv, max_qinv, nbins_R, max_R)
 
 
 def build_mc_kfile(dest, nbins_qinv, max_qinv, nbins_R, max_R):
@@ -309,7 +310,9 @@ def build_analytic_kfile(dest, nbins_q, max_q, nbins_R, max_R, *,
     from ROOT import TFile, TH2D, TProfile2D
 
     if vary_bins:
-        qbins = np.logspace(-4, np.log10(max_q), nbins_q + 1)
+        qbins = np.logspace(-4, np.log10(max_q), nbins_q)
+        # qbins = np.linspace(1e-4, max_q, nbins_q)
+        qbins = np.concatenate(([0.0], qbins))
         rbins = np.linspace(0, max_R, nbins_R + 1)
         bin_info = (nbins_q, qbins, nbins_R, rbins)
     else:
@@ -321,11 +324,18 @@ def build_analytic_kfile(dest, nbins_q, max_q, nbins_R, max_R, *,
 
     from functools import partial
 
+    def n_points_between(lo, hi, N):
+        # protectfrom going too low
+        if lo == 0.0:
+            lo = min(1e-4, hi / 10.0)
+
+        pts = np.linspace(lo, hi, N+1)
+        return (pts[:-1] + pts[1:]) / 2.0
+
     Rvals = np.linspace(0, max_R, nbins_R * 6)
     # qvals = np.logspace(-4, np.log10(max_q), nbins_q * 30)
-    qvals = np.concatenate([
-      np.linspace(qbins[i], qbins[i+1], 77)[:-1]
-      for i in range(nbins_q)])
+    qvals = np.concatenate([n_points_between(qbins[i], qbins[i+1], 77)
+                            for i in range(nbins_q)])
 
     with Pool() as pool:
         zz = pool.map(partial(calc_all, qvals), Rvals)
