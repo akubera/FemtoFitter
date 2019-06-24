@@ -11,6 +11,7 @@
 #include "CalculatorFsi.hpp"
 
 #include "./Data1D.hpp"
+#include "Mrc.hpp"
 
 #include <typeinfo>
 #include <TMinuit.h>
@@ -68,6 +69,37 @@ public:
           q = datum.qinv,
 
           CF = p.evaluate(q, Kfsi(q));
+
+        retval += resid_calc(n, d, CF);
+      }
+
+      return retval;
+    }
+
+  template <typename ResidFunc, typename FitParams>
+  double resid_calc_cf(const FitParams &p, Mrc1D &mrc, ResidFunc resid_calc) const
+    {
+      double retval = 0;
+
+      const std::function<double(double)>
+        Kfsi = fsi
+             ? fsi->ForRadius(p.radius)
+             : [] (double qinv) { return 1.0; };
+
+      auto cfhist = data.src->num->Clone();
+      cfhist->Reset();
+      p.fill(cfhist);
+      mrc.Smear(cfhist);
+
+      for (int i=0; i<h.GetNbinsX(); ++i) {
+        const auto &datum = data[i];
+
+        const double
+          n = datum.num,
+          d = datum.den,
+          q = datum.qinv,
+
+          CF = cfhist.GetBinContent(i+1);
 
         retval += resid_calc(n, d, CF);
       }
