@@ -41,8 +41,32 @@ MrcHypercube3D::MrcHypercube3D(const THnSparseI& hyp)
   int prev_percent = 0;
 
   while ((bin_num = iter.Next(a.data())) != -1) {
+    const u8
+      qobin = a[0],
+      qsbin = a[1],
+      qlbin = a[2],
+      tqobin = a[3],
+      tqsbin = a[4],
+      tqlbin = a[5];
+
+    const I3 key = {tqobin, tqsbin, tqlbin};
+
+    const std::array<u8, 2> so = {qsbin, qobin};
+
+    auto &dest_map = count_trie[key];
+    auto &p = dest_map[qlbin];
+    auto &idxs = p.first;
+    auto &value = p.second;
+
+    const auto so_insert_loc = std::lower_bound(idxs.begin(), idxs.end(), so);
+    const auto loc = idxs.insert(so_insert_loc, so);
+    const auto offset = std::distance(idxs.begin(), loc);
+
+    const auto cf_insert_loc = std::next(value.begin(), offset);
+    value.insert(cf_insert_loc, hyp.GetBinContent(bin_num));
+
     // AliFemtoModelCorrFctnTrueQ6D::kRecGenOSL
-    count_trie[{a[0], a[1], a[2]}][a[5]][a[4]][a[3]] = hyp.GetBinContent(bin_num);
+    // count_trie[{a[0], a[1], a[2]}][a[5]][a[4]][a[3]] = hyp.GetBinContent(bin_num);
     // AliFemtoModelCorrFctnTrueQ6D::kRecGenLSO
     // count_trie[{a[2], a[1], a[0]}][a[3]][a[4]][a[5]] = hyp.GetBinContent(bin_num);
     // AliFemtoModelCorrFctnTrueQ6D::kRecLSOGenOSL
@@ -59,34 +83,33 @@ MrcHypercube3D::MrcHypercube3D(const THnSparseI& hyp)
   }
 
   std::cout << "Done. Loaded counts:" << count_trie.size() << "\n";
-  std::cout << "  last bin read: " << bin_num << " (" << prev_bin << ")\n";
+  // std::cout << "  last bin read: " << bin_num << " (" << prev_bin << ")\n";
 
   auto insert_hint = frac_trie.begin();
-  // for (auto it = count_trie.begin(); it != count_trie.end(); ++it) {
-  for (auto &pair : count_trie) {
+  for (auto &ideal_and_spread : count_trie) {
+    auto true_bin = ideal_and_spread.first;
 
-    Int_t sum = 0;
-    for (auto sit0 : pair.second) {
-      for (auto sit1 : sit0.second) {
-        for (auto sit2 : sit1.second) {
-          sum += sit2.second;
-    }}}
-
-    // fill second tree with fractional values
-    Trie<Double_t> f0;
-    for (auto sit0 : pair.second) {
-      decltype(f0)::mapped_type f1;
-      for (auto sit1 : sit0.second) {
-        decltype(f1)::mapped_type f2;
-        for (auto sit2 : sit1.second) {
-          f2.emplace(sit2.first, sit2.second * 1.0 / sum);
-        }
-        f1.emplace(sit1.first, f2);
+    ULong64_t sum = 0;
+    for (const auto &long_and_vals : ideal_and_spread.second) {
+      const auto &vals = long_and_vals.second.second;
+      for (size_t i=0; i < vals.size(); ++i) {
+        sum += vals[i];
       }
-      f0.emplace(sit0.first, std::move(f1));
     }
 
-    insert_hint = frac_trie.emplace_hint(insert_hint, pair.first, std::move(f0));
+    // fill second tree with fractional values
+    Trie<Double_t> fracs;
+    for (const auto &long_and_vals : ideal_and_spread.second) {
+      auto &dest = fracs[long_and_vals.first];
+      const auto &outsides = long_and_vals.second.first;
+      const auto &vals = long_and_vals.second.second;
+      for (size_t i=0; i < vals.size(); ++i) {
+        dest.first.emplace_back(outsides[i]);
+        dest.second.emplace_back(vals[i] * 1.0 / sum);
+      }
+    }
+
+    insert_hint = frac_trie.emplace_hint(insert_hint, true_bin, std::move(fracs));
   }
 }
 
@@ -101,14 +124,50 @@ void smearhist(HistType &source)
 
 }
 
+template <typename T>
 void
-MrcHypercube3D::Smear(TH3 &result)
+MrcHypercube3D::Smear(const T &hist, T &buff) const
 {
+  for (auto &key_and_vals : frac_trie) {
+    auto &ijk = key_and_vals.first;
+    auto &trie = key_and_vals.second;
+
+    const float ideal_value = hist.GetBinContent(std::get<0>(ijk),
+                                                 std::get<1>(ijk),
+                                                 std::get<2>(ijk));
+
+    for (auto &long_and_vals : trie) {
+      const u8 dlong = long_and_vals.first;
+      const auto &outsides = long_and_vals.second.first;
+      const auto &fracs = long_and_vals.second.second;
+
+      for (size_t idx=0; idx < fracs.size(); ++idx) {
+        float frac = fracs[idx];
+        auto dods = outsides[idx];
+        u8 dout = dods[1];
+        u8 dside = dods[0];
+        auto tmp_val = buff.GetBinContent(dout, dside, dlong) + frac * ideal_value;
+        buff.SetBinContent(dout, dside, dlong, tmp_val);
+      }
+    }
+  }
+}
+
+
+void
+MrcHypercube3D::Smear(TH3 &result) const
+{
+  if (auto *hist = dynamic_cast<TH3F*>(&result)) {
+    TH3F* clone = static_cast<TH3F*>(result.Clone());
+    clone->Reset();
+
+    Smear(*hist, *static_cast<TH3F*>(clone));
+    *hist = *clone;
+  }
+
+
+
 /*
-  // if (auto &abc = dynamic_cast<TH3F&>(source)) {
-  //   abc->Reset();
-  //   smearhist(*abc, static_cast<>(abc->Clone()));
-  // }
   // else if (auto *abc = dynamic_cast<TH3D*>(source.Clone())) {
   //   abc->Reset();
   //   smearhist(*abc);
@@ -200,3 +259,8 @@ MrcHypercube3D::Smear(TH3 &result)
   // *hist = *res;
   */
 }
+
+
+void
+MrcHypercube3D::Unsmear(TH3&) const
+{}
