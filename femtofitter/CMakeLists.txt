@@ -106,6 +106,7 @@ set(SRCS
 
 ROOT_GENERATE_DICTIONARY(femfit_dict ${INCS}
                          LINKDEF Linkdef.h
+                         OPTIONS -Wno-inconsistent-missing-override
                          MODULE FemtoFitter)
 
 set(ROOT_LIBS
