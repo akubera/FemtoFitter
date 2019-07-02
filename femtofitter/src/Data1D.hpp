@@ -29,11 +29,25 @@ struct Data1D {
            den;
   };
 
+  /// reference back to source histograms
+  struct Source {
+    std::shared_ptr<const TH1> num;
+    std::shared_ptr<const TH1> den;
+
+    Source(std::unique_ptr<const TH1> n, std::unique_ptr<const TH1> d)
+      : num(std::move(n))
+      , den(std::move(d))
+      {}
+  };
+
+
   std::vector<Datum> data;
 
   double limit,
          true_limit,
          gamma;
+
+  std::shared_ptr<Source> src;
 
   /// Build out of standard tdirectory;
   static std::unique_ptr<Data1D> From(TDirectory &data, double limit=0.0);

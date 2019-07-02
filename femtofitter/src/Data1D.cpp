@@ -79,6 +79,36 @@ Data1D::Data1D(TDirectory &dir, double limit_)
 }
 
 
+static double
+calc_gamma_from_tdir(TDirectory &dir)
+{
+  auto gamma_from_mean_kt = [](double mean_kt)
+    {
+      double
+        kt_mass_ratio  = mean_kt / 0.13957,
+        kt_mass_ratio_sqr = kt_mass_ratio * kt_mass_ratio;
+
+      return std::sqrt(1.0 + 4 * kt_mass_ratio_sqr);
+    };
+
+  double gamma = 3.0;
+
+  if (auto *kt_dist = dynamic_cast<TH1*>(dir.Get("kt_dist"))) {
+    gamma = gamma_from_mean_kt(kt_dist->GetMean());
+    delete kt_dist;
+  }
+  else if (TDirectory *kt_dir = dir.GetMotherDir()) {
+    TString kt_name = kt_dir->GetName();
+    auto underscore = kt_name.First('_');
+    double ktlo = TString(kt_name(0, underscore)).Atof();
+    double kthi = TString(kt_name(underscore, kt_name.Length())).Atof();
+    gamma = gamma_from_mean_kt((kthi + ktlo) / 2.0);
+  }
+
+  return gamma;
+}
+
+
 std::unique_ptr<Data1D>
 Data1D::From(TDirectory &dir, double limit)
 {
@@ -89,7 +119,10 @@ Data1D::From(TDirectory &dir, double limit)
     return nullptr;
   }
 
-  return std::unique_ptr<Data1D>(new Data1D(*n, *d, limit));
+  auto data = std::unique_ptr<Data1D>(new Data1D(*n, *d, limit));
+  data->gamma = calc_gamma_from_tdir(dir);
+
+  return data;
 }
 
 
@@ -104,7 +137,11 @@ Data1D::From(TDirectory &dir, const TH1 &mrc, double limit)
   }
 
   n->Multiply(&mrc);
-  return std::make_unique<Data1D>(*n, *d, limit);
+
+  auto data = std::unique_ptr<Data1D>(new Data1D(*n, *d, limit));
+  data->gamma = calc_gamma_from_tdir(dir);
+
+  return data;
 }
 
 std::unique_ptr<Data1D>
@@ -127,5 +164,8 @@ Data1D::From(TDirectory &dir, TDirectory &mrc, double limit)
   n->Divide(dg.get());
   n->Divide(nr.get());
 
-  return std::make_unique<Data1D>(*n, *d, limit);
+  auto data = std::unique_ptr<Data1D>(new Data1D(*n, *d, limit));
+  data->gamma = calc_gamma_from_tdir(dir);
+
+  return data;
 }

@@ -35,7 +35,7 @@ calc_gamma_from_dir(TDirectory *kt_dir)
     pion_mass_sqr = 0.13957 * 0.13957,
     kt_lo = TString(ktname(0, underscore)).Atof(),
     kt_hi = TString(ktname(underscore, ktname.Length())).Atof(),
-    est_mean_kt = (kt_hi - kt_lo) / 2.0,
+    est_mean_kt = (kt_hi + kt_lo) / 2.0,
     est_mean_kt_sqr = est_mean_kt * est_mean_kt;
 
   // estimated gamma
@@ -48,11 +48,8 @@ calc_gamma_from_dir(TDirectory *kt_dir)
       if (!kthist) {
         delete tobject;
       } else {
-        Int_t binlo = kthist->FindBin(kt_lo),
-              binhi = kthist->FindBin(kt_hi);
 
-        TAxis &xaxis = *kthist->GetXaxis();
-        xaxis.SetRangeUser(binlo, binhi);
+        kthist->GetXaxis()->SetRangeUser(kt_lo, kt_hi);
 
         const double
           mean_kt = kthist->GetMean(),
