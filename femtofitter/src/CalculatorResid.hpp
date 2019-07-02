@@ -24,7 +24,7 @@ static void minuit_f(Int_t&, Double_t*, Double_t &retval, Double_t *par, Int_t)
   using FitterParams_t = typename ResidCalculator::FitParams;
 
   static const double BAD_VALUE = INFINITY;
-  const auto &data = *(const Fitter_t*)(intptr_t)(par[Fitter_t::DATA_PARAM_IDX]);
+  const auto &fitter = *(const Fitter_t*)(intptr_t)(par[Fitter_t::DATA_PARAM_IDX]);
 
   FitterParams_t params(par);
   if (params.is_invalid()) {
@@ -32,7 +32,26 @@ static void minuit_f(Int_t&, Double_t*, Double_t &retval, Double_t *par, Int_t)
     return;
   }
 
-  retval = ResidCalculator::resid(data, params);
+  retval = ResidCalculator::resid(fitter, params);
+}
+
+/// Fit using masked histograms instead of data objects
+template <typename ResidCalculator>
+static void minuit_func_mrc(Int_t&, Double_t*, Double_t &retval, Double_t *par, Int_t)
+{
+  using Fitter_t = typename ResidCalculator::Fitter;
+  using FitterParams_t = typename ResidCalculator::FitParams;
+
+  static const double BAD_VALUE = INFINITY;
+  const auto &fitter = *(const Fitter_t*)(intptr_t)(par[Fitter_t::DATA_PARAM_IDX]);
+
+  FitterParams_t params(par);
+  if (params.is_invalid()) {
+    retval = BAD_VALUE;
+    return;
+  }
+
+  retval = ResidCalculator::resid_mrc(fitter, params);
 }
 
 
@@ -45,8 +64,15 @@ struct ResidCalculatorPML {
   static double resid(const Fitter &f, const FitParams &p)
     { return f.resid_calc(p, loglikelihood_calc); }
 
+  static double resid_mrc(const Fitter &f, const FitParams &p)
+    { return f.resid_calc_mrc(p, *f.mrc, loglikelihood_calc); }
+
   static double resid(const Fitter &f, const typename Fitter_t::FitResult &p)
     { return f.resid_calc(p, loglikelihood_calc); }
+
+  static double resid_mrc(const Fitter &f, const typename Fitter_t::FitResult &p)
+    { return f.resid_calc_mrc(p, *f.mrc, loglikelihood_calc); }
+
 };
 
 template <typename Fitter_t>

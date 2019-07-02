@@ -8,14 +8,15 @@
 #ifndef DATA1D_HPP
 #define DATA1D_HPP
 
+#include <TH1.h>
+#include <TH1C.h>
+
 #include <array>
 #include <memory>
 #include <vector>
 #include <valarray>
 
 class TDirectory;
-class TH1;
-
 
 /// \class Data1D
 /// \brief 1D Correlation function
@@ -34,12 +35,16 @@ struct Data1D {
     std::shared_ptr<const TH1> num;
     std::shared_ptr<const TH1> den;
 
+    Source(const TH1& n, const TH1& d)
+      : num(static_cast<TH1*>(n.Clone()))
+      , den(static_cast<TH1*>(d.Clone()))
+      {}
+
     Source(std::unique_ptr<const TH1> n, std::unique_ptr<const TH1> d)
       : num(std::move(n))
       , den(std::move(d))
       {}
   };
-
 
   std::vector<Datum> data;
 
@@ -48,6 +53,8 @@ struct Data1D {
          gamma;
 
   std::shared_ptr<Source> src;
+
+  std::unique_ptr<TH1C> mask;
 
   /// Build out of standard tdirectory;
   static std::unique_ptr<Data1D> From(TDirectory &data, double limit=0.0);
@@ -67,10 +74,10 @@ struct Data1D {
   Data1D(TDirectory &tdir, double limit);
 
   /// copy constructor
-  Data1D(const Data1D&) = default;
+  Data1D(const Data1D&);
 
   /// assignment operator
-  Data1D& operator=(const Data1D&) = default;
+  Data1D& operator=(const Data1D&) = delete;
 
   size_t size() const
     { return data.size(); }

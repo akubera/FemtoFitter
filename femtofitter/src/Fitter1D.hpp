@@ -11,7 +11,7 @@
 #include "CalculatorFsi.hpp"
 
 #include "./Data1D.hpp"
-#include "Mrc.hpp"
+#include "mrc/Mrc.hpp"
 
 #include <typeinfo>
 #include <TMinuit.h>
@@ -34,6 +34,8 @@ public:
 
   /// The final-state-interaction calculator
   std::shared_ptr<FsiCalculator> fsi = nullptr;
+
+  std::shared_ptr<Mrc1D> mrc = nullptr;
 
   Fitter1D(const TH1 &num, const TH1 &den, double limit)
     : data(num, den, limit)
@@ -77,34 +79,38 @@ public:
     }
 
   template <typename ResidFunc, typename FitParams>
-  double resid_calc_cf(const FitParams &p, Mrc1D &mrc, ResidFunc resid_calc) const
+  double resid_calc_mrc(const FitParams &p, Mrc1D &mrc, ResidFunc resid_calc, UInt_t npoints=3) const
     {
       double retval = 0;
 
-      const std::function<double(double)>
-        Kfsi = fsi
-             ? fsi->ForRadius(p.radius)
-             : [] (double qinv) { return 1.0; };
-
-      auto cfhist = data.src->num->Clone();
+      auto *cfhist = static_cast<TH1*>(data.src->num->Clone());
       cfhist->Reset();
-      p.fill(cfhist);
-      mrc.Smear(cfhist);
+      p.fill(*cfhist, *fsi, npoints);
+      mrc.Smear(*cfhist);
 
-      for (int i=0; i<h.GetNbinsX(); ++i) {
+      for (int i=0; i<cfhist->GetNbinsX(); ++i) {
+        if (!data.mask->GetBinContent(i)) {
+          continue;
+        }
+
         const auto &datum = data[i];
 
         const double
           n = datum.num,
           d = datum.den,
-          q = datum.qinv,
 
-          CF = cfhist.GetBinContent(i+1);
+          CF = cfhist->GetBinContent(i+1);
 
         retval += resid_calc(n, d, CF);
       }
 
       return retval;
+    }
+
+  template <typename ResidFunc, typename FitParams>
+  double resid_calc_mrc(const FitParams &p, ResidFunc resid_calc) const
+    {
+      return resid_calc_mrc(p, mrc, resid_calc);
     }
 
   virtual int setup_minuit(TMinuit &minuit) const = 0;
@@ -118,7 +124,7 @@ public:
   void setup_pml_fitter(TMinuit &minuit)
     {
       static_cast<Impl*>(this)->setup_minuit(minuit);
-      minuit.SetFCN(minuit_f<typename Impl::CalcLoglike>);
+      minuit.SetFCN(minuit_func_mrc<typename Impl::CalcLoglike>);
     }
 
   std::size_t size() const
@@ -164,6 +170,23 @@ public:
       TMinuit minuit;
       minuit.SetPrintLevel(-1);
       setup_pml_fitter(minuit);
+      return do_fit_minuit(minuit);
+    }
+
+  auto fit_pml_mrc()
+    {
+      if (mrc == nullptr) {
+        throw std::runtime_error("Fitter missing Mrc1D object");
+      }
+
+      TMinuit minuit;
+      minuit.SetPrintLevel(-1);
+      setup_pml_fitter(minuit);
+
+      // fit without smearing, first
+      do_fit_minuit(minuit);
+
+      minuit.SetFCN(minuit_f<typename Impl::CalcLoglike>);
       return do_fit_minuit(minuit);
     }
 

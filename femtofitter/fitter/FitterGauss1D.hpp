@@ -253,6 +253,10 @@ struct FitterGauss1D : public Fitter1D<FitterGauss1D> {
   FitResult fit_pml()
     { return Fitter1D::fit_pml(); }
 
+  /// Fit with log-likelihood method and momentum-correction smearing
+  FitResult fit_pml_mrc()
+    { return Fitter1D::fit_pml_mrc(); }
+
   // void fit_with_random_inits(TMinuit &minuit, FitResult &res, int);
 };
 

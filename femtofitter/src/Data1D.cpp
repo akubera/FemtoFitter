@@ -4,6 +4,7 @@
 
 
 #include "Data1D.hpp"
+#include <TH1C.h>
 #include <TH1D.h>
 #include <TDirectory.h>
 
@@ -13,7 +14,10 @@
 Data1D::Data1D(const TH1& num, const TH1& den, double limit_)
   : data()
   , limit(limit_)
-  , true_limit(limit_)
+  , true_limit(NAN)
+  , gamma(NAN)
+  , src(std::make_shared<Source>(num, den))
+  , mask(std::make_unique<TH1C>("mask", "", num.GetNbinsX(), num.GetBinLowEdge(0), num.GetBinLowEdge(num.GetNbinsX()+1)))
 {
   const TAxis &xaxis = *num.GetXaxis();
 
@@ -37,22 +41,27 @@ Data1D::Data1D(const TH1& num, const TH1& den, double limit_)
     }
 
     data.push_back({q, n, d});
+    mask->SetBinContent(i, 1);
   }
 }
 
 Data1D::Data1D(TDirectory &dir, double limit_)
   : data()
   , limit(limit_)
-  , true_limit(limit_)
+  , true_limit(NAN)
+  , gamma(NAN)
+  , src(nullptr)
+  , mask(nullptr)
 {
-  const auto
+  auto
     num = std::unique_ptr<TH1>((TH1*)dir.Get("num")),
     den = std::unique_ptr<TH1>((TH1*)dir.Get("den"));
 
   if (!num || !den) {
-    throw std::runtime_error("Runtime error");
+    throw std::runtime_error("Could not load correlation function histograms");
   }
 
+  mask = std::make_unique<TH1C>("mask", "", num->GetNbinsX(), num->GetBinLowEdge(0), num->GetBinLowEdge(num->GetNbinsX()+1));
   const TAxis &xaxis = *num->GetXaxis();
 
   if (limit == 0.0) {
@@ -75,9 +84,21 @@ Data1D::Data1D(TDirectory &dir, double limit_)
     }
 
     data.push_back({q, n, d});
+    mask->SetBinContent(i, 1);
   }
+
+  src = std::make_shared<Source>(std::move(num), std::move(den));
 }
 
+Data1D::Data1D(const Data1D &orig)
+  : data(orig.data)
+  , limit(orig.limit)
+  , true_limit(orig.true_limit)
+  , gamma(orig.gamma)
+  , src(orig.src)
+  , mask(static_cast<TH1C*>(orig.mask->Clone()))
+{
+}
 
 static double
 calc_gamma_from_tdir(TDirectory &dir)

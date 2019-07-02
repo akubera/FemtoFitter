@@ -35,7 +35,7 @@ MrcHypercube3D::MrcHypercube3D(const THnSparseI& hyp)
   size_t total_bins = hyp.GetNbins();
 
   THnIter iter(&hyp, true);
-  Long64_t bin_num, prev_bin = -1;
+  Long64_t bin_num;
 
   std::array<Int_t, 6> a;
   int prev_percent = 0;
@@ -73,7 +73,6 @@ MrcHypercube3D::MrcHypercube3D(const THnSparseI& hyp)
     // count_trie[{a[2], a[1], a[0]}][a[5]][a[4]][a[3]] = hyp.GetBinContent(bin_num);
     // AliFemtoModelCorrFctnTrueQ6D::kRecLSOGenOSL
     // count_trie[{a[0], a[1], a[2]}][a[5]][a[4]][a[3]] = hyp.GetBinContent(bin_num);
-    prev_bin = bin_num;
 
     Int_t percent = (bin_num * 100 / total_bins);
     if (prev_percent < percent) {
@@ -83,7 +82,6 @@ MrcHypercube3D::MrcHypercube3D(const THnSparseI& hyp)
   }
 
   std::cout << "Done. Loaded counts:" << count_trie.size() << "\n";
-  // std::cout << "  last bin read: " << bin_num << " (" << prev_bin << ")\n";
 
   auto insert_hint = frac_trie.begin();
   for (auto &ideal_and_spread : count_trie) {
