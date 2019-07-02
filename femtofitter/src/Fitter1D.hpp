@@ -209,4 +209,47 @@ public:
 };
 
 
+template <typename CRTP>
+struct FitParam1D {
+
+  /// Fill histogram with no FSI factor
+  void fill(TH1 &h) const
+    {
+      const TAxis &xaxis = *h.GetXaxis();
+      for (int i=1; i <= xaxis.GetLast(); ++i) {
+        double q = xaxis.GetBinCenter(i);
+        double k = 1.0;
+        double cf = static_cast<const CRTP*>(this)->evaluate(q, k);
+        h.SetBinContent(i, cf);
+      }
+    }
+
+  /// Fill histogram with average of N-points per bin
+  ///
+  void fill(TH1 &h, FsiCalculator &fsi, UInt_t npoints=1) const
+    {
+      auto &self = static_cast<const CRTP&>(*this);
+
+      const TAxis &xaxis = *h.GetXaxis();
+      auto Kfsi = fsi.ForRadius(self.Rinv());
+
+      for (int i=1; i <= xaxis.GetLast(); ++i) {
+        const double
+          qlo = xaxis.GetBinLowEdge(i),
+          qhi = xaxis.GetBinUpEdge(i),
+          qstep = (qhi - qlo) / npoints,
+          qstart = qlo + qstep / 2;
+
+        double sum = 0.0;
+        for (double q=qstart; q < qhi; q += qstep) {
+          double k = Kfsi(q);
+          sum += self.evaluate(q, k);
+        }
+
+        const double cf = sum / npoints;
+        h.SetBinContent(i, cf);
+      }
+    }
+};
+
 #endif

@@ -106,7 +106,7 @@ struct FitterLevy1D : Fitter1D<FitterLevy1D> {
 
   /// \brief 1D Levy fit parameters
   ///
-  struct FitParams {
+  struct FitParams : public FitParam1D<FitParams> {
     double norm,
            lam,
            radius,
@@ -127,6 +127,11 @@ struct FitterLevy1D : Fitter1D<FitterLevy1D> {
       , radius(res.radius)
       , alpha(res.alpha)
       { }
+
+    double Rinv() const
+      {
+        return radius;
+      }
 
     bool is_invalid() const
       {
@@ -163,41 +168,24 @@ struct FitterLevy1D : Fitter1D<FitterLevy1D> {
         }
       }
 
-    void fill(TH1 &h, FsiCalculator *fsi=nullptr) const
-      {
-        std::function<double(double)> K = fsi ? fsi->ForRadius(radius)
-                                              : [] (double) { return 1.0; };
+    // void fill(TH1 &h, FsiCalculator *fsi=nullptr) const
+    //   {
+    //     std::function<double(double)> K = fsi ? fsi->ForRadius(radius)
+    //                                           : [] (double) { return 1.0; };
 
-        const TAxis &xaxis = *h.GetXaxis();
-        for (int i=1; i <= xaxis.GetLast(); ++i) {
-          double q = xaxis.GetBinCenter(i);
-          double cf = evaluate(q, K(q));
-          h.SetBinContent(i, cf);
-        }
-      }
+    //     const TAxis &xaxis = *h.GetXaxis();
+    //     for (int i=1; i <= xaxis.GetLast(); ++i) {
+    //       double q = xaxis.GetBinCenter(i);
+    //       double cf = evaluate(q, K(q));
+    //       h.SetBinContent(i, cf);
+    //     }
+    //   }
 
-    void fill(TH1 &h, FsiCalculator &fsi, UInt_t npoints=1) const
-      {
-        const TAxis &xaxis = *h.GetXaxis();
-        auto Kfsi = fsi.ForRadius(radius);
+    // void fill(TH1 &h, FsiCalculator &fsi, UInt_t npoints=1) const
+    //   {
+    //     FitParam1D<FitParams>::fill(h, fsi, npoints);
+    //   }
 
-        for (int i=1; i <= xaxis.GetLast(); ++i) {
-          const double
-            qlo = xaxis.GetBinLowEdge(i),
-            qhi = xaxis.GetBinUpEdge(i),
-            qstep = (qhi - qlo) / npoints,
-            qstart = qlo + qstep / 2;
-
-          double sum = 0.0;
-          for (double q=qstart; q < qhi; q += qstep) {
-            double k = Kfsi(q);
-            sum += evaluate(q, k);
-          }
-
-          const double cf = sum / npoints;
-          h.SetBinContent(i, cf);
-        }
-      }
   };
 
   FitterLevy1D(const TH1 &num, const TH1 &den, double limit)

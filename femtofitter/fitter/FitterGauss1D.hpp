@@ -105,7 +105,7 @@ struct FitterGauss1D : public Fitter1D<FitterGauss1D> {
     FitParams as_params() const;
   };
 
-  struct FitParams {
+  struct FitParams : FitParam1D<FitParams> {
     double norm,
            lam,
            radius;
@@ -123,6 +123,11 @@ struct FitterGauss1D : public Fitter1D<FitterGauss1D> {
       , lam(res.lam)
       , radius(res.radius)
       { }
+
+    double Rinv() const
+      {
+        return radius;
+      }
 
     bool is_invalid() const
       {
@@ -150,48 +155,11 @@ struct FitterGauss1D : public Fitter1D<FitterGauss1D> {
                     radius, lam, norm);
       }
 
-    double gauss(const double q, const double K) const
-      { return FitterGauss1D::gauss(q, radius * radius, lam, K, norm); }
-
     double evaluate(const double q, const double K) const
-      { return gauss(q, K); }
-
-    /// Fill histogram with no FSI factor
-    void fill(TH1 &h) const
       {
-        const TAxis &xaxis = *h.GetXaxis();
-        for (int i=1; i <= xaxis.GetLast(); ++i) {
-          double q = xaxis.GetBinCenter(i);
-          double k = 1.0;
-          double cf = gauss(q, k);
-          h.SetBinContent(i, cf);
-        }
+        return FitterGauss1D::gauss(q, radius * radius, lam, K, norm);
       }
 
-    /// Fill histogram with average of N-points per bin
-    ///
-    void fill(TH1 &h, FsiCalculator &fsi, UInt_t npoints=1) const
-      {
-        const TAxis &xaxis = *h.GetXaxis();
-        auto Kfsi = fsi.ForRadius(radius);
-
-        for (int i=1; i <= xaxis.GetLast(); ++i) {
-          const double
-            qlo = xaxis.GetBinLowEdge(i),
-            qhi = xaxis.GetBinUpEdge(i),
-            qstep = (qhi - qlo) / npoints,
-            qstart = qlo + qstep / 2;
-
-          double sum = 0.0;
-          for (double q=qstart; q < qhi; q += qstep) {
-            double k = Kfsi(q);
-            sum += evaluate(q, k);
-          }
-
-          const double cf = sum / npoints;
-          h.SetBinContent(i, cf);
-        }
-      }
   };
 
   int
