@@ -30,6 +30,16 @@ public:
 
   std::string source_name;
 
+  MrcMatrix1D(const TH2& hist)
+    : raw_matrix(static_cast<TH2*>(hist.Clone()))
+    , cache()
+    , source_name()
+    {
+    }
+
+  static std::shared_ptr<Mrc1D> new_shared_ptr(const TH2& hist)
+    { return std::make_shared<MrcMatrix1D>(hist); }
+
   virtual std::unique_ptr<TH1> Smeared(const TH1 &h) const
     {
       auto result = std::unique_ptr<TH1>(static_cast<TH1*>(h.Clone()));
@@ -54,6 +64,9 @@ public:
         h.SetBinContent(i, buff[i-1]);
       }
     }
+
+  void Unsmear(TH1 &h) const override
+    { throw std::runtime_error("Unimplemented method"); }
 
   std::shared_ptr<TH2D> GetNormalizedMatrix(TH1 &h) const
     {
