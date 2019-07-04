@@ -179,6 +179,10 @@ public:
         throw std::runtime_error("Fitter missing Mrc1D object");
       }
 
+      if (fsi == nullptr) {
+        throw std::runtime_error("Fitter missing Fsi object");
+      }
+
       TMinuit minuit;
       minuit.SetPrintLevel(-1);
       setup_pml_fitter(minuit);
@@ -186,7 +190,7 @@ public:
       // fit without smearing, first
       do_fit_minuit(minuit);
 
-      minuit.SetFCN(minuit_f<typename Impl::CalcLoglike>);
+      minuit.SetFCN(minuit_func_mrc<typename Impl::CalcLoglike>);
       return do_fit_minuit(minuit);
     }
 
@@ -204,8 +208,6 @@ public:
     {
       return resid_calc<ResidCalculatorChi2, FitParams>(p);
     }
-
-
 };
 
 
