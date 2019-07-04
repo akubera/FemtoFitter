@@ -111,6 +111,7 @@ ROOT_GENERATE_DICTIONARY(femfit_dict ${INCS}
 
 set(ROOT_LIBS
   ROOT::Hist
+  ROOT::Gui
   ROOT::Minuit
 )
 
