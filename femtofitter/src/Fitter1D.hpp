@@ -118,12 +118,33 @@ public:
   void setup_chi2_fitter(TMinuit &minuit)
     {
       static_cast<Impl*>(this)->setup_minuit(minuit);
-      minuit.SetFCN(minuit_f<typename Impl::CalcChi2>);
+      set_chi2_func(minuit);
     }
 
   void setup_pml_fitter(TMinuit &minuit)
     {
       static_cast<Impl*>(this)->setup_minuit(minuit);
+      set_pml_func(minuit);
+    }
+
+  void setup_pml_mrc_fitter(TMinuit &minuit)
+    {
+      static_cast<Impl*>(this)->setup_minuit(minuit);
+      set_pml_mrc_func(minuit);
+    }
+
+  void set_chi2_func(TMinuit &minuit) const
+    {
+      minuit.SetFCN(minuit_f<typename Impl::CalcChi2>);
+    }
+
+  void set_pml_func(TMinuit &minuit) const
+    {
+      minuit.SetFCN(minuit_f<typename Impl::CalcLoglike>);
+    }
+
+  void set_pml_mrc_func(TMinuit &minuit) const
+    {
       minuit.SetFCN(minuit_func_mrc<typename Impl::CalcLoglike>);
     }
 
@@ -159,6 +180,10 @@ public:
 
   auto fit_chi2()
     {
+      if (fsi == nullptr) {
+        throw std::runtime_error("Fitter missing Fsi object");
+      }
+
       TMinuit minuit;
       minuit.SetPrintLevel(-1);
       setup_chi2_fitter(minuit);
@@ -167,6 +192,10 @@ public:
 
   auto fit_pml()
     {
+      if (fsi == nullptr) {
+        throw std::runtime_error("Fitter missing Fsi object");
+      }
+
       TMinuit minuit;
       minuit.SetPrintLevel(-1);
       setup_pml_fitter(minuit);
@@ -190,7 +219,8 @@ public:
       // fit without smearing, first
       do_fit_minuit(minuit);
 
-      minuit.SetFCN(minuit_func_mrc<typename Impl::CalcLoglike>);
+      // fit with mrc-smearing
+      set_pml_mrc_func(minuit);
       return do_fit_minuit(minuit);
     }
 
