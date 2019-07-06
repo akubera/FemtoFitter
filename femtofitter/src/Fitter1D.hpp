@@ -115,21 +115,21 @@ public:
 
   virtual int setup_minuit(TMinuit &minuit) const = 0;
 
-  void setup_chi2_fitter(TMinuit &minuit)
+  void setup_chi2_fitter(TMinuit &minuit) const
     {
-      static_cast<Impl*>(this)->setup_minuit(minuit);
+      static_cast<const Impl*>(this)->setup_minuit(minuit);
       set_chi2_func(minuit);
     }
 
-  void setup_pml_fitter(TMinuit &minuit)
+  void setup_pml_fitter(TMinuit &minuit) const
     {
-      static_cast<Impl*>(this)->setup_minuit(minuit);
+      static_cast<const Impl*>(this)->setup_minuit(minuit);
       set_pml_func(minuit);
     }
 
-  void setup_pml_mrc_fitter(TMinuit &minuit)
+  void setup_pml_mrc_fitter(TMinuit &minuit) const
     {
-      static_cast<Impl*>(this)->setup_minuit(minuit);
+      static_cast<const Impl*>(this)->setup_minuit(minuit);
       set_pml_mrc_func(minuit);
     }
 
