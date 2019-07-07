@@ -89,21 +89,31 @@ public:
     {
     }
 
-  void Unsmear(TH1&) const override {}
+  static std::shared_ptr<Mrc1D> new_shared_ptr(const TH1 &ng, const TH1 &dg, const TH1 &nr, const TH1 &dr)
+    {
+      return std::make_shared<MrcRatio1D>(ng, dg, nr, dr);
+    }
 
   void Smear(TH1 &hist) const override
     {
-      TH1D& mrc_factor = GetMrcFactor(hist);
+      TH1D& mrc_factor = GetSmearingFactor(hist);
       hist.Multiply(&mrc_factor);
     }
 
-  TH1D& GetMrcFactor(TH1 &hist) const
+  void Unsmear(TH1 &hist) const override
+    {
+      TH1D& mrc_factor = GetSmearingFactor(hist);
+      hist.Divide(&mrc_factor);
+    }
+
+  TH1D& GetSmearingFactor(TH1 &hist) const
     {
       if (auto mrc = cache[hist]) {
         return *mrc;
       }
 
       std::shared_ptr<TH1D> mrc(static_cast<TH1D*>(hist.Clone()));
+      mrc->Reset();
 
       const TAxis &xax = *hist.GetXaxis();
 
@@ -121,8 +131,8 @@ public:
           nrf = integrate({xlo, xhi}, *nr),
           drf = integrate({xlo, xhi}, *dr),
 
-          num = ngf * drf,
-          den = dgf * nrf,
+          num = nrf * dgf,
+          den = drf * ngf,
 
           ratio = den == 0.0 ? INFINITY : num / den;
 
