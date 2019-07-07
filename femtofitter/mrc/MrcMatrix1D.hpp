@@ -30,6 +30,8 @@ public:
 
   std::string source_name;
 
+  mutable HistCache<TH1, TH1D> bg_cache;
+
   MrcMatrix1D(const TH2& hist)
     : raw_matrix(static_cast<TH2*>(hist.Clone()))
     , cache()
@@ -45,6 +47,19 @@ public:
       auto result = std::unique_ptr<TH1>(static_cast<TH1*>(h.Clone()));
       Smear(*result);
       return result;
+    }
+
+  std::shared_ptr<TH1D> SmearedBackground(TH1 &h) const
+    {
+      if (auto bg = bg_cache[h]) {
+        return bg;
+      }
+
+      auto res = std::make_shared<TH1D>("bg", "Smeared Background", h.GetNbinsX(), h.GetXaxis()->GetXmin(), h.GetXaxis()->GetXmax());
+      static_cast<TArrayD*>(res.get())->Reset(1);
+      Smear(*res);
+      bg_cache[h] = res;
+      return res;
     }
 
   void Smear(TH1 &h) const override
@@ -80,7 +95,7 @@ public:
       for (int i=1; i <= h.GetNbinsX(); ++i) {
 
         Double_t sum = 0.0;
-        for (int j=1; j <= h.GetNbinsX(); ++j) {
+        for (int j=1; j <= h.GetNbinsY(); ++j) {
           sum += result->GetBinContent(i, j);
         }
 
@@ -88,14 +103,15 @@ public:
           continue;
         }
 
-        for (int j=1; j <= h.GetNbinsX(); ++j) {
+        for (int j=1; j <= h.GetNbinsY(); ++j) {
           double val = result->GetBinContent(i, j);
           result->SetBinContent(i, j, val / sum);
           result->SetBinError(i, j, std::sqrt(val) / sum);
         }
       }
 
-      cache.insert(h, result);
+      // cache.insert(h, result);
+      cache[h] = result;
 
       return result;
     }
