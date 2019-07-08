@@ -83,12 +83,9 @@ public:
     {
       double retval = 0;
 
-      auto *cfhist = static_cast<TH1*>(data.src->num->Clone());
-      cfhist->Reset();
-      p.fill(*cfhist, *fsi, npoints);
-      mrc.Smear(*cfhist);
+      std::unique_ptr<const TH1D> cfhist = mrc.GetSmearedFit(p, *fsi, npoints);
 
-      for (int i=0; i<cfhist->GetNbinsX(); ++i) {
+      for (Int_t i=1; i<=cfhist->GetNbinsX(); ++i) {
         if (!data.mask->GetBinContent(i)) {
           continue;
         }
@@ -148,7 +145,7 @@ public:
       minuit.SetFCN(minuit_func_mrc<typename Impl::CalcLoglike>);
     }
 
-  std::size_t size() const
+  size_t size() const
     { return data.size(); }
 
   size_t degrees_of_freedom() const
@@ -214,12 +211,12 @@ public:
 
       TMinuit minuit;
       minuit.SetPrintLevel(-1);
-      setup_pml_fitter(minuit);
 
-      // fit without smearing, first
+      // first fit without smearing (faster)
+      setup_pml_fitter(minuit);
       do_fit_minuit(minuit);
 
-      // fit with mrc-smearing
+      // then fit with mrc-smearing (slower)
       set_pml_mrc_func(minuit);
       return do_fit_minuit(minuit);
     }
@@ -262,8 +259,32 @@ struct FitParam1D {
     {
       auto &self = static_cast<const CRTP&>(*this);
 
-      const TAxis &xaxis = *h.GetXaxis();
       auto Kfsi = fsi.ForRadius(self.Rinv());
+
+      _loop_over_bins(self, h, Kfsi, npoints, [&](int i, double cf) {
+        h.SetBinContent(i, cf);
+      });
+    }
+
+  /// Multiply histogram contents with average of N-points per bin
+  ///
+  void multiply(TH1 &h, FsiCalculator &fsi, UInt_t npoints=1) const
+    {
+      auto &self = static_cast<const CRTP&>(*this);
+
+      auto Kfsi = fsi.ForRadius(self.Rinv());
+
+      _loop_over_bins(self, h, Kfsi, npoints, [&](int i, double cf) {
+        h.SetBinContent(i, h.GetBinContent(i) * cf);
+      });
+    }
+
+private:
+
+  template <typename FsiFuncType, typename FuncType>
+  void _loop_over_bins(const CRTP &self, TH1 &h, FsiFuncType Kfsi, UInt_t npoints, FuncType func) const
+    {
+      const TAxis &xaxis = *h.GetXaxis();
 
       for (int i=1; i <= xaxis.GetLast(); ++i) {
         const double
@@ -278,10 +299,12 @@ struct FitParam1D {
           sum += self.evaluate(q, k);
         }
 
-        const double cf = sum / npoints;
-        h.SetBinContent(i, cf);
+        const double mean_cf = sum / npoints;
+        func(i, mean_cf);
       }
+
     }
+
 };
 
 #endif

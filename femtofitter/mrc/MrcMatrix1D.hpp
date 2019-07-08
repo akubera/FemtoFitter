@@ -25,13 +25,20 @@ public:
   /// reconstructed vs generated 2d-histogram
   std::unique_ptr<TH2> raw_matrix;
 
+  std::unique_ptr<TH1D> unsmeared_denominator;
+  std::unique_ptr<TH1D> smeared_denominator;
+
   /// Cache of rebinned matrix histograms
   mutable HistCache<TH1, TH2D> cache;
+
+  mutable HistCache<TH1, TH1D> denom_cache;
 
   std::string source_name;
 
   MrcMatrix1D(const TH2& hist)
     : raw_matrix(static_cast<TH2*>(hist.Clone()))
+    , unsmeared_denominator(raw_matrix->ProjectionX("unsmeared_den", 1, raw_matrix->GetNbinsY()))
+    , smeared_denominator(raw_matrix->ProjectionY("smeared_den", 1, raw_matrix->GetNbinsX()))
     , cache()
     , source_name()
     {
@@ -126,6 +133,21 @@ public:
       }
 
       return result;
+    }
+
+  // std::unique_ptr<TH1D> GetSmearedDenLike(const TH1& h) const
+  //   {
+  //   }
+
+  const TH1D& GetSmearedDen() const override
+    {
+      return *smeared_denominator;
+    }
+
+  std::unique_ptr<TH1D> GetUnsmearedDen() const override
+    {
+      auto *res = static_cast<TH1D*>(unsmeared_denominator->Clone());
+      return std::unique_ptr<TH1D>(res);
     }
 
   std::string Describe() const override

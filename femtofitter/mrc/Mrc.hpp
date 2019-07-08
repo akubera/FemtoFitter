@@ -9,6 +9,8 @@
 #define FEMTOFITTER_MRC_MRC_HPP
 
 
+#include "CalculatorFsi.hpp"
+
 #include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
@@ -147,6 +149,21 @@ struct Mrc1D : public Mrc {
 
   virtual void Smear(TH1&) const = 0;
   virtual void Unsmear(TH1&) const = 0;
+
+  virtual const TH1D& GetSmearedDen() const = 0;
+  virtual std::unique_ptr<TH1D> GetUnsmearedDen() const = 0;
+
+  template <typename FitParams>
+  std::unique_ptr<TH1D> GetSmearedFit(const FitParams &p, FsiCalculator &fsi, UInt_t npoints)
+    {
+      const TH1D& fitden = GetSmearedDen();
+      std::unique_ptr<TH1D> fitnum = GetUnsmearedDen();
+      p.multiply(*fitnum, fsi, npoints);
+      Smear(*fitnum);
+      fitnum->Divide(&fitden);
+      return fitnum;
+    }
+
 };
 
 /// \class Mrc3D
