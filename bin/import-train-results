@@ -1,0 +1,705 @@
+#!/usr/bin/env python
+#
+# import-train-results
+#
+
+from typing import Optional, Generator
+
+import re
+import sys
+from copy import copy
+from pathlib import Path
+from datetime import datetime
+
+from stumpy.utils import walk_matching, iter_tobject, get_tobject, is_null
+
+
+def arg_parser():
+    from argparse import ArgumentParser
+    parser = ArgumentParser()
+    parser.add_argument("train_nums",
+                        nargs='+',
+                        metavar='train-ids',
+                        type=int,
+                        help="Ids of the trains")
+    parser.add_argument("-o", "--out",
+                        nargs='?',
+                        default=None,
+                        help="Destination file")
+    parser.add_argument("--update",
+                        action='store_true',
+                        help="Open output file in UPDATE mode")
+    parser.add_argument("--container-pattern",
+                        nargs="?",
+                        default='PWG2FEMTO/*',
+                        help="")
+    parser.add_argument("-n", "--dry-run",
+                        action="store_true",
+                        help="Do not write output file")
+    return parser
+
+
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
+    args = arg_parser().parse_args(argv)
+
+    if args.dry_run:
+        from unittest.mock import MagicMock
+        output = MagicMock()
+    else:
+        open_mode = 'UPDATE' if args.update else 'RECREATE'
+        if args.out is None and len(args.train_nums) == 1:
+            out = f'Data-{args.train_nums[0]}.root'
+        else:
+            out = args.out or datetime.now().strftime(r"Data-%Y%m%d.root")
+        output = LazyTFile(out, open_mode)
+
+    train_path = Path('~/alice/data').expanduser()
+    print(train_path)
+    for train_number in args.train_nums:
+        for path in train_path.glob(f"**/*-{train_number}*.root"):
+            print("Loading", path, Path(path))
+            process_file(path, output, args.container_pattern)
+    print("\nOutput file:", output)
+    return 0
+    paths = set(Path(p).absolute() for p in args.files)
+
+    for path in copy(paths):
+        if path.is_dir():
+            paths.remove(path)
+            print("Scanning directory %s for all .root files" % path)
+            paths.update(s.absolute() for s in path.glob("**/*.root"))
+
+    for path in paths:
+        print(f"\nBeginning scan of {path}")
+
+
+
+def process_file(path, output, pattern=None):
+    from ROOT import TFile
+    path = str(path)
+    file = TFile.Open(path, "READ")
+    if not file:
+        return
+
+    for analysis in find_analyses(file, pattern):
+        analysis.write_to_file(output)
+        pass
+
+    print("Finished processing %s" % file.GetName())
+
+
+ANALYSIS_FINDERS = []
+
+
+def register_analysis_class(cls):
+    function = cls.FindIn
+    ANALYSIS_FINDERS.append(function)
+    return cls
+
+
+def find_analyses(file, pattern):
+    from ROOT import AliFemtoConfigObject
+
+    if not file:
+        return
+
+    filepath = Path(str(file.GetName()))
+    mfield = field_from_name(filepath.name)
+
+    for name, container in walk_matching(file, pattern):
+        print('scanning container %r' % name)
+        if mfield == '??':
+            magfield = field_from_name(container.GetName())
+        else:
+            magfield = mfield
+
+        for analysis in iter_tobject(container):
+            print('analysis:', analysis)
+            config = get_tobject(analysis, 'AliFemtoConfigObject')
+            if not config:
+                continue
+
+            cent_range = AliFemtoConfigObject.RangeValue_t()
+            cent_range_keys = ('event_cut.cent_range', 'event_cut.centrality_range')
+            for cent_range_key in cent_range_keys:
+                if config.find_and_load(cent_range_key, cent_range):
+                    break
+            else:
+                print("warning: centrality range could not be determined for", name)
+
+            cent = '%02d_%02d' % tuple(cent_range)
+
+            charge = config.find("track_cut.charge")
+            if not charge:
+                print("No charge in track_cut configuration. Skipping")
+                continue
+
+            pion_charge = charge.as_int()
+            pion_type = ('pim' if pion_charge == -1 else
+                         'pip' if pion_charge == 1 else
+                         'pi?')
+
+            key = config.Clone()
+            key.pop("is_mc")
+            key.pop("track_cut.charge")
+            key.pop(cent_range_key)
+
+            hashkey = f'cfg{key.Hash():016X}'
+
+            def get_storage_key(kt_bin):
+                def _fmt(f):
+                    f = float(f)
+                    return ('%0.1f' if f.is_integer() else '%g') % f
+
+                kt_dir = '_'.join(map(_fmt, kt_bin.split('_')))
+                return f'{hashkey}/{pion_type}/{cent}/{kt_dir}/{magfield}'
+
+            def _find_subanalyses():
+                for finder in ANALYSIS_FINDERS:
+                    yield from finder(analysis)
+
+            for kt_bin, analysis_results in _find_subanalyses():
+                analysis_results.storage_key = get_storage_key(kt_bin)
+                analysis_results.config = key
+                print(" -> ", analysis_results.storage_key)
+                yield analysis_results
+
+
+class AnalysisResults:
+
+    @classmethod
+    def FindIn(cls, obj) -> Generator[Optional['AnalysisResults'], None, None]:
+        from ROOT import TH1
+        if isinstance(cls.KT_CONTAINER_NAME, str):
+            container_names = [cls.KT_CONTAINER_NAME]
+        else:
+            container_names = tuple(cls.KT_CONTAINER_NAME)
+
+        for container_name in container_names:
+            container = get_tobject(obj, container_name)
+            if not is_null(container):
+                break
+        else:
+            return
+
+        for kt_container in iter_tobject(container):
+            if isinstance(kt_container, TH1):
+                # print('skipping histogram %r' % kt_container.GetName())
+                continue
+            self = cls.From(kt_container)
+            if not self:
+                continue
+            kt_bin = kt_container.GetName()
+            yield kt_bin, self
+
+    def write_config(self, dest):
+        cfg_dest = re.match('.*cfg[A-F0-9]+', self.storage_key)
+        if cfg_dest:
+            config_key = cfg_dest.group() + '/config'
+            key = dest.Get(config_key)
+            if not key:
+                dest.cd(cfg_dest.group())
+                self.config.Write("config")
+
+    @property
+    def storage_key(self):
+        return self._storage_key
+
+    @storage_key.setter
+    def storage_key(self, value: str):
+        self._storage_key = self.__class__.__name__ + "/" + value
+
+
+@register_analysis_class
+class AnalysisQinv(AnalysisResults):
+
+    KT_CONTAINER_NAME = ["KT_QINV", "KT_Qinv"]
+
+    @classmethod
+    def From(cls, container) -> Optional['AnalysisQinv']:
+
+        key_vec = [
+           ("Num", "Den", "kTDep"),
+           ("Num_qinv", "Den_qinv", "kTDep_qinv"),
+        ]
+
+        for keys in key_vec:
+            num, den, kt = (get_tobject(container, k) for k in keys)
+
+            if all((num, den, kt)):
+                break
+        else:
+            print("Could not find Qinv results in", container)
+            return None
+
+        self = cls(num, den, kt)
+        return self
+
+    def __init__(self, num, den, kt=None):
+        self.num = num
+        self.den = den
+        self.kt = kt
+
+    def write_to_file(self, dest):
+        dest.mkdir(self.storage_key)
+        self.write_config(dest)
+
+        dest.cd(self.storage_key)
+        self.num.Write("num")
+        self.den.Write("den")
+        if self.kt:
+            self.kt.Write("kt_dist")
+
+
+@register_analysis_class
+class AnalysisQlcms(AnalysisResults):
+
+    KT_CONTAINER_NAME = "KT_Qlcms"
+
+    @classmethod
+    def From(cls, container) -> Optional['AnalysisQlcms']:
+
+        key_vec = [
+           ("Num", "Den", "kTDep"),
+           ("Num_qinv", "Den_qinv", "kTDep_qinv"),
+        ]
+
+        for keys in key_vec:
+            num, den, kt = (get_tobject(container, k) for k in keys)
+
+            if all((num, den, kt)):
+                break
+        else:
+            print("Could not find Qinv results in", container)
+            return
+
+        self = cls(num, den, kt)
+        return self
+
+    def __init__(self, num, den, kt=None):
+        self.num = num
+        self.den = den
+        self.kt = kt
+
+    def write_to_file(self, dest):
+        dest.mkdir(self.storage_key)
+        self.write_config(dest)
+
+        dest.cd(self.storage_key)
+        self.num.Write("num")
+        self.den.Write("den")
+        if self.kt:
+            self.kt.Write("kt_dist")
+
+
+@register_analysis_class
+class AnalysisTrueQinv(AnalysisResults):
+
+    KT_CONTAINER_NAME = "KT_TrueQinv"
+
+    @classmethod
+    def From(cls, container) -> Optional['AnalysisTrueQinv']:
+
+        qgqr = get_tobject(container, "QgenQrec")
+        sm = qgqr.Clone("SmearMatrix")
+        sm.SetTitle("Normalized Smearing Matrix; q_{inv,gen}; q_{inv,rec};")
+        um = qgqr.Clone("UnsmearMatrix")
+        um.SetTitle("Normalized Unsmearing Matrix; q_{inv,rec}; q_{inv,gen};")
+
+        Ny, Nx = qgqr.GetNbinsY() + 2, qgqr.GetNbinsX() + 2
+
+        for y in range(Ny):
+            s = sum(qgqr.GetBinContent(x, y) for x in range(Nx))
+            for x in range(Nx):
+                um.SetBinContent(y, x, 0 if s == 0.0 else qgqr.GetBinContent(x, y) / s)
+
+        for x in range(Nx):
+            s = sum(qgqr.GetBinContent(x, y) for y in range(Ny))
+            for y in range(Ny):
+                sm.SetBinContent(x, y, 0 if s == 0.0 else qgqr.GetBinContent(x, y) / s)
+
+        self = cls(sm)
+
+        self.smear_matrix = sm
+        self.unsmear_matrix = um
+        self.nr = numrec = get_tobject(container, "NumTrue")
+        self.dr = denrec = get_tobject(container, "Den")
+        self.ng = numgen = get_tobject(container, "NumTrueIdeal")
+        self.dg = dengen = get_tobject(container, "DenIdeal")
+
+        self.mrc_factor = numgen.Clone("mrc")
+        self.mrc_factor.Multiply(denrec)
+        self.mrc_factor.Divide(numrec)
+        self.mrc_factor.Divide(dengen)
+
+        self.fnr = get_tobject(container, "NumFake")
+        if not self.fnr:
+            self.fnr = None
+
+        self.fng = get_tobject(container, "NumFakeIdeal")
+        if not self.fng:
+            self.fng = None
+
+        return self
+
+    def __init__(self, mrcmatrix):
+        self.mrc = mrcmatrix
+
+    def write_to_file(self, dest):
+        dest.mkdir(self.storage_key)
+        self.write_config(dest)
+
+        dest.cd(self.storage_key)
+        self.mrc_factor.Write("mrc_factor")
+        self.mrc.Write("mrc_matrix")
+
+        self.nr.Write("nr")
+        self.dr.Write("dr")
+        self.ng.Write("ng")
+        self.dg.Write("dg")
+
+        if self.fnr:
+            self.fnr.Write("fnr")
+
+        if self.fng:
+            self.fng.Write("fng")
+
+
+@register_analysis_class
+class AnalysisQ3D(AnalysisResults):
+
+    KT_CONTAINER_NAME = "KT_Q3D"
+
+    @classmethod
+    def From(cls, container) -> Optional['AnalysisQ3D']:
+        """
+        """
+        from ROOT import TH3I
+
+        keys = ("Num_q3d", "Den_q3d", "NumWqinv_q3d", "DenWqinv_q3d")
+        num, den, nqinv, dqinv = (get_tobject(container, k) for k in keys)
+
+        if any(map(is_null, (num, den, nqinv, dqinv))):
+            return
+        if isinstance(num, TH3I):
+            print("warning TH3I")
+
+        qinv = nqinv.Clone("qinv")
+        qinv.SetTitle("q_{inv}")
+        if qinv.GetSumw2N() == 0:
+            qinv.Sumw2()
+        qinv.Add(dqinv)
+        sum_ = num.Clone()
+        sum_.Add(den)
+        qinv.Divide(sum_)
+        del sum_
+
+        self = cls(num, den, qinv)
+        return self
+
+    def __init__(self, num, den, qinv):
+        self.num = num
+        self.den = den
+        self.qinv = qinv
+
+    def write_to_file(self, dest):
+        dest.mkdir(self.storage_key)
+        self.write_config(dest)
+
+        dest.cd(self.storage_key)
+        self.num.Write("num")
+        self.den.Write("den")
+        self.qinv.Write("qinv")
+
+
+@register_analysis_class
+class Q3DPosQuad(AnalysisResults):
+
+    KT_CONTAINER_NAME = "KT_PQ3D"
+
+    @classmethod
+    def From(cls, container) -> Optional['Q3DPosQuad']:
+        """
+        """
+
+        keys = ("Num", "Den", "Qinv")
+        objs = [get_tobject(container, k) for k in keys]
+
+        if not all(objs):
+            missing_keys = [name for name, obj in zip(keys, objs) if not obj]
+            print("Missing required objects:", ' '.join(missing_keys))
+            return
+
+        num, den, qinv = objs
+
+        qinv.SetTitle("q_{inv}")
+        if qinv.GetSumw2N() == 0:
+            print("Warning: Weighted qinv histogram not weighted")
+            qinv.Sumw2()
+        qinv.Divide(den)
+
+        self = cls(num, den, qinv)
+        return self
+
+    def __init__(self, num, den, qinv):
+        self.num = num
+        self.den = den
+        self.qinv = qinv
+
+    def write_to_file(self, dest):
+        dest.mkdir(self.storage_key)
+        self.write_config(dest)
+
+        dest.cd(self.storage_key)
+        self.num.Write("num")
+        self.den.Write("den")
+        self.qinv.Write("qinv")
+
+
+@register_analysis_class
+class Q3DLCMS(AnalysisResults):
+
+    KT_CONTAINER_NAME = "KT_Q3D_LCMS"
+
+    @classmethod
+    def From(cls, container) -> Optional['Q3DLCMS']:
+        """
+        """
+
+        keys = ("Num", "Den", "QinvW")
+        objs = [get_tobject(container, k) for k in keys]
+
+        if not all(objs):
+            missing_keys = [name for name, obj in zip(keys, objs) if not obj]
+            print("Missing required objects:", ' '.join(missing_keys))
+            return
+
+        num, den, qinv = objs
+
+        qinv.SetTitle("q_{inv}")
+        if qinv.GetSumw2N() == 0:
+            print("Warning: Weighted qinv histogram not weighted")
+            qinv.Sumw2()
+        sum_ = num.Clone("sum_")
+        sum_.Add(den)
+        qinv.Divide(sum_)
+        del sum_
+
+        self = cls(num, den, qinv)
+        return self
+
+    def __init__(self, num, den, qinv):
+        self.num = num
+        self.den = den
+        self.qinv = qinv
+
+    def write_to_file(self, dest):
+        dest.mkdir(self.storage_key)
+        self.write_config(dest)
+
+        dest.cd(self.storage_key)
+        self.num.Write("num")
+        self.den.Write("den")
+        self.qinv.Write("qinv")
+
+
+@register_analysis_class
+class AnalysisTrueQ3D(AnalysisResults):
+    """
+    Momentum resolution correction for Q3D
+    """
+
+    KT_CONTAINER_NAME = "KT_TrueQ3D"
+
+    @classmethod
+    def From(cls, obj) -> Optional['AnalysisTrueQ3D']:
+        """
+        """
+
+        def _load_hists(names):
+            hists = [get_tobject(obj, k) for k in names]
+            if not all(x for x in hists):
+                return None
+            return hists
+
+        keyslist = [
+            ("NumRec", "NumGen", "DenRec", "DenGen"),
+            ("Trueq3D_NumRec", "Trueq3D_NumGen",
+             "Trueq3D_DenRec", "Trueq3D_DenGen"),
+            ("Trueq3DNumRec", "Trueq3DNumGen",
+             "Trueq3DDenRec", "Trueq3DDenGen")
+        ]
+
+        for keys in keyslist:
+            hists = _load_hists(keys)
+            if hists:
+                break
+        else:
+            print("Could not find files in", obj)
+            return None
+
+        nr, ng, dr, dg = map(cls.symmetrize_histogram, hists)
+
+        mrc = ng.Clone("mrc")
+        mrc.SetStats(False)
+        if mrc.GetSumw2N() == 0:
+            mrc.Sumw2()
+
+        mrc.SetTitle("Momentum Resolution Correction")
+        mrc.Multiply(dr)
+        mrc.Divide(dg)
+        mrc.Divide(nr)
+
+        self = cls(mrc)
+        self.nr = nr
+        self.dr = dr
+        self.ng = ng
+        self.dg = dg
+
+        self.fnr = get_tobject(obj, "NumRecUnweighted")
+        if not self.fnr:
+            self.fnr = None
+        else:
+            self.symmetrize_histogram(self.fnr)
+
+        self.fng = get_tobject(obj, "NumGenUnweighted")
+        if not self.fng:
+            self.fng = None
+        else:
+            self.symmetrize_histogram(self.fng)
+
+        return self
+
+    def __init__(self, mrc):
+        self.mrc = mrc
+
+    def write_to_file(self, dest):
+        dest.mkdir(self.storage_key)
+        self.write_config(dest)
+
+        dest.cd(self.storage_key)
+        self.mrc.Write("mrc")
+
+        self.nr.Write("nr")
+        self.dr.Write("dr")
+        self.ng.Write("ng")
+        self.dg.Write("dg")
+
+        if self.fnr:
+            self.fnr.Write("fnr")
+
+        if self.fng:
+            self.fng.Write("fng")
+
+    @staticmethod
+    def symmetrize_histogram(h):
+        from itertools import product
+        from math import ceil
+
+        xax, yax, zax = h.GetXaxis(), h.GetYaxis(), h.GetZaxis()
+
+        nx = xax.GetNbins()
+        ny = yax.GetNbins()
+        nz = zax.GetNbins()
+
+        xzbin = xax.FindBin(0.0)
+        yzbin = yax.FindBin(0.0)
+        zzbin = zax.FindBin(0.0)
+
+        # histogram does not need symmetrized
+        if xzbin == 1:
+            return
+
+        if xzbin != ceil(nx / 2):
+            raise ValueError("Histogram axis not centered at zero!")
+
+        for i in range(1, ceil(nx / 2) + 1):
+            for k, j in product(range(1, nz + 1), range(1, ny + 1)):
+                bin1 = h.GetBin(i, j, k)
+                bin2 = h.GetBin(nx - i + 1, ny - j + 1, nz - k + 1)
+                val = h.GetBinContent(bin1) + h.GetBinContent(bin2)
+                h.SetBinContent(bin1, val)
+                h.SetBinContent(bin2, val)
+
+                if i > xzbin and j > yzbin and k > zzbin:
+                    break
+
+        return h
+
+
+@register_analysis_class
+class DetaDphiSimple(AnalysisResults):
+
+    KT_CONTAINER_NAME = 'KT_DetaDphiSimple'
+
+    @classmethod
+    def From(cls, obj) -> Optional['DetaDphiSimple']:
+        """
+        """
+        from itertools import product
+
+        valid = True
+
+        # generate hidden keys
+        keys = product(('Primary', 'SecWeak', 'SecMat'), ('', 'Data'))
+        keys = (''.join(('Hidden', *k)) for k in keys)
+
+        hists = {}
+
+        # loop through all keys
+        for suf in ('', 'Hidden', *keys):
+            for key in (f'{pre}DPhiDEta{suf}' for pre in ("Num", "Den")):
+                hists[key] = get_tobject(obj, key)
+                if not hists[keys]:
+                    print(f"Missing histogram {key}")
+                    valid = False
+
+        if not valid:
+            return
+
+        self = cls(**hists)
+        return self
+
+    def __init__(self, **hists):
+        self.hists = hists
+        # for key, val in hists.items():
+        #    setattr(self, key, val)
+
+    def write_to_file(self, dest):
+        dest.mkdir(self.storage_key)
+        self.write_config(dest)
+
+        dest.cd(self.storage_key)
+        for name, hist in self.hists.items():
+            hist.Write(name)
+
+
+class LazyTFile:
+    """
+    File created upon first use (not object construction)
+    """
+
+    def __init__(self, filename: str, mode: str):
+        self._file = (filename, mode)
+
+    def __getattr__(self, key):
+        if isinstance(self._file, tuple):
+            from ROOT import TFile
+            self._file = TFile.Open(*self._file)
+        return getattr(self._file, key)
+
+
+def field_from_name(name: str) -> str:
+    lower = name.casefold()
+    if 'neg' in lower:
+        return '--'
+    elif 'pos' in lower:
+        return '++'
+    else:
+        return '??'
+
+
+if __name__ == "__main__":
+    sys.exit(main())
