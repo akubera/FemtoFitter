@@ -307,4 +307,10 @@ private:
 
 };
 
+template <typename CRTP>
+struct FitResult1D {
+  virtual void SetMinuit(TMinuit &) const = 0;
+};
+
+
 #endif
