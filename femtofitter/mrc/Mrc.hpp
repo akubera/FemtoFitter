@@ -150,6 +150,12 @@ struct Mrc1D : public Mrc {
   virtual void Smear(TH1&) const = 0;
   virtual void Unsmear(TH1&) const = 0;
 
+  virtual void SmearRowMethod(TH1&) const
+    {}
+
+  virtual void SmearColMethod(TH1&) const
+    {}
+
   virtual const TH1D& GetSmearedDen() const = 0;
   virtual std::unique_ptr<TH1D> GetUnsmearedDen() const = 0;
 
