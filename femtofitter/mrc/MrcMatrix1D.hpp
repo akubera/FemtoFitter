@@ -92,7 +92,7 @@ public:
       }
     }
 
-  static void SmearCF(TH1 &h, TH2D &smear)
+  static void SmearCF(TH1 &h, const TH2D &smear)
     {
       std::vector<double> buff(h.GetNbinsX());
 
@@ -112,7 +112,7 @@ public:
   void Unsmear(TH1 &h) const override
     { throw std::runtime_error("Unimplemented method"); }
 
-  std::shared_ptr<TH2D> GetNormalizedMatrix(TH1 &h) const
+  std::shared_ptr<TH2D> GetNormalizedMatrix(const TH1 &h) const
     {
       if (auto mrc = norm_cache[h]) {
         return mrc;
@@ -128,7 +128,7 @@ public:
       for (int i=1; i <= Nx; ++i) {
 
         Double_t sum = 0.0;
-        for (int j=1; j <= Ny; ++j) {
+        for (int j=1; j <= Ny + 1; ++j) {
           sum += result->GetBinContent(i, j);
         }
 
@@ -148,7 +148,7 @@ public:
       return result;
     }
 
-  std::shared_ptr<const TH2D> GetRowNormalizedMatrix(TH1 &h) const
+  std::shared_ptr<const TH2D> GetRowNormalizedMatrix(const TH1 &h) const
     {
       if (auto mrc = rnorm_cache[h]) {
         return mrc;
@@ -184,30 +184,86 @@ public:
       return result;
     }
 
-  std::shared_ptr<TH2D> rebin_matrix_like(TH1 &h) const
+  std::shared_ptr<TH2D> rebin_matrix_like(const TH1 &h) const
     {
-      // std::shared_ptr<TH2D> result(new)
+      return rebin_matrix_like(h, *raw_matrix);
+    }
+
+  static std::shared_ptr<TH2D> rebin_matrix_like(const TH1 &h, const TH2 &matrix)
+    {
       const TAxis &xax = *h.GetXaxis();
 
-      const Int_t Nx = h.GetNbinsX();
-      const Double_t Xlo = xax.GetXmin(), Xhi = xax.GetXmax();
+      const Int_t
+        Nx = h.GetNbinsX(),
+        overflow_bin = Nx+1;
+
+      const Double_t
+        Xlo = xax.GetXmin(),
+        Xhi = xax.GetXmax(),
+        Ylo = Xlo,
+        Yhi = Xhi,
+        mxlo = matrix.GetXaxis()->GetXmin(),
+        mxhi = matrix.GetXaxis()->GetXmax(),
+        mylo = matrix.GetYaxis()->GetXmin(),
+        myhi = matrix.GetYaxis()->GetXmax();
+
+      if (Xhi > mxhi || Xhi > myhi) {
+        throw std::runtime_error("Histogram upper-bounds exceed raw-matrix, cannot rebin");
+        return nullptr;
+      }
+
+      if (Xlo < mxlo|| Xlo < mylo) {
+        throw std::runtime_error("Histogram lower-bounds exceed raw-matrix, cannot rebin");
+        return nullptr;
+      }
 
       auto result = std::make_shared<TH2D>("mrc", "Rebinned MRC matrix",
                                            Nx, Xlo, Xhi,
                                            Nx, Xlo, Xhi);
 
-      for (int j=1; j <= h.GetNbinsX(); ++j) {
+      for (int j=1; j <= Nx; ++j) {
         const Double_t ylo = xax.GetBinLowEdge(j),
                        yhi = xax.GetBinUpEdge(j);
 
-        for (int i=1; i <= h.GetNbinsX(); ++i) {
+        for (int i=1; i <= Nx; ++i) {
           const Double_t xlo = xax.GetBinLowEdge(i),
                          xhi = xax.GetBinUpEdge(i);
 
-          const Double_t val = integrate({xlo, xhi}, {ylo, yhi}, *raw_matrix);
+          const Double_t val = integrate({xlo, xhi}, {ylo, yhi}, matrix);
           result->SetBinContent(i, j, val);
         }
       }
+
+      // handle overflow & underflow
+      for (int i=1; i<=Nx; ++i) {
+        const Double_t
+          xlo = xax.GetBinLowEdge(i),
+          xhi = xax.GetBinUpEdge(i),
+          ylo = xlo,
+          yhi = xhi;
+
+        const double
+          x_underflow = integrate({xlo, xhi}, {mylo - 1.0, Ylo}, matrix),
+          x_overflow = integrate({xlo, xhi}, {Yhi, myhi + 1.0}, matrix),
+          y_underflow = integrate({mxlo - 1.0, Xlo}, {ylo, yhi}, matrix),
+          y_overflow = integrate({Xhi, mxhi + 1.0}, {ylo, yhi}, matrix);
+
+        result->SetBinContent(i, 0, x_underflow);
+        result->SetBinContent(i, overflow_bin, x_overflow);
+        result->SetBinContent(0, i, y_underflow);
+        result->SetBinContent(overflow_bin, i, y_overflow);
+      }
+
+      const double
+        bin_uu = integrate({mxlo-1.0, Xlo}, {mylo-1.0, Ylo}, matrix),
+        bin_ou = integrate({Xhi, mxhi+1.0}, {mylo-1.0, Ylo}, matrix),
+        bin_uo = integrate({mxlo-1.0, Xlo}, {Yhi, myhi+1.0}, matrix),
+        bin_oo = integrate({Xhi, mxhi+1.0}, {Yhi, myhi+1.0}, matrix);
+
+      result->SetBinContent(0, 0, bin_uu);
+      result->SetBinContent(overflow_bin, 0, bin_ou);
+      result->SetBinContent(0, overflow_bin, bin_uo);
+      result->SetBinContent(overflow_bin, overflow_bin, bin_oo);
 
       return result;
     }
