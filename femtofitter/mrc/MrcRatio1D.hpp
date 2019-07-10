@@ -144,6 +144,16 @@ public:
       return *mrc;
     }
 
+  std::unique_ptr<TH1D> GetUnsmearedDen() const override
+    {
+      return std::unique_ptr<TH1D>(static_cast<TH1D*>(dg->Clone()));
+    }
+
+  const TH1D& GetSmearedDen() const override
+    {
+      return static_cast<const TH1D&>(*dr);
+    }
+
   std::string Describe() const override
     {
       return "MrcRatio1D[" + source_name + "]";

@@ -49,7 +49,9 @@ struct FitterGauss1D : public Fitter1D<FitterGauss1D> {
 
   /// \class FitResult
   /// \brief Result of the fit
-  struct FitResult {
+  ///
+  struct FitResult : FitResult1D<FitResult> {
+
     Value norm,
           lam,
           radius;
@@ -66,6 +68,9 @@ struct FitterGauss1D : public Fitter1D<FitterGauss1D> {
       : norm(minuit, NORM_PARAM_IDX)
       , lam(minuit, LAM_PARAM_IDX)
       , radius(minuit, R_PARAM_IDX)
+      { }
+
+    virtual ~FitResult()
       { }
 
     std::map<std::string, double>
@@ -103,6 +108,14 @@ struct FitterGauss1D : public Fitter1D<FitterGauss1D> {
       { return FitterGauss1D::gauss(q, radius * radius, lam, K, norm); }
 
     FitParams as_params() const;
+
+    void SetMinuit(TMinuit &minuit) const override
+      {
+        int errflag = 0;
+        minuit.mnparm(NORM_PARAM_IDX, "Norm", norm.value, norm.error, 0.0, 0.0, errflag);
+        minuit.mnparm(LAM_PARAM_IDX, "Lam", lam.value, lam.error, 0.0, 0.0, errflag);
+        minuit.mnparm(R_PARAM_IDX, "Radius", radius.value, radius.error, 0.0, 0.0, errflag);
+      }
   };
 
   struct FitParams : FitParam1D<FitParams> {

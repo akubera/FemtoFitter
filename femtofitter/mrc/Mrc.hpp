@@ -9,6 +9,8 @@
 #define FEMTOFITTER_MRC_MRC_HPP
 
 
+#include "CalculatorFsi.hpp"
+
 #include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
@@ -20,6 +22,19 @@ struct Mrc {
 
   /// String describing corrector, saved with fit results
   virtual std::string Describe() const = 0;
+
+  /// Return fraction of bin content to use
+  static double get_frac(int bin, const TAxis &ax, int lo, int hi, double lofrac, double hifrac)
+    {
+      const double frac = (bin == lo) ? lofrac
+                        : (bin == hi) ? hifrac
+                                      : 1.0;
+
+      // always all or nothing of overflow/underflow bins
+      return ((bin == 0 || bin > ax.GetNbins()) && frac != 0.0)
+           ? 1.0
+           : frac;
+    }
 
   static
   double integrate(std::pair<double,double> xrange, const TH1 &h)
@@ -37,10 +52,7 @@ struct Mrc {
       double ret = 0.0;
 
       for (int xx = xlo_mrcbin; xx <= xhi_mrcbin; xx += 1) {
-        const double
-          value = h.GetBinContent(xx),
-          xfactor = (xx == xlo_mrcbin ? xlo_frac : xx == xhi_mrcbin ? xhi_frac : 1.0);
-        ret += value * xfactor;
+        ret += h.GetBinContent(xx) * get_frac(xx, xax, xlo_mrcbin, xhi_mrcbin, xlo_frac, xhi_frac);
       }
 
       return ret;
@@ -71,20 +83,22 @@ struct Mrc {
       double ret = 0.0;
 
       for (int yy = ylo_mrcbin; yy <= yhi_mrcbin; yy += 1) {
-        const double
-          yfactor = (yy == ylo_mrcbin ? ylo_frac : yy == yhi_mrcbin ? yhi_frac : 1.0);
+        const double yfactor = get_frac(yy, yax, ylo_mrcbin, yhi_mrcbin, ylo_frac, yhi_frac);
+        if (yfactor == 0.0) {
+          continue;
+        }
 
         for (int xx = xlo_mrcbin; xx <= xhi_mrcbin; xx += 1) {
           const double
             value = h.GetBinContent(xx, yy),
-            xfactor = (xx == xlo_mrcbin ? xlo_frac : xx == xhi_mrcbin ? xhi_frac : 1.0);
+            xfactor = get_frac(xx, xax, xlo_mrcbin, xhi_mrcbin, xlo_frac, xhi_frac);
+
           ret += value * xfactor * yfactor;
         }
       }
 
       return ret;
     }
-
 
   static
   double integrate(std::pair<double,double> xrange,
@@ -122,13 +136,22 @@ struct Mrc {
       double ret = 0.0;
 
       for (int zz = zlo_mrcbin; zz <= zhi_mrcbin; zz += 1) {
+        const double zfactor = get_frac(zz, zax, zlo_mrcbin, zhi_mrcbin, zlo_frac, zhi_frac);
+        if (zfactor == 0.0) {
+          continue;
+        }
+
         for (int yy = ylo_mrcbin; yy <= yhi_mrcbin; yy += 1) {
+          const double yfactor = get_frac(yy, yax, ylo_mrcbin, yhi_mrcbin, ylo_frac, yhi_frac);
+          if (yfactor == 0.0) {
+            continue;
+          }
+
           for (int xx = xlo_mrcbin; xx <= xhi_mrcbin; xx += 1) {
             const double
               value = h.GetBinContent(xx, yy, zz),
-              zfactor = (zz == zlo_mrcbin ? zlo_frac : zz == zhi_mrcbin ? zhi_frac : 1.0),
-              yfactor = (yy == ylo_mrcbin ? ylo_frac : yy == yhi_mrcbin ? yhi_frac : 1.0),
-              xfactor = (xx == xlo_mrcbin ? xlo_frac : xx == xhi_mrcbin ? xhi_frac : 1.0);
+              xfactor = get_frac(xx, xax, xlo_mrcbin, xhi_mrcbin, xlo_frac, xhi_frac);
+
             ret += value * zfactor * yfactor * xfactor;
           }
         }
@@ -147,6 +170,27 @@ struct Mrc1D : public Mrc {
 
   virtual void Smear(TH1&) const = 0;
   virtual void Unsmear(TH1&) const = 0;
+
+  virtual void SmearRowMethod(TH1&) const
+    {}
+
+  virtual void SmearColMethod(TH1&) const
+    {}
+
+  virtual const TH1D& GetSmearedDen() const = 0;
+  virtual std::unique_ptr<TH1D> GetUnsmearedDen() const = 0;
+
+  template <typename FitParams>
+  std::unique_ptr<TH1D> GetSmearedFit(const FitParams &p, FsiCalculator &fsi, UInt_t npoints)
+    {
+      const TH1D& fitden = GetSmearedDen();
+      std::unique_ptr<TH1D> fitnum = GetUnsmearedDen();
+      p.multiply(*fitnum, fsi, npoints);
+      Smear(*fitnum);
+      fitnum->Divide(&fitden);
+      return fitnum;
+    }
+
 };
 
 /// \class Mrc3D
