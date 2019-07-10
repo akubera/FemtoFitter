@@ -199,7 +199,29 @@ public:
       return do_fit_minuit(minuit);
     }
 
+  /// Creates minuit and uses residual cut 'resid_calc_mrc'
+  ///
   auto fit_pml_mrc()
+    {
+      if (mrc == nullptr) {
+        throw std::runtime_error("Fitter missing Mrc1D object");
+      }
+
+      if (fsi == nullptr) {
+        throw std::runtime_error("Fitter missing Fsi object");
+      }
+
+      TMinuit minuit;
+      minuit.SetPrintLevel(-1);
+
+      setup_pml_mrc_fitter(minuit);
+      return do_fit_minuit(minuit);
+    }
+
+  /// First uses non-smeared fit to quickly get to close result,
+  /// then calls pml_mrc to get final result.
+  ///
+  auto fit_pml_mrc_quick()
     {
       if (mrc == nullptr) {
         throw std::runtime_error("Fitter missing Mrc1D object");
@@ -214,19 +236,21 @@ public:
 
       // first fit without smearing (faster)
       setup_pml_fitter(minuit);
-      do_fit_minuit(minuit);
+      // auto tmp_res = do_fit_minuit(minuit);
+      double strat_args[] = {1.0};
+      double migrad_args[] = {2000.0, 1.0};
+
+      int errflag;
+      minuit.mnexcm("SET STRategy", strat_args, 1, errflag);
+      minuit.mnexcm("MIGRAD", migrad_args, 2, errflag);
+      auto tmp_res = typename Impl::FitResult(minuit);
 
       // then fit with mrc-smearing (slower)
-      set_pml_mrc_func(minuit);
-      return do_fit_minuit(minuit);
-    }
-
-  template <typename FitResult>
-  double
-  resid_chi2(const FitResult &r) const
-    {
-      const typename Impl::FitParams &params = r;
-      return resid_chi2_calc(params);
+      TMinuit mminuit;
+      mminuit.SetPrintLevel(-1);
+      setup_pml_mrc_fitter(mminuit);
+      tmp_res.FillMinuit(mminuit);
+      return do_fit_minuit(mminuit);
     }
 
   template <typename FitParams>
@@ -309,7 +333,7 @@ private:
 
 template <typename CRTP>
 struct FitResult1D {
-  virtual void SetMinuit(TMinuit &) const = 0;
+  virtual void FillMinuit(TMinuit &) const = 0;
 };
 
 

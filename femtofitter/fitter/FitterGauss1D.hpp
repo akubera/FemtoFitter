@@ -109,12 +109,13 @@ struct FitterGauss1D : public Fitter1D<FitterGauss1D> {
 
     FitParams as_params() const;
 
-    void SetMinuit(TMinuit &minuit) const override
+    void FillMinuit(TMinuit &minuit) const override
       {
         int errflag = 0;
-        minuit.mnparm(NORM_PARAM_IDX, "Norm", norm.value, norm.error, 0.0, 0.0, errflag);
-        minuit.mnparm(LAM_PARAM_IDX, "Lam", lam.value, lam.error, 0.0, 0.0, errflag);
-        minuit.mnparm(R_PARAM_IDX, "Radius", radius.value, radius.error, 0.0, 0.0, errflag);
+        // minuit.mnparm(NORM_PARAM_IDX, "Norm", norm.value, norm.error * norm.error * 4, 0.0, 0.0, errflag);
+        minuit.mnparm(NORM_PARAM_IDX, "Norm", norm.value, 0.005, 0.0, 0.0, errflag);
+        minuit.mnparm(LAM_PARAM_IDX, "Lam", lam.value, .01, 0.0, 0.0, errflag);
+        minuit.mnparm(R_PARAM_IDX, "Radius", radius.value, 0.2, 0.0, 0.0, errflag);
       }
   };
 
@@ -237,6 +238,9 @@ struct FitterGauss1D : public Fitter1D<FitterGauss1D> {
   /// Fit with log-likelihood method and momentum-correction smearing
   FitResult fit_pml_mrc()
     { return Fitter1D::fit_pml_mrc(); }
+
+  FitResult fit_pml_mrc_quick()
+    { return Fitter1D::fit_pml_mrc_quick(); }
 
   // void fit_with_random_inits(TMinuit &minuit, FitResult &res, int);
 };
