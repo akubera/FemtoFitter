@@ -144,6 +144,32 @@ public:
       return *mrc;
     }
 
+  std::unique_ptr<TH1D> GetUnsmearedDenLike(const TH1 &h) const override
+    {
+      if (h.GetNbinsX() == dg->GetNbinsX() &&
+          h.GetXaxis()->GetXmin() == dg->GetXaxis()->GetXmin() &&
+          h.GetXaxis()->GetXmax() == dg->GetXaxis()->GetXmax()) {
+        auto ptr = std::unique_ptr<TH1D>(static_cast<TH1D*>(dg->Clone()));
+        return ptr;
+      }
+
+      auto ptr = rebin_1d(h, *dg);
+      return ptr;
+    }
+
+  std::shared_ptr<const TH1D> GetSmearedDenLike(const TH1 &h) const override
+    {
+      if (h.GetNbinsX() == dr->GetNbinsX() &&
+          h.GetXaxis()->GetXmin() == dr->GetXaxis()->GetXmin() &&
+          h.GetXaxis()->GetXmax() == dr->GetXaxis()->GetXmax()) {
+        auto ptr = std::shared_ptr<TH1D>(static_cast<TH1D*>(dr->Clone()));
+        return ptr;
+      }
+
+      auto ptr = rebin_1d(h, *dr);
+      return ptr;
+    }
+
   std::unique_ptr<TH1D> GetUnsmearedDen() const override
     {
       return std::unique_ptr<TH1D>(static_cast<TH1D*>(dg->Clone()));
@@ -152,6 +178,26 @@ public:
   const TH1D& GetSmearedDen() const override
     {
       return static_cast<const TH1D&>(*dr);
+    }
+
+  void FillUnsmearedDen(TH1 &h) const override
+    {
+      TAxis &ax = *h.GetXaxis();
+
+      for (int i=1; i<=h.GetNbinsX(); ++i) {
+        const double
+          xlo = ax.GetBinLowEdge(i),
+          xhi = ax.GetBinUpEdge(i);
+
+        h.SetBinContent(i, integrate({xlo, xhi}, *dg));
+      }
+
+      const std::pair<double, double>
+        uflow = {dg->GetXaxis()->GetXmin() - 1.0, ax.GetXmin()},
+        oflow = {ax.GetXmax(), dg->GetXaxis()->GetXmax() + 1.0};
+
+      h.SetBinContent(0, integrate(uflow, *dg));
+      h.SetBinContent(ax.GetNbins()+1, integrate(oflow, *dg));
     }
 
   std::string Describe() const override

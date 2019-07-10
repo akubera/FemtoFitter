@@ -160,6 +160,34 @@ struct Mrc {
       return ret;
     }
 
+  static
+  std::unique_ptr<TH1D>
+  rebin_1d(const TH1& shape, const TH1 &source)
+    {
+      auto res = std::make_unique<TH1D>(Form("rebinned_%s", source.GetName()),
+                                        source.GetTitle(),
+                                        shape.GetNbinsX(),
+                                        shape.GetXaxis()->GetXmin(),
+                                        shape.GetXaxis()->GetXmax());
+      const TAxis &ax = *res->GetXaxis();
+
+      for (int i=1; i<=res->GetNbinsX(); ++i) {
+        const double
+          xlo = ax.GetBinLowEdge(i),
+          xhi = ax.GetBinUpEdge(i);
+
+        res->SetBinContent(i, integrate({xlo, xhi}, source));
+      }
+
+      const std::pair<double, double>
+        uflow = {source.GetXaxis()->GetXmin() - 1.0, ax.GetXmin()},
+        oflow = {ax.GetXmax(), source.GetXaxis()->GetXmax() + 1.0};
+
+      res->SetBinContent(0, integrate(uflow, source));
+      res->SetBinContent(ax.GetNbins()+1, integrate(oflow, source));
+
+      return res;
+    }
 };
 
 
@@ -180,18 +208,11 @@ struct Mrc1D : public Mrc {
   virtual const TH1D& GetSmearedDen() const = 0;
   virtual std::unique_ptr<TH1D> GetUnsmearedDen() const = 0;
 
-  virtual void FillUnsmearedDen(TH1 &) const
-    { }
+  virtual void FillUnsmearedDen(TH1 &) const = 0;
 
-  virtual std::shared_ptr<const TH1D> GetSmearedDenLike(const TH1 &) const
-    {
-      return nullptr;
-    }
+  virtual std::shared_ptr<const TH1D> GetSmearedDenLike(const TH1 &) const = 0;
 
-  virtual std::unique_ptr<TH1D> GetUnsmearedDenLike(const TH1 &h) const
-    {
-      return nullptr;
-    }
+  virtual std::unique_ptr<TH1D> GetUnsmearedDenLike(const TH1 &h) const = 0;
 
   template <typename FitParams>
   std::unique_ptr<TH1D> GetSmearedFit(const FitParams &p, FsiCalculator &fsi, UInt_t npoints)
