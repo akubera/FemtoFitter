@@ -92,7 +92,8 @@ public:
       }
       auto *cfhist = _tmp_cf.get();
 
-      mrc.FillSmearedFit(*cfhist, p, *fsi);
+      // mrc.FillSmearedFit(*cfhist, p, *fsi);
+      p.FillAndSmearColMethod(*cfhist, *fsi, mrc);
 
       for (Int_t i=1; i<=cfhist->GetNbinsX(); ++i) {
         if (!data.mask->GetBinContent(i)) {
@@ -290,6 +291,21 @@ struct FitParam1D {
       _loop_over_bins(self, h, Kfsi, npoints, [&](int i, double cf) {
         h.SetBinContent(i, cf);
       });
+    }
+
+  void FillAndSmearRowMethod(TH1 &h, FsiCalculator &fsi, Mrc1D &mrc) const
+    {
+      fill(h, fsi, 1);
+      mrc.SmearRowMethod(h);
+    }
+
+  void FillAndSmearColMethod(TH1 &h, FsiCalculator &fsi, Mrc1D &mrc) const
+    {
+      mrc.FillUnsmearedDen(h);
+      multiply(h, fsi, 1);
+      mrc.Smear(h);
+      auto den = mrc.GetSmearedDenLike(h);
+      h.Divide(den.get());
     }
 
   /// Multiply histogram contents with average of N-points per bin
