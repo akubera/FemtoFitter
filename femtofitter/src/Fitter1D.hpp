@@ -35,7 +35,11 @@ public:
   /// The final-state-interaction calculator
   std::shared_ptr<FsiCalculator> fsi = nullptr;
 
+  /// The Momentum Resolution Correction
   std::shared_ptr<Mrc1D> mrc = nullptr;
+
+  /// "cache" histogram used in fit
+  mutable std::unique_ptr<TH1D> _tmp_cf = nullptr;
 
   Fitter1D(const TH1 &num, const TH1 &den, double limit)
     : data(num, den, limit)
@@ -79,11 +83,16 @@ public:
     }
 
   template <typename ResidFunc, typename FitParams>
-  double resid_calc_mrc(const FitParams &p, Mrc1D &mrc, ResidFunc resid_calc, UInt_t npoints=3) const
+  double resid_calc_mrc(const FitParams &p, Mrc1D &mrc, ResidFunc resid_calc, UInt_t npoints=1) const
     {
       double retval = 0;
 
-      std::unique_ptr<const TH1D> cfhist = mrc.GetSmearedFit(p, *fsi, npoints);
+      if (_tmp_cf == nullptr) {
+        _tmp_cf.reset(static_cast<TH1D*>(data.src->num->Clone()));
+      }
+      auto *cfhist = _tmp_cf.get();
+
+      mrc.FillSmearedFit(*cfhist, p, *fsi);
 
       for (Int_t i=1; i<=cfhist->GetNbinsX(); ++i) {
         if (!data.mask->GetBinContent(i)) {
