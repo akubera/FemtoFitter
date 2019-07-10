@@ -207,6 +207,16 @@ public:
         mylo = matrix.GetYaxis()->GetXmin(),
         myhi = matrix.GetYaxis()->GetXmax();
 
+      // no rebinning necessary
+      if (matrix.GetNbinsX() == Nx &&
+          matrix.GetNbinsY() == Nx &&
+          mxlo == Xlo && mxhi == Xhi &&
+          mylo == Ylo && myhi == Yhi) {
+
+          std::shared_ptr<TH2D> result(static_cast<TH2D*>(matrix.Clone()));
+          return result;
+      }
+
       if (Xhi > mxhi || Xhi > myhi) {
         throw std::runtime_error("Histogram upper-bounds exceed raw-matrix, cannot rebin");
         return nullptr;
