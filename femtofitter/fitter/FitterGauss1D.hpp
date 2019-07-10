@@ -229,8 +229,8 @@ struct FitterGauss1D : public Fitter1D<FitterGauss1D> {
 
   virtual ~FitterGauss1D() = default;
 
-  // FitResult fit_chi2()
-  //   { return Fitter1D::fit_chi2(); }
+  FitResult fit_chi2()
+    { return Fitter1D::fit_chi2(); }
 
   FitResult fit_pml()
     { return Fitter1D::fit_pml(); }
@@ -243,6 +243,34 @@ struct FitterGauss1D : public Fitter1D<FitterGauss1D> {
     { return Fitter1D::fit_pml_mrc_quick(); }
 
   // void fit_with_random_inits(TMinuit &minuit, FitResult &res, int);
+
+  void fill(const FitParams &p, TH1 &h, UInt_t npoints=3) const
+    {
+      p.fill(h, *fsi, npoints);
+    }
+
+  void fill(const FitResult &p, TH1 &h, UInt_t npoints=3) const
+    {
+      p.as_params().fill(h, *fsi, npoints);
+    }
+
+  void fill_and_smear(const FitResult &p, TH1D &h, UInt_t npoints=3) const
+    {
+      mrc->FillUnsmearedDen(h);
+      p.as_params().multiply(h, *fsi, npoints);
+      auto denptr = mrc->GetSmearedDenLike(h);
+      h.Divide(denptr.get());
+    }
+
+  void fill_smeared_fit(TH1 &h, const FitResult &fr)
+    {
+      fill_smeared_fit(h, fr.as_params());
+    }
+
+  void fill_smeared_fit(TH1 &h, const FitParams &p)
+    {
+      mrc->FillSmearedFit(h, p, *fsi, 1);
+    }
 };
 
 auto
