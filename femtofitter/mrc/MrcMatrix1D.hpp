@@ -207,14 +207,22 @@ public:
         mylo = matrix.GetYaxis()->GetXmin(),
         myhi = matrix.GetYaxis()->GetXmax();
 
-      // no rebinning necessary
-      if (matrix.GetNbinsX() == Nx &&
-          matrix.GetNbinsY() == Nx &&
-          mxlo == Xlo && mxhi == Xhi &&
+      // limits are same
+      if (mxlo == Xlo && mxhi == Xhi &&
           mylo == Ylo && myhi == Yhi) {
 
-          std::shared_ptr<TH2D> result(static_cast<TH2D*>(matrix.Clone()));
+        /// if perfectly dividable, use Rebin2D method
+        Int_t newx, newy;
+        if (std::remquo(matrix.GetNbinsX(), Nx, &newx) == 0.0 &&
+            std::remquo(matrix.GetNbinsY(), Nx, &newy) == 0.0) {
+
+          TString newname = Form("rebin_%s_%d_%d", matrix.GetName(), newx, newy);
+          TH2 *newhist = const_cast<TH2&>(matrix).Rebin2D(newx, newy, newname.Data());
+
+          std::shared_ptr<TH2D> result(static_cast<TH2D*>(newhist));
+          // std::shared_ptr<TH2D> result(static_cast<TH2D*>(matrix.Clone()));
           return result;
+        }
       }
 
       if (Xhi > mxhi || Xhi > myhi) {
