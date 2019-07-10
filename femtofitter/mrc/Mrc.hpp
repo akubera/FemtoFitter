@@ -180,6 +180,19 @@ struct Mrc1D : public Mrc {
   virtual const TH1D& GetSmearedDen() const = 0;
   virtual std::unique_ptr<TH1D> GetUnsmearedDen() const = 0;
 
+  virtual void FillUnsmearedDen(TH1 &) const
+    { }
+
+  virtual std::shared_ptr<const TH1D> GetSmearedDenLike(const TH1 &) const
+    {
+      return nullptr;
+    }
+
+  virtual std::unique_ptr<TH1D> GetUnsmearedDenLike(const TH1 &h) const
+    {
+      return nullptr;
+    }
+
   template <typename FitParams>
   std::unique_ptr<TH1D> GetSmearedFit(const FitParams &p, FsiCalculator &fsi, UInt_t npoints)
     {
@@ -190,6 +203,25 @@ struct Mrc1D : public Mrc {
       Smear(*fitnum);
       // fitnum->Divide(&fitden);
       return fitnum;
+    }
+
+  template <typename FitParams>
+  void FillSmearedFit(TH1 &h, const FitParams &p, FsiCalculator &fsi, UInt_t npoints=1)
+    {
+      // const TH1D& fitden = GetSmearedDen();
+      // std::unique_ptr<TH1D> fitnum = GetUnsmearedDenLike(h);
+#define JESSE_METHOD true
+
+#if JESSE_METHOD
+      p.fill(h, fsi, npoints);
+      SmearRowMethod(h);
+#else
+      FillUnsmearedDen(h);
+      p.multiply(h, fsi, npoints);
+      Smear(h);
+      auto den = GetSmearedDenLike(h);
+      h.Divide(den.get());
+#endif
     }
 
 };

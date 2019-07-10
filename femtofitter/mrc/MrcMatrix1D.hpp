@@ -32,16 +32,16 @@ public:
   mutable HistCache<TH1, TH2D> norm_cache;
   mutable HistCache<TH1, TH2D> rnorm_cache;
 
-  mutable HistCache<TH1, TH1D> denom_cache;
+  mutable HistCache<TH1, const TH1D> denom_cache;
+  mutable HistCache<TH1, const TH1D> bg_cache;
 
   std::string source_name;
 
-  mutable HistCache<TH1, TH1D> bg_cache;
 
   MrcMatrix1D(const TH2& hist)
     : raw_matrix(static_cast<TH2*>(hist.Clone()))
-    , unsmeared_denominator(raw_matrix->ProjectionX("unsmeared_den", 1, raw_matrix->GetNbinsY()))
-    , smeared_denominator(raw_matrix->ProjectionY("smeared_den", 1, raw_matrix->GetNbinsX()))
+    , unsmeared_denominator(raw_matrix->ProjectionX("unsmeared_den"))
+    , smeared_denominator(raw_matrix->ProjectionY("smeared_den"))
     , norm_cache()
     , rnorm_cache()
     , source_name()
@@ -58,17 +58,50 @@ public:
       return result;
     }
 
-  std::shared_ptr<TH1D> SmearedBackground(TH1 &h) const
+  std::shared_ptr<const TH1D> GetSmearedDenLike(const TH1 &h) const override
     {
       if (auto bg = bg_cache[h]) {
         return bg;
       }
 
-      auto res = std::make_shared<TH1D>("bg", "Smeared Background", h.GetNbinsX(), h.GetXaxis()->GetXmin(), h.GetXaxis()->GetXmax());
-      static_cast<TArrayD*>(res.get())->Reset(1);
-      Smear(*res);
+      // auto res = std::make_shared<TH1D>("bg", "Smeared Background", h.GetNbinsX(), h.GetXaxis()->GetXmin(), h.GetXaxis()->GetXmax());
+      auto tmp = rebin_matrix_like(h, *raw_matrix);
+      std::shared_ptr<const TH1D> res(tmp->ProjectionY());
+      // static_cast<TArrayD*>(res.get())->Reset(1);
+      // Smear(*res);
       bg_cache[h] = res;
       return res;
+    }
+
+  std::unique_ptr<TH1D> GetUnsmearedDenLike(const TH1 &h) const override
+    {
+      std::shared_ptr<const TH1D> bg = denom_cache[h];
+      if (!bg) {
+        auto tmp = static_cast<TH1D*>(h.Clone());
+        FillUnsmearedDen(*tmp);
+        bg.reset(tmp);
+        denom_cache[h] = bg;
+        // denom_cache[h].reset(tmp);
+      }
+
+      auto *ptr = static_cast<TH1D*>(bg->Clone());
+      return std::unique_ptr<TH1D>(ptr);
+    }
+
+  void FillUnsmearedDen(TH1 &h) const override
+    {
+      auto bg = denom_cache[h];
+      if (!bg) {
+        auto tmp = rebin_matrix_like(h, *raw_matrix);
+        bg = std::shared_ptr<const TH1D>(tmp->ProjectionX());
+        denom_cache[h] = bg;
+      }
+
+      for (int i=0; i<=h.GetNbinsX()+1; ++i) {
+        double val = bg->GetBinContent(i);
+        h.SetBinContent(i, val);
+        h.SetBinError(i, std::sqrt(val));
+      }
     }
 
   void Smear(TH1 &h) const override
