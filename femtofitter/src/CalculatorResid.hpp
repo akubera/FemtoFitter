@@ -81,7 +81,16 @@ struct ResidCalculatorChi2 {
   using FitParams = typename Fitter::FitParams;
 
   static double resid(const Fitter &f, const FitParams &p)
-    { return f.resid_chi2(p); }
+    { return f.resid_calc(p, chi2_calc); }
+
+  static double resid_mrc(const Fitter &f, const FitParams &p)
+    { return f.resid_calc_mrc(p, *f.mrc, chi2_calc); }
+
+  static double resid(const Fitter &f, const typename Fitter_t::FitResult &p)
+    { return f.resid_calc(p, chi2_calc); }
+
+  static double resid_mrc(const Fitter &f, const typename Fitter_t::FitResult &p)
+    { return f.resid_calc_mrc(p, *f.mrc, chi2_calc); }
 };
 
 
