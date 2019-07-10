@@ -73,50 +73,52 @@ public:
 
   void Smear(TH1 &h) const override
     {
-      auto mrc = GetNormalizedMatrix(h);
-      std::vector<double> buff(h.GetNbinsX());
+      SmearCF(h);
+      // auto mrc = GetNormalizedMatrix(h);
+      // std::vector<double> buff(h.GetNbinsX());
 
-      for (int j=1; j <= h.GetNbinsX(); ++j) {
-        double sum = 0.0;
-        for (int i=1; i <= h.GetNbinsX(); ++i) {
-          sum += h.GetBinContent(i) * mrc->GetBinContent(i, j);
-        }
-        buff[j-1] = sum;
-      }
+      // for (int j=1; j <= h.GetNbinsX(); ++j) {
+      //   double sum = 0.0;
+      //   for (int i=1; i <= h.GetNbinsX(); ++i) {
+      //     sum += h.GetBinContent(i) * mrc->GetBinContent(i, j);
+      //   }
+      //   buff[j-1] = sum;
+      // }
 
-      for (int i=1; i <= h.GetNbinsX(); ++i) {
-        h.SetBinContent(i, buff[i-1]);
-      }
+      // for (int i=1; i <= h.GetNbinsX(); ++i) {
+      //   h.SetBinContent(i, buff[i-1]);
+      // }
     }
 
   void SmearCF(TH1 &h) const
     {
       auto mrc = GetNormalizedMatrix(h);
-      std::vector<double> buff(h.GetNbinsX());
+      Smear(h, *mrc);
+      // std::vector<double> buff(h.GetNbinsX());
 
-      for (int j=1; j <= h.GetNbinsX(); ++j) {
-        double sum = 0.0;
-        for (int i=1; i <= h.GetNbinsX(); ++i) {
-          sum += h.GetBinContent(i) * mrc->GetBinContent(i, j);
-        }
-        buff[j-1] = sum;
-      }
+      // for (int j=1; j <= h.GetNbinsX(); ++j) {
+      //   double sum = 0.0;
+      //   for (int i=1; i <= h.GetNbinsX(); ++i) {
+      //     sum += h.GetBinContent(i) * mrc->GetBinContent(i, j);
+      //   }
+      //   buff[j-1] = sum;
+      // }
 
-      for (int i=1; i <= h.GetNbinsX(); ++i) {
-        h.SetBinContent(i, buff[i-1]);
-      }
+      // for (int i=1; i <= h.GetNbinsX(); ++i) {
+      //   h.SetBinContent(i, buff[i-1]);
+      // }
     }
 
-  static void SmearCF(TH1 &h, const TH2D &smear)
+  static void Smear(TH1 &h, const TH2D &smear)
     {
-      std::vector<double> buff(h.GetNbinsX());
+      std::vector<double> buff(h.GetNbinsX() + 2);
 
-      for (int j=1; j <= h.GetNbinsX(); ++j) {
+      for (int j=0; j <= h.GetNbinsX()+1; ++j) {
         double sum = 0.0;
-        for (int i=1; i <= h.GetNbinsX(); ++i) {
+        for (int i=0; i <= h.GetNbinsX()+1; ++i) {
           sum += h.GetBinContent(i) * smear.GetBinContent(i, j);
         }
-        buff[j-1] = sum;
+        buff[j] = sum;
       }
 
       for (int i=1; i <= h.GetNbinsX(); ++i) {
@@ -140,10 +142,10 @@ public:
         Ny = result->GetNbinsY();
 
       // normalize along y-direction
-      for (int i=1; i <= Nx; ++i) {
+      for (int i=0; i <= Nx + 1; ++i) {
 
         Double_t sum = 0.0;
-        for (int j=1; j <= Ny + 1; ++j) {
+        for (int j=0; j <= Ny + 1; ++j) {
           sum += result->GetBinContent(i, j);
         }
 
@@ -151,7 +153,7 @@ public:
           continue;
         }
 
-        for (int j=1; j <= Ny; ++j) {
+        for (int j=0; j <= Ny + 1; ++j) {
           double val = result->GetBinContent(i, j);
           result->SetBinContent(i, j, val / sum);
           result->SetBinError(i, j, std::sqrt(val) / sum);
@@ -304,13 +306,13 @@ public:
   void SmearRowMethod(TH1 &h) const override
     {
       auto matrix = GetRowNormalizedMatrix(h);
-      MrcMatrix1D::SmearCF(h, *matrix);
+      MrcMatrix1D::Smear(h, *matrix);
     }
 
   void SmearColMethod(TH1 &h) const override
     {
       auto matrix = GetNormalizedMatrix(h);
-      MrcMatrix1D::SmearCF(h, *matrix);
+      MrcMatrix1D::Smear(h, *matrix);
     }
 
   // std::unique_ptr<TH1D> GetSmearedDenLike(const TH1& h) const

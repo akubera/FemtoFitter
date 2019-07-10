@@ -183,11 +183,12 @@ struct Mrc1D : public Mrc {
   template <typename FitParams>
   std::unique_ptr<TH1D> GetSmearedFit(const FitParams &p, FsiCalculator &fsi, UInt_t npoints)
     {
-      const TH1D& fitden = GetSmearedDen();
+      // const TH1D& fitden = GetSmearedDen();
       std::unique_ptr<TH1D> fitnum = GetUnsmearedDen();
-      p.multiply(*fitnum, fsi, npoints);
+      fitnum->Reset();
+      p.fill(*fitnum, fsi, npoints);
       Smear(*fitnum);
-      fitnum->Divide(&fitden);
+      // fitnum->Divide(&fitden);
       return fitnum;
     }
 
