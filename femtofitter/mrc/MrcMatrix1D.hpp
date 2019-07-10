@@ -121,8 +121,8 @@ public:
         buff[j] = sum;
       }
 
-      for (int i=1; i <= h.GetNbinsX(); ++i) {
-        h.SetBinContent(i, buff[i-1]);
+      for (int i=0; i <= h.GetNbinsX()+1; ++i) {
+        h.SetBinContent(i, buff[i]);
       }
     }
 
@@ -237,7 +237,6 @@ public:
           TH2 *newhist = const_cast<TH2&>(matrix).Rebin2D(newx, newy, newname.Data());
 
           std::shared_ptr<TH2D> result(static_cast<TH2D*>(newhist));
-          // std::shared_ptr<TH2D> result(static_cast<TH2D*>(matrix.Clone()));
           return result;
         }
       }
