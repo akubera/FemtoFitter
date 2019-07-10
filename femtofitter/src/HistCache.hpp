@@ -28,7 +28,7 @@ struct KeyType<TH3> {
     z_axis;
 
   KeyType(const TH3 &h)
-    : classname(h.GetName())
+    : classname(h.ClassName())
     , x_axis(std::make_tuple(h.GetNbinsX(), h.GetXaxis()->GetXmin(), h.GetXaxis()->GetXmax()))
     , y_axis(std::make_tuple(h.GetNbinsY(), h.GetYaxis()->GetXmin(), h.GetYaxis()->GetXmax()))
     , z_axis(std::make_tuple(h.GetNbinsZ(), h.GetZaxis()->GetXmin(), h.GetZaxis()->GetXmax()))
@@ -36,12 +36,44 @@ struct KeyType<TH3> {
 
   bool operator<(const KeyType &rhs) const
     {
+      if (classname > rhs.classname) {
+        return false;
+      }
+
       return classname < rhs.classname
-          && x_axis < rhs.x_axis
-          && y_axis < rhs.y_axis
-          && z_axis < rhs.z_axis;
+          || (x_axis < rhs.x_axis
+          || (x_axis == rhs.x_axis
+              && (y_axis < rhs.y_axis
+              || (y_axis == rhs.y_axis
+                  && z_axis < rhs.z_axis))));
     }
 
+  bool operator<=(const KeyType &rhs) const
+    {
+      return *this == rhs || *this < rhs;
+    }
+
+  bool operator>(const KeyType &rhs) const
+    {
+      return !(*this == rhs || *this < rhs);
+    }
+
+  bool operator==(const KeyType &rhs) const
+    {
+      return classname == rhs.classname
+          && x_axis == rhs.x_axis
+          && y_axis == rhs.y_axis
+          && z_axis == rhs.z_axis;
+    }
+
+  std::string __repr__() const
+    {
+      return Form("<KeyType %s (%d %g %g) (%d %g %g) (%d %g %g)>",
+                  classname.c_str(),
+                  std::get<0>(x_axis), std::get<1>(x_axis), std::get<2>(x_axis),
+                  std::get<0>(y_axis), std::get<1>(y_axis), std::get<2>(y_axis),
+                  std::get<0>(z_axis), std::get<1>(z_axis), std::get<2>(z_axis));
+    }
 };
 
 
@@ -51,13 +83,35 @@ struct KeyType<TH1> {
   std::tuple<int, double, double> x_axis;
 
   KeyType(const TH1 &h)
-    : classname(h.GetName())
+    : classname(h.ClassName())
     , x_axis(std::make_tuple(h.GetNbinsX(), h.GetXaxis()->GetXmin(), h.GetXaxis()->GetXmax()))
     {}
 
   bool operator<(const KeyType &rhs) const
     {
-      return classname < rhs.classname && x_axis < rhs.x_axis;
+      return classname < rhs.classname
+          || (classname == rhs.classname && x_axis < rhs.x_axis);
+    }
+
+  bool operator>(const KeyType &rhs) const
+    {
+      return classname > rhs.classname
+          || (classname == rhs.classname && x_axis > rhs.x_axis);
+    }
+
+  bool operator>=(const KeyType &rhs) const
+    {
+      return *this == rhs || *this > rhs;
+    }
+
+  bool operator==(const KeyType &rhs) const
+    {
+      return classname == rhs.classname && x_axis == rhs.x_axis;
+    }
+
+  std::string __repr__() const
+    {
+      return Form("<KeyType %s (%d %g %g)>", classname.c_str(), std::get<0>(x_axis), std::get<1>(x_axis), std::get<2>(x_axis));
     }
 };
 
