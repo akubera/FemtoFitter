@@ -129,7 +129,7 @@ public:
   void Unsmear(TH1 &h) const override
     { throw std::runtime_error("Unimplemented method"); }
 
-  std::shared_ptr<TH2D> GetNormalizedMatrix(const TH1 &h) const
+  std::shared_ptr<const TH2D> GetNormalizedMatrix(const TH1 &h) const
     {
       if (auto mrc = norm_cache[h]) {
         return mrc;
@@ -178,10 +178,10 @@ public:
         Ny = result->GetNbinsY();
 
       // normalize along x-direction
-      for (int j=1; j <= Ny; ++j) {
+      for (int j=0; j <= Ny+1; ++j) {
 
         Double_t sum = 0.0;
-        for (int i=1; i <= Nx; ++i) {
+        for (int i=0; i <= Nx+1; ++i) {
           sum += result->GetBinContent(i, j);
         }
 
@@ -189,7 +189,7 @@ public:
           continue;
         }
 
-        for (int i=1; i <= Nx; ++i) {
+        for (int i=0; i <= Nx+1; ++i) {
           double val = result->GetBinContent(i, j);
           result->SetBinContent(i, j, val / sum);
           result->SetBinError(i, j, std::sqrt(val) / sum);
