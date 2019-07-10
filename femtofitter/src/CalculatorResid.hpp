@@ -18,7 +18,7 @@
 /// to the data
 ///
 template <typename ResidCalculator>
-static void minuit_f(Int_t&, Double_t*, Double_t &retval, Double_t *par, Int_t)
+static void minuit_func(Int_t&, Double_t*, Double_t &retval, Double_t *par, Int_t)
 {
   using Fitter_t = typename ResidCalculator::Fitter;
   using FitterParams_t = typename ResidCalculator::FitParams;
@@ -35,7 +35,8 @@ static void minuit_f(Int_t&, Double_t*, Double_t &retval, Double_t *par, Int_t)
   retval = ResidCalculator::resid(fitter, params);
 }
 
-/// Fit using masked histograms instead of data objects
+
+/// Fit using momentum-resolution smearing of the correlation function
 template <typename ResidCalculator>
 static void minuit_func_mrc(Int_t&, Double_t*, Double_t &retval, Double_t *par, Int_t)
 {
@@ -55,43 +56,44 @@ static void minuit_func_mrc(Int_t&, Double_t*, Double_t &retval, Double_t *par, 
 }
 
 
-/// \brief ResidCalculatorPML
-template <typename Fitter_t>
-struct ResidCalculatorPML {
+/// \class ResidCalculatorT
+/// \brief Abstraction over residual calcuations
+///
+template <typename Calc, typename Fitter_t>
+struct ResidCalculatorT {
   using Fitter = Fitter_t;
   using FitParams = typename Fitter::FitParams;
 
+  static constexpr auto resid_func = Calc::residual;
+
   static double resid(const Fitter &f, const FitParams &p)
-    { return f.resid_calc(p, loglikelihood_calc); }
+    { return f.resid_calc(p, resid_func); }
 
   static double resid_mrc(const Fitter &f, const FitParams &p)
-    { return f.resid_calc_mrc(p, *f.mrc, loglikelihood_calc); }
+    { return f.resid_calc_mrc(p, *f.mrc, resid_func); }
 
   static double resid(const Fitter &f, const typename Fitter_t::FitResult &p)
-    { return f.resid_calc(p, loglikelihood_calc); }
+    { return f.resid_calc(p, resid_func); }
 
   static double resid_mrc(const Fitter &f, const typename Fitter_t::FitResult &p)
-    { return f.resid_calc_mrc(p, *f.mrc, loglikelihood_calc); }
+    { return f.resid_calc_mrc(p, *f.mrc, resid_func); }
 
+};
+
+
+struct Chi2ResidualFunctor {
+  static constexpr auto residual = chi2_calc;
+};
+
+struct LogLikelihoodResidualFunctor {
+  static constexpr auto residual = loglikelihood_calc;
 };
 
 template <typename Fitter_t>
-struct ResidCalculatorChi2 {
-  using Fitter = Fitter_t;
-  using FitParams = typename Fitter::FitParams;
+using ResidCalculatorPML = ResidCalculatorT<LogLikelihoodResidualFunctor, Fitter_t>;
 
-  static double resid(const Fitter &f, const FitParams &p)
-    { return f.resid_calc(p, chi2_calc); }
-
-  static double resid_mrc(const Fitter &f, const FitParams &p)
-    { return f.resid_calc_mrc(p, *f.mrc, chi2_calc); }
-
-  static double resid(const Fitter &f, const typename Fitter_t::FitResult &p)
-    { return f.resid_calc(p, chi2_calc); }
-
-  static double resid_mrc(const Fitter &f, const typename Fitter_t::FitResult &p)
-    { return f.resid_calc_mrc(p, *f.mrc, chi2_calc); }
-};
+template <typename Fitter_t>
+using ResidCalculatorChi2 = ResidCalculatorT<Chi2ResidualFunctor, Fitter_t>;
 
 
 #endif

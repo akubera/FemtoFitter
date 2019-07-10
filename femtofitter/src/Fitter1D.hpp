@@ -141,12 +141,12 @@ public:
 
   void set_chi2_func(TMinuit &minuit) const
     {
-      minuit.SetFCN(minuit_f<typename Impl::CalcChi2>);
+      minuit.SetFCN(minuit_func<typename Impl::CalcChi2>);
     }
 
   void set_pml_func(TMinuit &minuit) const
     {
-      minuit.SetFCN(minuit_f<typename Impl::CalcLoglike>);
+      minuit.SetFCN(minuit_func<typename Impl::CalcLoglike>);
     }
 
   void set_pml_mrc_func(TMinuit &minuit) const

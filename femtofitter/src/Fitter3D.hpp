@@ -195,7 +195,7 @@ public:
 
   /// Automatic Fit Function
   ///
-  /// Create minuit function and call minuit_f with the
+  /// Create minuit function and call minuit_func with the
   /// ResidualCalculation template parameter
   ///
   template <typename ResidCalc_t>
@@ -206,7 +206,7 @@ public:
     minuit.SetPrintLevel(-1);
     static_cast<Impl*>(this)->setup_minuit(minuit);
 
-    minuit.SetFCN(minuit_f<ResidCalc_t>);
+    minuit.SetFCN(minuit_func<ResidCalc_t>);
 
     return do_fit_minuit(minuit, sigma);
   }
@@ -214,13 +214,13 @@ public:
   void setup_pml_fitter(TMinuit &minuit)
     {
       static_cast<Impl*>(this)->setup_minuit(minuit);
-      minuit.SetFCN(minuit_f<typename Impl::CalcLoglike>);
+      minuit.SetFCN(minuit_func<typename Impl::CalcLoglike>);
     }
 
   void setup_chi2_fitter(TMinuit &minuit)
     {
       static_cast<Impl*>(this)->setup_minuit(minuit);
-      minuit.SetFCN(minuit_f<typename Impl::CalcChi2>);
+      minuit.SetFCN(minuit_func<typename Impl::CalcChi2>);
     }
 
   auto fit_pml()
