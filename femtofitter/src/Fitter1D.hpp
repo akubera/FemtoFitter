@@ -252,13 +252,6 @@ public:
       tmp_res.FillMinuit(mminuit);
       return do_fit_minuit(mminuit);
     }
-
-  template <typename FitParams>
-  double
-  resid_chi2_calc(const FitParams &p) const
-    {
-      return resid_calc<ResidCalculatorChi2, FitParams>(p);
-    }
 };
 
 
