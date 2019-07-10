@@ -285,6 +285,11 @@ struct FitParam1D {
 
   /// Multiply histogram contents with average of N-points per bin
   ///
+  void multiply(TH1 &h, std::shared_ptr<FsiCalculator> fsi, UInt_t npoints=1) const
+    {
+      multiply(h, *fsi, npoints);
+    }
+
   void multiply(TH1 &h, FsiCalculator &fsi, UInt_t npoints=1) const
     {
       auto &self = static_cast<const CRTP&>(*this);
@@ -293,6 +298,7 @@ struct FitParam1D {
 
       _loop_over_bins(self, h, Kfsi, npoints, [&](int i, double cf) {
         h.SetBinContent(i, h.GetBinContent(i) * cf);
+        h.SetBinError(i, h.GetBinError(i) * cf);
       });
     }
 
