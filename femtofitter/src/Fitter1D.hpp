@@ -90,6 +90,7 @@ public:
       if (_tmp_cf == nullptr) {
         _tmp_cf.reset(static_cast<TH1D*>(data.src->num->Clone()));
       }
+
       auto *cfhist = _tmp_cf.get();
 
       // mrc.FillSmearedFit(*cfhist, p, *fsi);
@@ -265,16 +266,27 @@ public:
 };
 
 
+/// \class Fit1DPrameters
+/// \brief Abstract Base Class for 1d fit-parameters
+///
+struct Fit1DParameters {
+  virtual ~Fit1DParameters(){}
+  virtual void fill(TH1 &h) const = 0;
+  virtual void fill(TH1 &, FsiCalculator &, UInt_t npoints=1) const = 0;
+  virtual void multiply(TH1 &, FsiCalculator &, UInt_t npoints=1) const = 0;
+};
+
+
+/// \class FitParam1D
+/// \brief Template based superclass for fit parameters
+///
 template <typename CRTP>
-struct FitParam1D {
+struct FitParam1D : Fit1DParameters {
 
-  void multiply(TH1 &h, std::shared_ptr<FsiCalculator> fsi, UInt_t npoints=1) const
-    {
-      multiply(h, *fsi, npoints);
-    }
+  virtual ~FitParam1D(){}
 
-  void multiply(TH1 &h, FsiCalculator &fsi, UInt_t npoints=1) const override
-  void fill(TH1 &h) const
+  /// Fill histogram with no FSI factor
+  void fill(TH1 &h) const override
     {
       const TAxis &xaxis = *h.GetXaxis();
       for (int i=1; i <= xaxis.GetLast(); ++i) {
@@ -287,7 +299,7 @@ struct FitParam1D {
 
   /// Fill histogram with average of N-points per bin
   ///
-  void fill(TH1 &h, FsiCalculator &fsi, UInt_t npoints=1) const
+  void fill(TH1 &h, FsiCalculator &fsi, UInt_t npoints=1) const override
     {
       auto &self = static_cast<const CRTP&>(*this);
 
@@ -320,7 +332,7 @@ struct FitParam1D {
       multiply(h, *fsi, npoints);
     }
 
-  void multiply(TH1 &h, FsiCalculator &fsi, UInt_t npoints=1) const
+  void multiply(TH1 &h, FsiCalculator &fsi, UInt_t npoints=1) const override
     {
       auto &self = static_cast<const CRTP&>(*this);
 
