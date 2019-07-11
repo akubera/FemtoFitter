@@ -130,18 +130,24 @@ add_executable(quick-fit src/bin/quick-fit.cc)
 target_include_directories(quick-fit PRIVATE src)
 target_link_libraries(quick-fit FemtoFitter ${LIB_FEMTO})
 
-add_library(fitinspector
-            STATIC fitinspector_dict
-            src/bin/fit-inspector/MainFrame.cpp
-            src/bin/fit-inspector/PanelFitResult.cpp
-            src/bin/fit-inspector/PanelCutConfig.cpp
-            src/bin/fit-inspector/Projectionist.cpp)
-target_include_directories(fitinspector PUBLIC $ENV{ALICE_PHYSICS}/include)
-add_executable(fit-inspector src/bin/fit-inspector/main.cc)
-target_link_libraries(fit-inspector fitinspector
-    ROOT::Hist
-    ROOT::Gui
-    ROOT::PyROOT
-    Python3::Python
-    ${LIB_FEMTO}
-    )
+find_library(LIB_TENDER
+             Tender
+             HINTS $ENV{ALICE_PHYSICS}/lib)
+
+
+#add_library(fitinspector
+#            STATIC fitinspector_dict
+#            src/bin/fit-inspector/MainFrame.cpp
+#            src/bin/fit-inspector/PanelFitResult.cpp
+#            src/bin/fit-inspector/PanelCutConfig.cpp
+#            src/bin/fit-inspector/Projectionist.cpp)
+#target_include_directories(fitinspector PUBLIC $ENV{ALICE_PHYSICS}/include)
+#add_executable(fit-inspector src/bin/fit-inspector/main.cc)
+#target_link_libraries(fit-inspector fitinspector
+#    ROOT::Hist
+#    ROOT::Gui
+#    ROOT::PyROOT
+#    Python3::Python
+#    ${LIB_FEMTO}
+#${LIB_TENDER}
+#    )
