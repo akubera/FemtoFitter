@@ -268,7 +268,12 @@ public:
 template <typename CRTP>
 struct FitParam1D {
 
-  /// Fill histogram with no FSI factor
+  void multiply(TH1 &h, std::shared_ptr<FsiCalculator> fsi, UInt_t npoints=1) const
+    {
+      multiply(h, *fsi, npoints);
+    }
+
+  void multiply(TH1 &h, FsiCalculator &fsi, UInt_t npoints=1) const override
   void fill(TH1 &h) const
     {
       const TAxis &xaxis = *h.GetXaxis();
