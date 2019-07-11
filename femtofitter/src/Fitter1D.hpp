@@ -92,9 +92,7 @@ public:
       }
 
       auto *cfhist = _tmp_cf.get();
-
-      // mrc.FillSmearedFit(*cfhist, p, *fsi);
-      p.FillAndSmearColMethod(*cfhist, *fsi, mrc);
+      mrc.FillSmearedFit(*cfhist, p, *fsi);
 
       for (Int_t i=1; i<=cfhist->GetNbinsX(); ++i) {
         if (!data.mask->GetBinContent(i)) {
