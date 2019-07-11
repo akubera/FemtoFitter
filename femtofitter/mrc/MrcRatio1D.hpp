@@ -11,6 +11,7 @@
 
 #include "Mrc.hpp"
 #include "HistCache.hpp"
+#include "Fitter1D.hpp"
 
 #include <TDirectory.h>
 
@@ -198,6 +199,13 @@ public:
 
       h.SetBinContent(0, integrate(uflow, *dg));
       h.SetBinContent(ax.GetNbins()+1, integrate(oflow, *dg));
+    }
+
+  void FillSmearedFit(TH1 &cf, const Fit1DParameters &p, FsiCalculator &fsi, UInt_t npoints) const override
+    {
+       p.fill(cf, fsi, npoints);
+       const auto &mrc = GetSmearingFactor(cf);
+       cf.Multiply(&mrc);
     }
 
   std::string Describe() const override

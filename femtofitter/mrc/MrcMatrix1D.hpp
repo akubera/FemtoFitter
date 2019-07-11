@@ -9,6 +9,7 @@
 
 #include "Mrc.hpp"
 #include "HistCache.hpp"
+#include "Fitter1D.hpp"
 
 #include <TH2.h>
 #include <memory>
@@ -360,6 +361,16 @@ public:
     {
       auto *res = static_cast<TH1D*>(unsmeared_denominator->Clone());
       return std::unique_ptr<TH1D>(res);
+    }
+
+  void FillSmearedFit(TH1 &cf, const Fit1DParameters &p, FsiCalculator &fsi, UInt_t npoints) const override
+    {
+      FillUnsmearedDen(cf);
+      p.multiply(cf, fsi);
+      auto smear_matrix = GetNormalizedMatrix(cf);
+      MrcMatrix1D::Smear(cf, *smear_matrix);
+
+      cf.Divide(smeared_denominator.get());
     }
 
   std::string Describe() const override

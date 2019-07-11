@@ -191,6 +191,9 @@ struct Mrc {
 };
 
 
+class Fit1DParameters;
+
+
 /// \class Mrc1D
 /// \brief Abstract class for 1D momentum resolution corrector
 ///
@@ -213,6 +216,8 @@ struct Mrc1D : public Mrc {
   virtual std::shared_ptr<const TH1D> GetSmearedDenLike(const TH1 &) const = 0;
 
   virtual std::unique_ptr<TH1D> GetUnsmearedDenLike(const TH1 &h) const = 0;
+
+  virtual void FillSmearedFit(TH1 &cf, const Fit1DParameters&, FsiCalculator&, UInt_t npoints=1) const = 0;
 
   template <typename FitParams>
   std::unique_ptr<TH1D> GetSmearedFit(const FitParams &p, FsiCalculator &fsi, UInt_t npoints)
