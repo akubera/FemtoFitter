@@ -94,8 +94,7 @@ public:
       auto *cfhist = _tmp_cf.get();
       mrc.FillSmearedFit(*cfhist, p, *fsi);
 
-      for (unsigned i=0; i<data.size(); ++i) {
-        const auto &datum = data[i];
+      for (const auto &datum : data) {
 
         const double
           n = datum.num,
