@@ -28,6 +28,8 @@ struct Data1D {
     double qinv,
            num,
            den;
+
+    unsigned hist_bin;
   };
 
   /// reference back to source histograms

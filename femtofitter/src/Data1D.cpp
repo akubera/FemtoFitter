@@ -25,12 +25,12 @@ Data1D::Data1D(const TH1& num, const TH1& den, double limit_)
     limit = xaxis.GetXmax();
   }
 
-  const Int_t stop_bin = xaxis.FindBin(limit);
+  const UInt_t stop_bin = xaxis.FindBin(limit);
   data.reserve(stop_bin);
 
   true_limit = xaxis.GetBinUpEdge(stop_bin);
 
-  for (int i=1; i <= stop_bin; ++i) {
+  for (unsigned i=1; i <= stop_bin; ++i) {
     const double
       q = xaxis.GetBinCenter(i),
       n = num.GetBinContent(i),
@@ -40,7 +40,7 @@ Data1D::Data1D(const TH1& num, const TH1& den, double limit_)
       continue;
     }
 
-    data.push_back({q, n, d});
+    data.push_back({q, n, d, i});
     mask->SetBinContent(i, 1);
   }
 }

@@ -94,18 +94,14 @@ public:
       auto *cfhist = _tmp_cf.get();
       mrc.FillSmearedFit(*cfhist, p, *fsi);
 
-      for (Int_t i=1; i<=cfhist->GetNbinsX(); ++i) {
-        if (!data.mask->GetBinContent(i)) {
-          continue;
-        }
-
+      for (unsigned i=0; i<data.size(); ++i) {
         const auto &datum = data[i];
 
         const double
           n = datum.num,
           d = datum.den,
 
-          CF = cfhist->GetBinContent(i+1);
+          CF = cfhist->GetBinContent(datum.hist_bin);
 
         retval += resid_calc(n, d, CF);
       }
