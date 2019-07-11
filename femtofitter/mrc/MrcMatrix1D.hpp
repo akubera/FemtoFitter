@@ -377,7 +377,28 @@ public:
     {
       return "MrcMatrix1D[" + source_name + "]";
     }
+};
 
+
+
+class MrcMatrix1DJesse : public MrcMatrix1D {
+public:
+
+  MrcMatrix1DJesse(const TH2& hist)
+    : MrcMatrix1D(hist)
+    { }
+
+  void FillSmearedFit(TH1 &cf, const Fit1DParameters &p, FsiCalculator &fsi, UInt_t npoints) const override
+    {
+      p.fill(cf, fsi, npoints);
+      auto smear_matrix = GetRowNormalizedMatrix(cf);
+      MrcMatrix1D::Smear(cf, *smear_matrix);
+    }
+
+  std::string Describe() const override
+    {
+      return "MrcMatrix1DJesse[" + source_name + "]";
+    }
 };
 
 #endif
