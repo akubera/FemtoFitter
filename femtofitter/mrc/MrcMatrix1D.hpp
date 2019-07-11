@@ -49,6 +49,9 @@ public:
     {
     }
 
+  virtual ~MrcMatrix1D()
+    { }
+
   static std::shared_ptr<Mrc1D> new_shared_ptr(const TH2& hist)
     { return std::make_shared<MrcMatrix1D>(hist); }
 
@@ -366,11 +369,12 @@ public:
   void FillSmearedFit(TH1 &cf, const Fit1DParameters &p, FsiCalculator &fsi, UInt_t npoints) const override
     {
       FillUnsmearedDen(cf);
-      p.multiply(cf, fsi);
+      p.multiply(cf, fsi, npoints);
       auto smear_matrix = GetNormalizedMatrix(cf);
       MrcMatrix1D::Smear(cf, *smear_matrix);
 
-      cf.Divide(smeared_denominator.get());
+      auto denom = GetSmearedDenLike(cf);
+      cf.Divide(denom.get());
     }
 
   std::string Describe() const override
@@ -386,6 +390,12 @@ public:
 
   MrcMatrix1DJesse(const TH2& hist)
     : MrcMatrix1D(hist)
+    { }
+
+  static std::shared_ptr<Mrc1D> new_shared_ptr(const TH2& hist)
+    { return std::make_shared<MrcMatrix1DJesse>(hist); }
+
+  virtual ~MrcMatrix1DJesse()
     { }
 
   void FillSmearedFit(TH1 &cf, const Fit1DParameters &p, FsiCalculator &fsi, UInt_t npoints) const override
