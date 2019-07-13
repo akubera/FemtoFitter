@@ -393,9 +393,28 @@ private:
 
 };
 
-template <typename CRTP>
+template <typename CRTP, typename FitterType>
 struct FitResult1D {
+  using Paramters = typename FitterType::FitParams;
+
   virtual void FillMinuit(TMinuit &) const = 0;
+
+  // virtual auto as_params() const -> typename FitterType::FitParams = 0;
+  Paramters as_params() const
+    {
+      return Paramters(static_cast<const CRTP&>(*this));
+    }
+
+  /// fill histogram with values of the correlation function
+  /// represented by this fit result
+  void fill_cf(TH1 &h, FsiCalculator &fsi, Mrc1D *mrc=nullptr) const
+    {
+      if (mrc == nullptr) {
+        as_params().fill(h, fsi, 1);
+      } else {
+        mrc->FillSmearedFit(h, as_params(), fsi, 1);
+      }
+    }
 };
 
 

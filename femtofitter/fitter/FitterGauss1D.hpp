@@ -50,7 +50,7 @@ struct FitterGauss1D : public Fitter1D<FitterGauss1D> {
   /// \class FitResult
   /// \brief Result of the fit
   ///
-  struct FitResult : FitResult1D<FitResult> {
+  struct FitResult : FitResult1D<FitResult, FitterGauss1D> {
 
     Value norm,
           lam,
@@ -272,11 +272,5 @@ struct FitterGauss1D : public Fitter1D<FitterGauss1D> {
       mrc->FillSmearedFit(h, p, *fsi, 1);
     }
 };
-
-auto
-FitterGauss1D::FitResult::as_params() const -> FitParams
-{
-  return FitParams(*this);
-}
 
 #endif

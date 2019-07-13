@@ -50,7 +50,8 @@ struct FitterLevy1D : Fitter1D<FitterLevy1D> {
 
   /// \class Fit results from TMinuit
   ///
-  struct FitResult {
+  struct FitResult : FitResult1D<FitResult, FitterLevy1D> {
+
     Value norm,
           lam,
           radius,
@@ -70,6 +71,9 @@ struct FitterLevy1D : Fitter1D<FitterLevy1D> {
       , lam(minuit, LAM_PARAM_IDX)
       , radius(minuit, RADIUS_PARAM_IDX)
       , alpha(minuit, ALPHA_PARAM_IDX)
+      { }
+
+    virtual ~FitResult()
       { }
 
     void print() const
@@ -100,7 +104,14 @@ struct FitterLevy1D : Fitter1D<FitterLevy1D> {
         #undef OUT
       }
 
-     FitParams as_params() const;
+    void FillMinuit(TMinuit &minuit) const override
+      {
+        int errflag = 0;
+        minuit.mnparm(NORM_PARAM_IDX, "Norm", norm.value, 0.005, 0.0, 0.0, errflag);
+        minuit.mnparm(LAM_PARAM_IDX, "Lam", lam.value, .01, 0.0, 0.0, errflag);
+        minuit.mnparm(RADIUS_PARAM_IDX, "Radius", radius.value, 0.2, 0.0, 0.0, errflag);
+        minuit.mnparm(ALPHA_PARAM_IDX, "ALPHA", alpha.value, 0.01, 0.0, 0.0, errflag);
+      }
   };
 
 
