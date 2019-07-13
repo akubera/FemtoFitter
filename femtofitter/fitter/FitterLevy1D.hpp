@@ -231,16 +231,18 @@ struct FitterLevy1D : Fitter1D<FitterLevy1D> {
       return errflag;
     }
 
+  FitResult fit_chi2()
+    { return Fitter1D::fit_chi2(); }
+
+  FitResult fit_chi2_mrc()
+    { return Fitter1D::fit_chi2_mrc(); }
+
   FitResult fit_pml()
     { return Fitter1D::fit_pml(); }
 
+  FitResult fit_pml_mrc()
+    { return Fitter1D::fit_pml_mrc(); }
+
 };
-
-auto
-FitterLevy1D::FitResult::as_params() const -> FitParams
-{
-  return FitParams(*this);
-}
-
 
 #endif

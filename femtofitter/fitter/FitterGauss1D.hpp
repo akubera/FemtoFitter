@@ -232,6 +232,9 @@ struct FitterGauss1D : public Fitter1D<FitterGauss1D> {
   FitResult fit_chi2()
     { return Fitter1D::fit_chi2(); }
 
+  FitResult fit_chi2_mrc()
+    { return Fitter1D::fit_chi2_mrc(); }
+
   FitResult fit_pml()
     { return Fitter1D::fit_pml(); }
 
