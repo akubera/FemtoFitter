@@ -284,6 +284,12 @@ public:
       tmp_res.FillMinuit(mminuit);
       return do_fit_minuit(mminuit);
     }
+
+  template <typename Params>
+  void fill_smeared_fit(TH1 &h, const Params &p)
+    {
+      mrc->FillSmearedFit(h, p, *fsi, 1);
+    }
 };
 
 

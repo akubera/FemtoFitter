@@ -247,22 +247,14 @@ struct FitterGauss1D : public Fitter1D<FitterGauss1D> {
 
   // void fit_with_random_inits(TMinuit &minuit, FitResult &res, int);
 
-  void fill(const FitParams &p, TH1 &h, UInt_t npoints=3) const
+  void fill(const FitParams &p, TH1 &h, UInt_t npoints=1) const
     {
       p.fill(h, *fsi, npoints);
     }
 
-  void fill(const FitResult &p, TH1 &h, UInt_t npoints=3) const
+  void fill(const FitResult &p, TH1 &h, UInt_t npoints=1) const
     {
-      p.as_params().fill(h, *fsi, npoints);
-    }
-
-  void fill_and_smear(const FitResult &p, TH1D &h, UInt_t npoints=3) const
-    {
-      mrc->FillUnsmearedDen(h);
-      p.as_params().multiply(h, *fsi, npoints);
-      auto denptr = mrc->GetSmearedDenLike(h);
-      h.Divide(denptr.get());
+      fill(p.as_params(), h, npoints);
     }
 
   void fill_smeared_fit(TH1 &h, const FitResult &fr)
@@ -272,7 +264,7 @@ struct FitterGauss1D : public Fitter1D<FitterGauss1D> {
 
   void fill_smeared_fit(TH1 &h, const FitParams &p)
     {
-      mrc->FillSmearedFit(h, p, *fsi, 1);
+      Fitter1D::fill_smeared_fit(h, p);
     }
 };
 

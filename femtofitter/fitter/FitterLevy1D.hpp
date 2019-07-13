@@ -243,6 +243,25 @@ struct FitterLevy1D : Fitter1D<FitterLevy1D> {
   FitResult fit_pml_mrc()
     { return Fitter1D::fit_pml_mrc(); }
 
+  void fill(const FitParams &p, TH1 &h, UInt_t npoints=1) const
+    {
+      p.fill(h, *fsi, npoints);
+    }
+
+  void fill(const FitResult &p, TH1 &h, UInt_t npoints=1) const
+    {
+      fill(p.as_params(), h, npoints);
+    }
+
+  void fill_smeared_fit(TH1 &h, const FitResult &fr)
+    {
+      fill_smeared_fit(h, fr.as_params());
+    }
+
+  void fill_smeared_fit(TH1 &h, const FitParams &p)
+    {
+      Fitter1D::fill_smeared_fit(h, p);
+    }
 };
 
 #endif
