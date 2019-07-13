@@ -122,6 +122,12 @@ public:
       set_chi2_func(minuit);
     }
 
+  void setup_chi2_mrc_fitter(TMinuit &minuit) const
+    {
+      static_cast<const Impl*>(this)->setup_minuit(minuit);
+      set_chi2_mrc_func(minuit);
+    }
+
   void setup_pml_fitter(TMinuit &minuit) const
     {
       static_cast<const Impl*>(this)->setup_minuit(minuit);
@@ -137,6 +143,11 @@ public:
   void set_chi2_func(TMinuit &minuit) const
     {
       minuit.SetFCN(minuit_func<typename Impl::CalcChi2>);
+    }
+
+  void set_chi2_mrc_func(TMinuit &minuit) const
+    {
+      minuit.SetFCN(minuit_func_mrc<typename Impl::CalcChi2>);
     }
 
   void set_pml_func(TMinuit &minuit) const
@@ -188,6 +199,23 @@ public:
       TMinuit minuit;
       minuit.SetPrintLevel(-1);
       setup_chi2_fitter(minuit);
+      return do_fit_minuit(minuit);
+    }
+
+  auto fit_chi2_mrc()
+    {
+      if (mrc == nullptr) {
+        throw std::runtime_error("Fitter missing Mrc1D object");
+      }
+
+      if (fsi == nullptr) {
+        throw std::runtime_error("Fitter missing Fsi object");
+      }
+
+      TMinuit minuit;
+      minuit.SetPrintLevel(-1);
+
+      setup_chi2_mrc_fitter(minuit);
       return do_fit_minuit(minuit);
     }
 
