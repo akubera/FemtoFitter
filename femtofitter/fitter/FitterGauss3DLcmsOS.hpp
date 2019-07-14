@@ -109,6 +109,13 @@ struct FitterGauss3DLcmsOS : public Fitter3D<FitterGauss3DLcmsOS> {
                                  norm.value, norm.error);
     }
 
+    std::string
+    __repr__() const
+      {
+        return Form("<FitterGauss3DLcmsOS::FitResult Ro=%g Rs=%g Rl=%g Ros=%g lambda=%g norm=%g>",
+                    Ro.value, Rs.value, Rl.value, Ros.value, lam.value, norm.value);
+      }
+
     std::map<std::string, double>
     as_map() const
     {
@@ -119,6 +126,25 @@ struct FitterGauss3DLcmsOS : public Fitter3D<FitterGauss3DLcmsOS> {
       };
 
       #undef OUT
+    }
+
+    PyObject*
+    as_dict() const
+    {
+      #define Add(__name) \
+        PyDict_SetItemString(dict, #__name, PyFloat_FromDouble(__name.value));\
+        PyDict_SetItemString(dict, #__name "_err", PyFloat_FromDouble(__name.error))
+
+      auto *dict = PyDict_New();
+      Add(Ro);
+      Add(Rs);
+      Add(Rl);
+      Add(Ros);
+      Add(lam);
+      Add(norm);
+
+      return dict;
+      #undef Add
     }
   };
 
@@ -198,6 +224,30 @@ struct FitterGauss3DLcmsOS : public Fitter3D<FitterGauss3DLcmsOS> {
 
         hist.SetBinContent(i,j,k, hist.GetBinContent(i,j,k) * gauss({qo, qs, ql}, K));
       }
+    }
+    std::string
+    __repr__() const
+      {
+        return Form("<FitterGauss3DLcmsOS::FitParam Ro=%g Rs=%g Rl=%g Ros=%g lambda=%g norm=%g>",
+                    Ro, Rs, Rl, Ros, lam, norm);
+      }
+
+    PyObject*
+    as_dict() const
+    {
+      #define Add(__name) \
+        PyDict_SetItemString(dict, #__name, PyFloat_FromDouble(__name))
+
+      auto *dict = PyDict_New();
+      Add(Ro);
+      Add(Rs);
+      Add(Rl);
+      Add(Ros);
+      Add(lam);
+      Add(norm);
+
+      return dict;
+      #undef Add
     }
   };
 

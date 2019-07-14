@@ -16,6 +16,8 @@
 #include <TMinuit.h>
 #include <TGraph.h>
 
+#include <Python.h>
+
 #include <array>
 #include <vector>
 #include <string>
@@ -110,6 +112,13 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
                                  norm.value, norm.error);
     }
 
+    std::string
+    __repr__() const
+      {
+        return Form("<FitterGaussOSL::FitResult Ro=%g Rs=%g Rl=%g lambda=%g norm=%g>",
+                    Ro.value, Rs.value, Rl.value, lam.value, norm.value);
+      }
+
     std::map<std::string, double>
     as_map() const
     {
@@ -120,6 +129,24 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
       };
 
       #undef OUT
+    }
+
+    PyObject*
+    as_dict() const
+    {
+      #define Add(__name) \
+        PyDict_SetItemString(dict, #__name, PyFloat_FromDouble(__name.value));\
+        PyDict_SetItemString(dict, #__name "_err", PyFloat_FromDouble(__name.error))
+
+      auto *dict = PyDict_New();
+      Add(Ro);
+      Add(Rs);
+      Add(Rl);
+      Add(lam);
+      Add(norm);
+
+      return dict;
+      #undef Add
     }
 
     FitParams as_params() const;
@@ -291,6 +318,31 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
         hist.SetBinContent(i,j,k, hist.GetBinContent(i,j,k) * gauss({qo, qs, ql}, K));
       }
     }
+
+    std::string
+    __repr__() const
+      {
+        return Form("<FitterGaussOSL::FitParam Ro=%g Rs=%g Rl=%g lambda=%g norm=%g>",
+                    Ro, Rs, Rl, lam, norm);
+      }
+
+    PyObject*
+    as_dict() const
+    {
+      #define Add(__name) \
+        PyDict_SetItemString(dict, #__name, PyFloat_FromDouble(__name))
+
+      auto *dict = PyDict_New();
+      Add(Ro);
+      Add(Rs);
+      Add(Rl);
+      Add(lam);
+      Add(norm);
+
+      return dict;
+      #undef Add
+    }
+
   };
 
   /// Construct fitter from numerator denominator qinv histograms

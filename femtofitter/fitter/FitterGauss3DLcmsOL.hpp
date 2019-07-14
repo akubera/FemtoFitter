@@ -4,6 +4,8 @@
 
 #pragma once
 
+#ifndef FITTER_FITTERGAUSS3DLCMSOL_HPP
+#define FITTER_FITTERGAUSS3DLCMSOL_HPP
 
 #include <TFile.h>
 #include <TH3.h>
@@ -39,6 +41,9 @@ struct FitterGauss3DLcmsOL : public Fitter3D<FitterGauss3DLcmsOL> {
     ROL_PARAM_IDX = 6,
   };
 
+  static std::string GetName()
+    { return "Gauss3DLcmsOL"; }
+
   static unsigned char CountParams()
     { return 6; }
 
@@ -51,10 +56,13 @@ struct FitterGauss3DLcmsOL : public Fitter3D<FitterGauss3DLcmsOL> {
         double norm=1.0)
   {
     const double
-      Eo = q[0] * q[0] * RSq[0],
-      Es = q[1] * q[1] * RSq[1],
-      El = q[2] * q[2] * RSq[2],
-      Eol = q[0] * q[2] * std::fabs(Rol) * Rol,
+      qo = q[0],
+      qs = q[1],
+      ql = q[2],
+      Eo = qo * qo * RSq[0],
+      Es = qs * qs * RSq[1],
+      El = ql * ql * RSq[2],
+      Eol = qo * ql * std::fabs(Rol) * Rol,
       gauss = 1.0 + std::exp(-(Eo + Es + El + Eol) / HBAR_C_SQ),
       result = (1.0 - lam) + lam * K * gauss;
 
@@ -110,6 +118,13 @@ struct FitterGauss3DLcmsOL : public Fitter3D<FitterGauss3DLcmsOL> {
                                  norm.value, norm.error);
     }
 
+    std::string
+    __repr__() const
+      {
+        return Form("<FitterGauss3DLcmsOL::FitResult Ro=%g Rs=%g Rl=%g Rol=%g lambda=%g norm=%g>",
+                    Ro.value, Rs.value, Rl.value, Rol.value, lam.value, norm.value);
+      }
+
     std::map<std::string, double>
     as_map() const
     {
@@ -120,6 +135,25 @@ struct FitterGauss3DLcmsOL : public Fitter3D<FitterGauss3DLcmsOL> {
       };
 
       #undef OUT
+    }
+
+    PyObject*
+    as_dict() const
+    {
+      #define Add(__name) \
+        PyDict_SetItemString(dict, #__name, PyFloat_FromDouble(__name.value));\
+        PyDict_SetItemString(dict, #__name "_err", PyFloat_FromDouble(__name.error))
+
+      auto *dict = PyDict_New();
+      Add(Ro);
+      Add(Rs);
+      Add(Rl);
+      Add(Rol);
+      Add(lam);
+      Add(norm);
+
+      return dict;
+      #undef Add
     }
   };
 
@@ -199,6 +233,31 @@ struct FitterGauss3DLcmsOL : public Fitter3D<FitterGauss3DLcmsOL> {
 
         hist.SetBinContent(i,j,k, hist.GetBinContent(i,j,k) * gauss({qo, qs, ql}, K));
       }
+    }
+
+    std::string
+    __repr__() const
+      {
+        return Form("<FitterGauss3DLcmsOL::FitParam Ro=%g Rs=%g Rl=%g Rol=%g lambda=%g norm=%g>",
+                    Ro, Rs, Rl, Rol, lam, norm);
+      }
+
+    PyObject*
+    as_dict() const
+    {
+      #define Add(__name) \
+        PyDict_SetItemString(dict, #__name, PyFloat_FromDouble(__name))
+
+      auto *dict = PyDict_New();
+      Add(Ro);
+      Add(Rs);
+      Add(Rl);
+      Add(Rol);
+      Add(lam);
+      Add(norm);
+
+      return dict;
+      #undef Add
     }
   };
 
@@ -293,3 +352,5 @@ struct FitterGauss3DLcmsOL : public Fitter3D<FitterGauss3DLcmsOL> {
     { return Fitter3D::fit(); }
 
 };
+
+#endif

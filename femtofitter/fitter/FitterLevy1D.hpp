@@ -2,25 +2,22 @@
 /// \file femtofitter/fitter/FitterLevy1D.hpp
 ///
 
+#pragma once
+
+#ifndef FITTERLEVY1D_HPP
+#define FITTERLEVY1D_HPP
 
 #include "Fitter1D.hpp"
-#include "Value.hpp"
-#include "math/constants.hh"
-
-
-#ifndef LEVY1D_HPP
-#define LEVY1D_HPP
 
 
 /// \class FitterLevy1D
-/// \brief
+/// \brief Fit 1D Levy function
 ///
 struct FitterLevy1D : Fitter1D<FitterLevy1D> {
 
   using Super = Fitter1D<FitterGauss1D>;
 
   struct FitParams;
-  struct FitInput;
 
   static std::string GetName()
     { return "Levy1D"; }
@@ -89,6 +86,13 @@ struct FitterLevy1D : Fitter1D<FitterLevy1D> {
                                    norm.value, norm.error);
       }
 
+    std::string
+    __repr__() const
+      {
+        return Form("<FitterLevy1D::FitParam radius=%g lambda=%g alpha=%g norm=%g>",
+                    radius.value, lam.value, alpha.value, norm.value);
+      }
+
     std::map<std::string, double>
     as_map() const
       {
@@ -104,13 +108,28 @@ struct FitterLevy1D : Fitter1D<FitterLevy1D> {
         #undef OUT
       }
 
+    PyObject*
+    as_dict() const
+      {
+        auto *dict = PyDict_New();
+        PyDict_SetItemString(dict, "radius", PyFloat_FromDouble(radius.value));
+        PyDict_SetItemString(dict, "radius_err", PyFloat_FromDouble(radius.error));
+        PyDict_SetItemString(dict, "lam", PyFloat_FromDouble(lam.value));
+        PyDict_SetItemString(dict, "lam_err", PyFloat_FromDouble(lam.error));
+        PyDict_SetItemString(dict, "alpha", PyFloat_FromDouble(alpha.value));
+        PyDict_SetItemString(dict, "alpha_err", PyFloat_FromDouble(alpha.error));
+        PyDict_SetItemString(dict, "norm", PyFloat_FromDouble(norm.value));
+        PyDict_SetItemString(dict, "norm_err", PyFloat_FromDouble(norm.error));
+        return dict;
+      }
+
     void FillMinuit(TMinuit &minuit) const override
       {
         int errflag = 0;
         minuit.mnparm(NORM_PARAM_IDX, "Norm", norm.value, 0.005, 0.0, 0.0, errflag);
         minuit.mnparm(LAM_PARAM_IDX, "Lam", lam.value, .01, 0.0, 0.0, errflag);
         minuit.mnparm(RADIUS_PARAM_IDX, "Radius", radius.value, 0.2, 0.0, 0.0, errflag);
-        minuit.mnparm(ALPHA_PARAM_IDX, "ALPHA", alpha.value, 0.01, 0.0, 0.0, errflag);
+        minuit.mnparm(ALPHA_PARAM_IDX, "Alpha", alpha.value, 0.01, 0.0, 0.0, errflag);
       }
   };
 
@@ -179,6 +198,24 @@ struct FitterLevy1D : Fitter1D<FitterLevy1D> {
         }
       }
 
+    std::string
+    __repr__() const
+      {
+        return Form("<FitterLevy1D::FitParam radius=%g lambda=%g alpha=%g norm=%g>",
+                    radius, lam, alpha, norm);
+      }
+
+    PyObject*
+    as_dict() const
+      {
+        auto *dict = PyDict_New();
+        PyDict_SetItemString(dict, "radius", PyFloat_FromDouble(radius));
+        PyDict_SetItemString(dict, "lam", PyFloat_FromDouble(lam));
+        PyDict_SetItemString(dict, "alpha", PyFloat_FromDouble(alpha));
+        PyDict_SetItemString(dict, "norm", PyFloat_FromDouble(norm));
+        return dict;
+      }
+
     // void fill(TH1 &h, FsiCalculator *fsi=nullptr) const
     //   {
     //     std::function<double(double)> K = fsi ? fsi->ForRadius(radius)
@@ -218,7 +255,7 @@ struct FitterLevy1D : Fitter1D<FitterLevy1D> {
       minuit.mnparm(NORM_PARAM_IDX, "Norm", 0.25, 0.02, 0.0, 0.0, errflag);
       minuit.mnparm(LAM_PARAM_IDX, "Lam", 0.2, 0.1, 0.0, 1.0, errflag);
       minuit.mnparm(RADIUS_PARAM_IDX, "Radius", 2.0, 1.0, 0.0, 0.0, errflag);
-      minuit.mnparm(ALPHA_PARAM_IDX, "ALPHA", 1.9, 0.01, 0.0, 0.0, errflag);
+      minuit.mnparm(ALPHA_PARAM_IDX, "Alpha", 1.9, 0.01, 0.0, 0.0, errflag);
 
       const double this_dbl = static_cast<double>((intptr_t)this);
       minuit.mnparm(DATA_PARAM_IDX, "DATA_PTR", this_dbl, 0, 0, INTPTR_MAX, errflag);

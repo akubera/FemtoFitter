@@ -120,6 +120,13 @@ struct FitterLevyFull : public Fitter3D<FitterLevyFull> {
       return buff.data();
     }
 
+    std::string
+    __repr__() const
+      {
+        return Form("<FitterLevyFull::FitResult Ro=%g Rs=%g Rl=%g alpha=(%g,%g,%g) lambda=%g norm=%g>",
+                    Ro.value, Rs.value, Rl.value, alphao.value, alphas.value, alphal.value, lam.value, norm.value);
+      }
+
     std::map<std::string, double>
     as_map() const
     {
@@ -130,6 +137,27 @@ struct FitterLevyFull : public Fitter3D<FitterLevyFull> {
       };
 
       #undef OUT
+    }
+
+    PyObject*
+    as_dict() const
+    {
+      #define Add(__name) \
+        PyDict_SetItemString(dict, #__name, PyFloat_FromDouble(__name.value));\
+        PyDict_SetItemString(dict, #__name "_err", PyFloat_FromDouble(__name.error))
+
+      auto *dict = PyDict_New();
+      Add(Ro);
+      Add(Rs);
+      Add(Rl);
+      Add(alphao);
+      Add(alphas);
+      Add(alphal);
+      Add(lam);
+      Add(norm);
+
+      return dict;
+      #undef Add
     }
   };
 
@@ -195,6 +223,33 @@ struct FitterLevyFull : public Fitter3D<FitterLevyFull> {
         std::array<double, 3> Rsq = {Ro*Ro, Rs*Rs, Rl*Rl};
         return FitterLevyFull::gauss(q, Rsq, lam, alphao, alphas, alphal, K, norm);
       }
+
+    std::string
+    __repr__() const
+      {
+        return Form("<FitterLevyFull::FitParam Ro=%g Rs=%g Rl=%g lambda=%g norm=%g>",
+                    Ro, Rs, Rl, lam, norm);
+      }
+
+    PyObject*
+    as_dict() const
+    {
+      #define Add(__name) \
+        PyDict_SetItemString(dict, #__name, PyFloat_FromDouble(__name))
+
+      auto *dict = PyDict_New();
+      Add(Ro);
+      Add(Rs);
+      Add(Rl);
+      Add(alphao);
+      Add(alphas);
+      Add(alphal);
+      Add(lam);
+      Add(norm);
+
+      return dict;
+      #undef Add
+    }
   };
 
   /// Construct fitter from numerator denominator qinv histograms

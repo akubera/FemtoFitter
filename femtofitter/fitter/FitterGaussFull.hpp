@@ -40,6 +40,9 @@ struct FitterGaussFull : public Fitter3D<FitterGaussFull> {
     RSL_PARAM_IDX = 8,
   };
 
+  static std::string GetName()
+    { return "FitterGaussFull"; }
+
   static unsigned char CountParams()
     { return 8; }
 
@@ -128,6 +131,34 @@ struct FitterGaussFull : public Fitter3D<FitterGaussFull> {
       };
 
       #undef OUT
+    }
+
+    std::string
+    __repr__() const
+      {
+        return Form("<FitterGaussFull::FitResult Ro=%g Rs=%g Rl=%g Ros=%g Rol=%g Rsl=%g lambda=%g norm=%g>",
+                    Ro.value, Rs.value, Rl.value, Ros.value, Rol.value, Rsl.value, lam.value, norm.value);
+      }
+
+    PyObject*
+    as_dict() const
+    {
+      #define Add(__name) \
+        PyDict_SetItemString(dict, #__name, PyFloat_FromDouble(__name.value));\
+        PyDict_SetItemString(dict, #__name "_err", PyFloat_FromDouble(__name.error))
+
+      auto *dict = PyDict_New();
+      Add(Ro);
+      Add(Rs);
+      Add(Rl);
+      Add(Ros);
+      Add(Rol);
+      Add(Rsl);
+      Add(lam);
+      Add(norm);
+
+      return dict;
+      #undef Add
     }
   };
 
@@ -220,6 +251,33 @@ struct FitterGaussFull : public Fitter3D<FitterGaussFull> {
           hist.SetBinContent(i,j,k, CF * factor );
         }
       }
+
+    std::string
+    __repr__() const
+      {
+        return Form("<FitterGaussFull::FitParam Ro=%g Rs=%g Rl=%g Ros=%g Rol=%g Rsl=%g lambda=%g norm=%g>",
+                    Ro, Rs, Rl, Ros, Rol, Rsl, lam, norm);
+      }
+
+    PyObject*
+    as_dict() const
+    {
+      #define Add(__name) \
+        PyDict_SetItemString(dict, #__name, PyFloat_FromDouble(__name))
+
+      auto *dict = PyDict_New();
+      Add(Ro);
+      Add(Rs);
+      Add(Rl);
+      Add(Ros);
+      Add(Rol);
+      Add(Rsl);
+      Add(lam);
+      Add(norm);
+
+      return dict;
+      #undef Add
+    }
   };
 
   /// Construct fitter from numeratork, denominator, & qinv histograms

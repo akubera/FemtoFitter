@@ -8,8 +8,6 @@
 #define FITTER_FITTERGAUSS1D_HPP
 
 #include "Fitter1D.hpp"
-#include "Value.hpp"
-#include "math/constants.hh"
 
 
 /// \class FitterGauss1D
@@ -20,7 +18,6 @@ struct FitterGauss1D : public Fitter1D<FitterGauss1D> {
   using Super = Fitter1D<FitterGauss1D>;
 
   struct FitParams;
-  struct FitInput;
 
   static std::string GetName()
     { return "Gauss1D"; }
@@ -104,6 +101,19 @@ struct FitterGauss1D : public Fitter1D<FitterGauss1D> {
                     radius.value, lam.value, norm.value);
       }
 
+    PyObject*
+    as_dict() const
+      {
+        auto *dict = PyDict_New();
+        PyDict_SetItemString(dict, "radius", PyFloat_FromDouble(radius.value));
+        PyDict_SetItemString(dict, "radius_err", PyFloat_FromDouble(radius.error));
+        PyDict_SetItemString(dict, "lam", PyFloat_FromDouble(lam.value));
+        PyDict_SetItemString(dict, "lam_err", PyFloat_FromDouble(lam.error));
+        PyDict_SetItemString(dict, "norm", PyFloat_FromDouble(norm.value));
+        PyDict_SetItemString(dict, "norm_err", PyFloat_FromDouble(norm.error));
+        return dict;
+      }
+
     double evaluate(const double q, const double K) const
       { return FitterGauss1D::gauss(q, radius * radius, lam, K, norm); }
 
@@ -167,6 +177,16 @@ struct FitterGauss1D : public Fitter1D<FitterGauss1D> {
       {
         return Form("<FitterGauss1D::FitParam radius=%f lambda=%f norm=%f>",
                     radius, lam, norm);
+      }
+
+    PyObject*
+    as_dict() const
+      {
+        auto *dict = PyDict_New();
+        PyDict_SetItemString(dict, "radius", PyFloat_FromDouble(radius));
+        PyDict_SetItemString(dict, "lam", PyFloat_FromDouble(lam));
+        PyDict_SetItemString(dict, "norm", PyFloat_FromDouble(norm));
+        return dict;
       }
 
     double evaluate(const double q, const double K) const

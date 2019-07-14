@@ -10,12 +10,17 @@
 #include "CalculatorResid.hpp"
 #include "CalculatorFsi.hpp"
 
-#include "./Data1D.hpp"
+#include "Data1D.hpp"
 #include "mrc/Mrc.hpp"
+#include "Value.hpp"
+#include "math/constants.hh"
 
 #include <typeinfo>
 #include <TMinuit.h>
 #include <TFile.h>
+
+#include <Python.h>
+
 #include <iostream>
 
 #include "CoulombHist.hpp"
