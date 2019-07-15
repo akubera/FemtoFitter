@@ -330,4 +330,139 @@ public:
     }
 };
 
+/// \class Fit3DParameters
+/// \brief Abstract base class for 3D fitter parameters
+struct Fit3DParameters {
+
+  virtual ~Fit3DParameters()
+    { }
+
+  virtual void fill(TH3 &, FsiCalculator *fsi=nullptr, UInt_t npoints=1) const = 0;
+
+  virtual void multiply(TH1 &, FsiCalculator *fsi=nullptr, UInt_t npoints=1) const = 0;
+};
+
+
+/// \class FitParam3D
+/// \brief Template based superclass for fit parameters
+///
+template <typename CRTP>
+struct FitParam3D : Fit3DParameters {
+
+  virtual ~FitParam3D()
+    { }
+
+  void fill(TH3 &h, FsiCalculator *fsi=nullptr, UInt_t npoints=1) const override
+    {
+      auto &self = static_cast<const CRTP&>(*this);
+
+      auto callback = [&](int i, int j, int k, double cf)
+        {
+          h.SetBinContent(i, j, k, cf);
+        };
+
+
+      auto loop = [&] (auto fsi_func)
+        {
+          if (npoints == 1) {
+            _loop_over_bins(self, h, fsi_func, callback);
+          } else {
+            _loop_over_bins(self, h, fsi_func, npoints, callback);
+          }
+        };
+
+      if (fsi == nullptr) {
+        auto no_fsi = [] () { return 1.0; };
+        loop(no_fsi);
+        // if (npoints == 1) {
+        //   _loop_over_bins(self, h, no_fsi, callback);
+        // } else {
+        //   _loop_over_bins(self, h, no_fsi, npoints, callback);
+        // }
+      } else {
+        auto Kfsi = fsi->ForRadius(self.Rinv());
+        loop(Kfsi);
+        // if (npoints == 1) {
+        //   _loop_over_bins(self, h, Kfsi, callback);
+        // } else {
+        //   _loop_over_bins(self, h, Kfsi, npoints, callback);
+        // }
+      }
+
+
+    }
+
+  void multiply(TH1 &, FsiCalculator *fsi=nullptr, UInt_t npoints=1) const override
+    {
+
+    }
+
+private:
+
+  template <typename FsiFuncType, typename FuncType>
+  void _loop_over_bins(const CRTP &self, TH1 &h, FsiFuncType Kfsi, FuncType func) const
+    {
+      const TAxis
+        &xaxis = *h.GetXaxis(),
+        &yaxis = *h.GetYaxis(),
+        &zaxis = *h.GetZaxis();
+
+      for (int k=1; k <= zaxis.GetNbins(); ++k) {
+        const double qz = zaxis.GetBinCenter(k);
+      for (int j=1; j <= yaxis.GetNbins(); ++j) {
+        const double qy = yaxis.GetBinCenter(j);
+      for (int i=1; i <= xaxis.GetNbins(); ++i) {
+        const double qx = xaxis.GetBinCenter(i);
+
+        // const double k = Kfsi(q);
+        const double k = 1.0;
+        const double cf = self.evaluate(qx, qy, qz, k);
+        func(i, j, k, cf);
+      } } }
+    }
+
+  template <typename FsiFuncType, typename FuncType>
+  void _loop_over_bins(const CRTP &self, TH1 &h, FsiFuncType Kfsi, UInt_t npoints, FuncType func) const
+    {
+      const TAxis
+        &xaxis = *h.GetXaxis(),
+        &yaxis = *h.GetYaxis(),
+        &zaxis = *h.GetZaxis();
+
+      for (int k=1; k <= zaxis.GetNbins(); ++k) {
+        const double
+          qzlo = zaxis.GetBinLowEdge(k),
+          qzhi = zaxis.GetBinUpEdge(k),
+          qzstep = (qzhi - qzlo) / npoints,
+          qzstart = qzlo + qzstep / 2;
+
+      for (int j=1; j <= yaxis.GetNbins(); ++j) {
+        const double
+          qylo = yaxis.GetBinLowEdge(j),
+          qyhi = yaxis.GetBinUpEdge(j),
+          qystep = (qyhi - qylo) / npoints,
+          qystart = qylo + qystep / 2;
+
+      for (int i=1; i <= xaxis.GetNbins(); ++i) {
+        const double
+          qxlo = xaxis.GetBinLowEdge(i),
+          qxhi = xaxis.GetBinUpEdge(i),
+          qxstep = (qxhi - qxlo) / npoints,
+          qxstart = qxlo + qxstep / 2;
+
+        double sum = 0.0;
+        for (double qz=qzstart; qz < qzhi; qz += qzstep) {
+        for (double qy=qystart; qy < qyhi; qy += qystep) {
+        for (double qx=qxstart; qx < qxhi; qx += qxstep) {
+          double k = Kfsi(std::sqrt(qx * qy * qz));
+          sum += self.evaluate(qx, qy, qz, k);
+        } } }
+
+        const double mean_cf = sum / (npoints * npoints * npoints);
+        func(i, j, k, mean_cf);
+      } } }
+    }
+
+};
+
 #endif

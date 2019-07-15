@@ -101,20 +101,58 @@ public:
 
   void Smear(TH3 &hist) const override
     {
-      TH3& mrc_factor = GetMrcFactor(hist);
-      hist.Multiply(&mrc_factor);
+      auto mrc_factor = GetSmearingFactor(hist);
+      hist.Multiply(mrc_factor.get());
     }
 
   void Unsmear(TH3 &hist) const override
     {
-      TH3& mrc_factor = GetMrcFactor(hist);
-      hist.Divide(&mrc_factor);
+      auto mrc_factor = GetSmearingFactor(hist);
+      hist.Divide(mrc_factor.get());
     }
 
-  TH3& GetMrcFactor(TH3 &hist) const
+  std::shared_ptr<TH3> GetSmearingFactor(TH3 &hist) const
     {
       if (auto mrc = cache[hist]) {
-        return *mrc;
+        return mrc;
+      }
+
+      auto rebinnable = [] (const TAxis &ax1, const TAxis &ax2, int &nbins)
+        {
+          if (ax1.GetXmin() == ax2.GetXmin() &&
+              ax1.GetXmax() == ax2.GetXmax() &&
+              std::remquo(ax1.GetNbins(), ax2.GetNbins(), &nbins) == 0.0) {
+            return true;
+          }
+          return false;
+        };
+
+      // Use Rebin3D
+      int rebinx = 0, rebiny = 0, rebinz = 0;
+      if (rebinnable(*dg->GetXaxis(), *hist.GetXaxis(), rebinx) &&
+          rebinnable(*dg->GetYaxis(), *hist.GetYaxis(), rebiny) &&
+          rebinnable(*dg->GetZaxis(), *hist.GetZaxis(), rebinz)) {
+
+        std::shared_ptr<TH3> mrc(nr->Rebin3D(rebinx, rebiny, rebinz, "smearfactor"));
+
+        if (rebinx == 1 && rebiny == 1 && rebinz == 1) {
+          mrc->Divide(dr.get());
+          mrc->Multiply(dg.get());
+          mrc->Divide(ng.get());
+
+        } else {
+          std::unique_ptr<TH3>
+            ptr_ng(ng->Rebin3D(rebinx, rebiny, rebinz, "ng")),
+            ptr_dg(dg->Rebin3D(rebinx, rebiny, rebinz, "dg")),
+            ptr_dr(dr->Rebin3D(rebinx, rebiny, rebinz, "dr"));
+
+          mrc->Divide(ptr_dr.get());
+          mrc->Multiply(ptr_dg.get());
+          mrc->Divide(ptr_ng.get());
+        }
+
+        cache[hist] = mrc;
+        return mrc;
       }
 
       std::shared_ptr<TH3> mrc(static_cast<TH3*>(hist.Clone()));
@@ -165,10 +203,17 @@ public:
 
       cache.insert(hist, mrc);
 
-      return *mrc;
+      return mrc;
     }
 
-  ///
+  void FillSmearedFit(TH3 &cf, const Fit3DParameters &p, FsiCalculator &fsi, UInt_t npoints) const override
+    {
+      p.fill(cf, &fsi, npoints);
+      auto smearing_matrix = GetSmearingFactor(cf);
+      cf.Multiply(smearing_matrix.get());
+    }
+
+  /// Return MRC class and source file
   std::string Describe() const override
     {
       return "MrcRatio3D[" + source_name + "]";

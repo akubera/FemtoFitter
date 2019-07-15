@@ -192,7 +192,7 @@ struct Mrc {
 
 
 class Fit1DParameters;
-
+class Fit3DParameters;
 
 /// \class Mrc1D
 /// \brief Abstract class for 1D momentum resolution corrector
@@ -239,6 +239,8 @@ struct Mrc3D : public Mrc {
     {}
   Mrc3D(const Mrc3D&)
     {}
+
+  virtual void FillSmearedFit(TH3 &cf, const Fit3DParameters&, FsiCalculator&, UInt_t npoints=1) const = 0;
 
   virtual void Smear(TH3&) const = 0;
   virtual void Unsmear(TH3&) const = 0;
