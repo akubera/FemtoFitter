@@ -99,6 +99,36 @@ struct Data1D {
   auto end() const
     { return data.end(); }
 
+  /// Represent data in 2D array
+  std::array<std::vector<double>, 3> as_array() const
+    {
+      std::array<std::vector<double>, 3> result;
+      result[0].reserve(size());
+      result[1].reserve(size());
+      result[2].reserve(size());
+
+      for (const auto &datum : data) {
+        result[0].push_back(datum.qinv);
+        result[1].push_back(datum.num);
+        result[2].push_back(datum.den);
+      }
+
+      return result;
+    }
+
+  /// Represent data in 2D array
+  std::vector<std::array<double, 3>> as_array_T() const
+    {
+      std::vector<std::array<double, 3>> result;
+      result.reserve(size());
+
+      for (const auto &datum : data) {
+        // result.emplace_back(datum.qinv, datum.num, datum.den);
+        result.push_back({datum.qinv, datum.num, datum.den});
+      }
+
+      return result;
+    }
 };
 
 
