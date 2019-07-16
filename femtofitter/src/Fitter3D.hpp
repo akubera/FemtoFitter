@@ -337,9 +337,12 @@ struct Fit3DParameters {
   virtual ~Fit3DParameters()
     { }
 
-  virtual void fill(TH3 &, FsiCalculator *fsi=nullptr, UInt_t npoints=1) const = 0;
+  virtual void fill(TH3 &h, const TH3 &qinv, FsiCalculator &fsi) const = 0;
+  virtual void multiply(TH3 &h, const TH3 &qinv, FsiCalculator &fsi) const = 0;
 
-  virtual void multiply(TH1 &, FsiCalculator *fsi=nullptr, UInt_t npoints=1) const = 0;
+  virtual void fill(TH3 &h, const TH3 &qinv, FsiCalculator &fsi, UInt_t npoints) const = 0;
+  virtual void multiply(TH3 &h, const TH3 &qinv, FsiCalculator &fsi, UInt_t npoints) const = 0;
+
 };
 
 
@@ -352,17 +355,33 @@ struct FitParam3D : Fit3DParameters {
   virtual ~FitParam3D()
     { }
 
-  void fill(TH3 &h, FsiCalculator *fsi=nullptr, UInt_t npoints=1) const override
+  void fill(TH3 &h, const TH3 &qinv, FsiCalculator &fsi) const override
     {
-      _loop_over_bins(fsi, npoints, [&](int i, int j, int k, double cf)
+      _loop_over_bins(h, qinv, fsi, [&](int i, int j, int k, double cf)
         {
           h.SetBinContent(i, j, k, cf);
         });
     }
 
-  void multiply(TH1 &h, FsiCalculator *fsi=nullptr, UInt_t npoints=1) const override
+  void multiply(TH3 &h, const TH3 &qinv, FsiCalculator &fsi) const override
     {
-      _loop_over_bins(fsi, npoints, [&](int i, int j, int k, double cf)
+      _loop_over_bins(h, qinv, fsi, [&](int i, int j, int k, double cf)
+        {
+          h.SetBinContent(i, j, k, cf * h.GetBinContent(i, j, k));
+        });
+    }
+
+  void fill(TH3 &h, const TH3 &qinv, FsiCalculator &fsi, UInt_t npoints) const override
+    {
+      _loop_over_bins(h, qinv, fsi, npoints, [&](int i, int j, int k, double cf)
+        {
+          h.SetBinContent(i, j, k, cf);
+        });
+    }
+
+  void multiply(TH3 &h, const TH3 &qinv, FsiCalculator &fsi, UInt_t npoints) const override
+    {
+      _loop_over_bins(h, qinv, fsi, npoints, [&](int i, int j, int k, double cf)
         {
           h.SetBinContent(i, j, k, cf * h.GetBinContent(i, j, k));
         });
@@ -370,25 +389,13 @@ struct FitParam3D : Fit3DParameters {
 
 private:
 
-  template <typename FsiFuncType, typename FuncType>
-  void _loop_over_bins(TH1 &h, FsiCalculator *fsi, UInt_t npoints, FuncType func) const
+  template <typename FuncType>
+  void _loop_over_bins(TH3 &h, const TH3 &qinvh, FsiCalculator &fsi, FuncType func) const
     {
       auto &self = static_cast<const CRTP&>(*this);
 
-      auto Kfsi = fsi == nullptr
-                ? [] () { return 1.0; }
-                : fsi->ForRadius(self.Rinv());
+      auto Kfsi = fsi.ForRadius(self.Rinv());
 
-      auto loop = npoints == 1
-                ? [&] (auto &fsi_func) { _loop_over_bins(self, h, fsi_func, func); }
-                : [&] (auto &fsi_func) { _loop_over_bins(self, h, fsi_func, npoints, func); };
-
-      loop(Kfsi);
-    }
-
-  template <typename FsiFuncType, typename FuncType>
-  void _loop_over_bins(const CRTP &self, TH1 &h, FsiFuncType Kfsi, FuncType func) const
-    {
       const TAxis
         &xaxis = *h.GetXaxis(),
         &yaxis = *h.GetYaxis(),
@@ -402,17 +409,20 @@ private:
         const double qx = xaxis.GetBinCenter(i);
 
         const double
-          q = std::sqrt(qx * qy * qz),
-          k = Kfsi(q),
+          qinv = const_cast<TH3&>(qinvh).Interpolate(qx, qy, qz),
+          k = Kfsi(qinv),
           cf = self.evaluate(qx, qy, qz, k);
-
         func(i, j, k, cf);
       } } }
     }
 
-  template <typename FsiFuncType, typename FuncType>
-  void _loop_over_bins(const CRTP &self, TH1 &h, FsiFuncType Kfsi, UInt_t npoints, FuncType func) const
+  template <typename FuncType>
+  void _loop_over_bins(TH3 &h, const TH3 &qinvh, FsiCalculator &fsi, UInt_t npoints, FuncType func) const
     {
+      auto &self = static_cast<const CRTP&>(*this);
+
+      auto Kfsi = fsi.ForRadius(self.Rinv());
+
       const TAxis
         &xaxis = *h.GetXaxis(),
         &yaxis = *h.GetYaxis(),
@@ -443,8 +453,12 @@ private:
         for (double qz=qzstart; qz < qzhi; qz += qzstep) {
         for (double qy=qystart; qy < qyhi; qy += qystep) {
         for (double qx=qxstart; qx < qxhi; qx += qxstep) {
-          double k = Kfsi(std::sqrt(qx * qy * qz));
-          sum += self.evaluate(qx, qy, qz, k);
+          const double
+            qinv = const_cast<TH3&>(qinvh).Interpolate(qx, qy, qz),
+            k = Kfsi(qinv),
+            cf = self.evaluate(qx, qy, qz, k);
+
+          sum += cf;
         } } }
 
         const double mean_cf = sum / (npoints * npoints * npoints);
