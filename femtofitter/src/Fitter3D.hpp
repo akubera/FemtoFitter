@@ -90,9 +90,15 @@ public:
   static std::unique_ptr<Impl>
   From(TDirectory &tdir, double limit=0.0)
     {
-      TH3 *num = static_cast<TH3*>(tdir.Get("num")),
-          *den = static_cast<TH3*>(tdir.Get("den")),
-          *qinv = static_cast<TH3*>(tdir.Get("qinv"));
+      return From(tdir, {"num", "den", "qinv"}, limit);
+    }
+
+  static std::unique_ptr<Impl>
+  From(TDirectory &tdir, std::array<const TString, 3> names, double limit=0.0)
+    {
+      TH3 *num = static_cast<TH3*>(tdir.Get(names[0])),
+          *den = static_cast<TH3*>(tdir.Get(names[1])),
+          *qinv = static_cast<TH3*>(tdir.Get(names[2]));
 
       if (!num || !den || !qinv) {
         std::cerr << "Error loading " << typeid(Impl).name() << " histograms from path "
