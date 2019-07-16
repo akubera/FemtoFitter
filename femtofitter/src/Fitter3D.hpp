@@ -43,12 +43,39 @@ public:
   /// The final-state-interaction calculator
   std::shared_ptr<FsiCalculator> fsi = nullptr;
 
-  /// Used to initialize parameters
-  std::unique_ptr<ParamHints> paramhints;
+  /// The Momentum Resolution Correction
+  std::shared_ptr<Mrc3D> mrc = nullptr;
 
-  Fitter3D(TH3 &n, TH3 &d, TH3 &q, double limit, std::shared_ptr<FsiCalculator> fsi_calc=nullptr)
+  /// temporary histogram used during fitting
+  mutable std::unique_ptr<TH3D> _tmp_cf = nullptr;
+
+  /// Used to initialize parameters
+  std::unique_ptr<ParamHints> paramhints = nullptr;
+
+  Fitter3D(const TH3 &n,
+           const TH3 &d,
+           const TH3 &q,
+           double limit)
+    : Fitter3D(n, d, q, limit, std::shared_ptr<FsiCalculator>())
+    { }
+
+  Fitter3D(const TH3 &n,
+	         const TH3 &d,
+	         const TH3 &q,
+	         double limit,
+	         std::shared_ptr<FsiCalculator> fsi_calc)
+    : Fitter3D(n, d, q, limit, nullptr, fsi_calc)
+    { }
+
+  Fitter3D(const TH3 &n,
+	         const TH3 &d,
+	         const TH3 &q,
+	         double limit,
+	         std::shared_ptr<Mrc3D> mrc_ptr,
+	         std::shared_ptr<FsiCalculator> fsi_calc=nullptr)
     : data(n, d, q, limit)
     , fsi(fsi_calc)
+    , mrc(mrc_ptr)
     { }
 
   Fitter3D(std::unique_ptr<Data3D> data_)

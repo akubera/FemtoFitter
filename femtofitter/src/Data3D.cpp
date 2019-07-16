@@ -8,7 +8,7 @@
 #include <TDirectory.h>
 
 #include <iostream>
-
+#include <initializer_list>
 
 void store_into(std::vector<double> &v, std::vector<double> &dest)
   { dest = std::move(v); }
@@ -74,8 +74,9 @@ Data3D::Data3D()
 
 Data3D::Data3D(const TH3 &n, const TH3 &d, const TH3 &q, double limit_)
   : data()
+  , src(std::make_shared<Source>(n, d, q))
   , limit(limit_)
-  , true_limit(limit_)
+  , true_limit(NAN)
   , gamma(3.0)
 {
   const TAxis
@@ -125,7 +126,8 @@ Data3D::Data3D(const TH3 &n, const TH3 &d, const TH3 &q, double limit_)
           num_err = n.GetBinError(i, j, k),
           qinv = q.GetBinContent(i, j, k);
 
-        data.push_back({qo, qs, ql, num, num_err, den, qinv});
+        const unsigned hist_bin = n.GetBin(i, j, k);
+        data.emplace_back(qo, qs, ql, num, den, qinv, hist_bin);
       }
     }
   }

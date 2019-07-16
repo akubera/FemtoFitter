@@ -37,6 +37,20 @@ struct Data3D {
            den,
            qinv;
 
+    unsigned hist_bin;
+
+    Datum(double q0, double q1,double q2, double n, double d, double qi, unsigned bin)
+      : qo(q0)
+      , qs(q1)
+      , ql(q2)
+      , num(n)
+      , num_err(std::sqrt(n))
+      , den(d)
+      , qinv(qi)
+      , hist_bin(bin)
+      {
+      }
+
     const double
     calc_chi2(const double model) const
     {
@@ -54,7 +68,37 @@ struct Data3D {
 
   };
 
+  /// saved copy of source histograms
+  struct Source {
+    std::shared_ptr<const TH3> num;
+    std::shared_ptr<const TH3> den;
+    std::shared_ptr<const TH3> qinv;
+
+    Source(const TH3& n, const TH3& d, const TH3& qinv)
+      : num(static_cast<TH3*>(n.Clone()))
+      , den(static_cast<TH3*>(d.Clone()))
+      , qinv(static_cast<TH3*>(qinv.Clone()))
+      { }
+
+    Source(std::shared_ptr<const TH3> n,
+           std::shared_ptr<const TH3> d,
+           std::shared_ptr<const TH3> q)
+      : num(n)
+      , den(d)
+      , qinv(q)
+      { }
+
+    Source(std::unique_ptr<const TH3> n, std::unique_ptr<const TH3> d)
+      : num(std::move(n))
+      , den(std::move(d))
+      { }
+
+    Source(const Source &orig) = default;
+  };
+
   std::vector<Datum> data;
+
+  std::shared_ptr<Source> src;
 
   double limit,
          true_limit;
@@ -95,6 +139,7 @@ struct Data3D {
   /// Copy Constructor
   Data3D(const Data3D &orig)
     : data(orig.data)
+    , src(orig.src)
     , limit(orig.limit)
     , true_limit(orig.true_limit)
     , gamma(orig.gamma)
@@ -103,6 +148,7 @@ struct Data3D {
   /// Move Constructor
   Data3D(Data3D &&orig)
     : data(std::move(orig.data))
+    , src(std::move(orig.src))
     , limit(orig.limit)
     , true_limit(orig.true_limit)
     , gamma(orig.gamma)
@@ -111,6 +157,7 @@ struct Data3D {
   /// Move value from unique ptr
   Data3D(std::unique_ptr<Data3D> ptr)
     : data(std::move(ptr->data))
+    , src(std::move(ptr->src))
     , limit(ptr->limit)
     , true_limit(ptr->true_limit)
     , gamma(ptr->gamma)
