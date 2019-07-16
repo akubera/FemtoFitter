@@ -354,50 +354,37 @@ struct FitParam3D : Fit3DParameters {
 
   void fill(TH3 &h, FsiCalculator *fsi=nullptr, UInt_t npoints=1) const override
     {
-      auto &self = static_cast<const CRTP&>(*this);
-
-      auto callback = [&](int i, int j, int k, double cf)
+      _loop_over_bins(fsi, npoints, [&](int i, int j, int k, double cf)
         {
           h.SetBinContent(i, j, k, cf);
-        };
-
-
-      auto loop = [&] (auto fsi_func)
-        {
-          if (npoints == 1) {
-            _loop_over_bins(self, h, fsi_func, callback);
-          } else {
-            _loop_over_bins(self, h, fsi_func, npoints, callback);
-          }
-        };
-
-      if (fsi == nullptr) {
-        auto no_fsi = [] () { return 1.0; };
-        loop(no_fsi);
-        // if (npoints == 1) {
-        //   _loop_over_bins(self, h, no_fsi, callback);
-        // } else {
-        //   _loop_over_bins(self, h, no_fsi, npoints, callback);
-        // }
-      } else {
-        auto Kfsi = fsi->ForRadius(self.Rinv());
-        loop(Kfsi);
-        // if (npoints == 1) {
-        //   _loop_over_bins(self, h, Kfsi, callback);
-        // } else {
-        //   _loop_over_bins(self, h, Kfsi, npoints, callback);
-        // }
-      }
-
-
+        });
     }
 
-  void multiply(TH1 &, FsiCalculator *fsi=nullptr, UInt_t npoints=1) const override
+  void multiply(TH1 &h, FsiCalculator *fsi=nullptr, UInt_t npoints=1) const override
     {
-
+      _loop_over_bins(fsi, npoints, [&](int i, int j, int k, double cf)
+        {
+          h.SetBinContent(i, j, k, cf * h.GetBinContent(i, j, k));
+        });
     }
 
 private:
+
+  template <typename FsiFuncType, typename FuncType>
+  void _loop_over_bins(TH1 &h, FsiCalculator *fsi, UInt_t npoints, FuncType func) const
+    {
+      auto &self = static_cast<const CRTP&>(*this);
+
+      auto Kfsi = fsi == nullptr
+                ? [] () { return 1.0; }
+                : fsi->ForRadius(self.Rinv());
+
+      auto loop = npoints == 1
+                ? [&] (auto &fsi_func) { _loop_over_bins(self, h, fsi_func, func); }
+                : [&] (auto &fsi_func) { _loop_over_bins(self, h, fsi_func, npoints, func); };
+
+      loop(Kfsi);
+    }
 
   template <typename FsiFuncType, typename FuncType>
   void _loop_over_bins(const CRTP &self, TH1 &h, FsiFuncType Kfsi, FuncType func) const
@@ -414,9 +401,11 @@ private:
       for (int i=1; i <= xaxis.GetNbins(); ++i) {
         const double qx = xaxis.GetBinCenter(i);
 
-        // const double k = Kfsi(q);
-        const double k = 1.0;
-        const double cf = self.evaluate(qx, qy, qz, k);
+        const double
+          q = std::sqrt(qx * qy * qz),
+          k = Kfsi(q),
+          cf = self.evaluate(qx, qy, qz, k);
+
         func(i, j, k, cf);
       } } }
     }
