@@ -3,6 +3,8 @@
 ///
 
 #include "MrcHypercube3D.hpp"
+#include "Fitter3D.hpp"
+
 #include <iostream>
 
 // for AVX instructions
@@ -109,6 +111,9 @@ MrcHypercube3D::MrcHypercube3D(const THnSparseI& hyp)
 
     insert_hint = frac_trie.emplace_hint(insert_hint, true_bin, std::move(fracs));
   }
+
+  fUnsmearedHist.reset(hyp.Projection(0, 1, 2));
+  fSmearedHist.reset(hyp.Projection(3, 4, 5));
 }
 
 template <typename HistType>
@@ -262,3 +267,37 @@ MrcHypercube3D::Smear(TH3 &result) const
 void
 MrcHypercube3D::Unsmear(TH3&) const
 {}
+
+void
+MrcHypercube3D::FillUnsmearedDen(TH3 &cf) const
+{
+  fUnsmearedHist->Copy(cf);
+}
+
+void
+MrcHypercube3D::FillUnsmearedDen(TH3D &cf) const
+{
+  static_cast<TArrayD&>(cf) = static_cast<const TArrayD&>(*fUnsmearedHist);
+}
+
+std::shared_ptr<const TH3D>
+MrcHypercube3D::GetSmearedDenLike(TH3 &cf) const
+{
+  return nullptr;
+}
+
+void
+MrcHypercube3D::FillSmearedFit(TH3 &cf,
+                               const Fit3DParameters &p,
+                               const TH3 &qinv,
+                               FsiCalculator &fsi,
+                               UInt_t npoints) const
+{
+  // FillUnsmearedDen(static_cast<TH3D&>(cf));
+  FillUnsmearedDen(cf);
+  p.multiply(cf, qinv, fsi, npoints);
+  Smear(cf);
+
+  auto denom = GetSmearedDenLike(cf);
+  cf.Divide(denom.get());
+}

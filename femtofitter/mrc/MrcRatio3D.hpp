@@ -206,9 +206,16 @@ public:
       return mrc;
     }
 
-  void FillSmearedFit(TH3 &cf, const Fit3DParameters &p, FsiCalculator &fsi, UInt_t npoints) const override
+  void FillSmearedFit(TH3 &cf, const Fit3DParameters &p, const TH3& qinv, FsiCalculator &fsi) const override
     {
-      p.fill(cf, &fsi, npoints);
+      p.fill(cf, qinv, fsi);
+      auto smearing_matrix = GetSmearingFactor(cf);
+      cf.Multiply(smearing_matrix.get());
+    }
+
+  void FillSmearedFit(TH3 &cf, const Fit3DParameters &p, const TH3& qinv, FsiCalculator &fsi, UInt_t npoints) const override
+    {
+      p.fill(cf, qinv, fsi, npoints);
       auto smearing_matrix = GetSmearingFactor(cf);
       cf.Multiply(smearing_matrix.get());
     }

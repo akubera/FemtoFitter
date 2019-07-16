@@ -49,6 +49,9 @@ public:
   std::map<I3, Trie<Int_t>> count_trie;
   std::map<I3, Trie<Double_t>> frac_trie;
 
+  std::unique_ptr<TH3D> fUnsmearedHist = nullptr;
+  std::unique_ptr<TH3D> fSmearedHist = nullptr;
+
 protected:
 
 public:
@@ -67,6 +70,14 @@ public:
 
   /// Unsmear histogram (reverse smearing)
   void Unsmear(TH3 &hist) const override;
+
+  void FillUnsmearedDen(TH3 &cf) const;
+
+  void FillUnsmearedDen(TH3D &cf) const;
+
+  std::shared_ptr<const TH3D> GetSmearedDenLike(TH3 &cf) const;
+
+  void FillSmearedFit(TH3 &cf, const Fit3DParameters &p, const TH3 &qinv, FsiCalculator &fsi, UInt_t npoints) const override;
 
   std::string Describe() const override
     { return "MrcHypercube3D"; }

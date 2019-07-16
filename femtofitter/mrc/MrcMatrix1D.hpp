@@ -351,10 +351,6 @@ public:
       MrcMatrix1D::Smear(h, *matrix);
     }
 
-  // std::unique_ptr<TH1D> GetSmearedDenLike(const TH1& h) const
-  //   {
-  //   }
-
   const TH1D& GetSmearedDen() const override
     {
       return *smeared_denominator;
