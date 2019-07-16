@@ -164,7 +164,7 @@ struct FitterLevyFull : public Fitter3D<FitterLevyFull> {
   /// \brief 3D Levy fit parameters
   ///
   ///
-  struct FitParams {
+  struct FitParams : FitParam3D<FitParams> {
     double norm, lam;
     double alphao, alphas, alphal;
     double Ro, Rs, Rl;
@@ -217,6 +217,9 @@ struct FitterLevyFull : public Fitter3D<FitterLevyFull> {
     /// Return calculated Rinv: $\sqrt{Ro^2 \gamma + Rs^2 + Rl^2}$
     double PseudoRinv(double gamma) const
       { return std::sqrt((Ro * Ro * gamma + Rs * Rs + Rl * Rl) / 3.0); }
+
+    double Rinv() const
+      { return PseudoRinv(gamma); }
 
     double gauss(const std::array<double, 3> &q, double K) const
       {

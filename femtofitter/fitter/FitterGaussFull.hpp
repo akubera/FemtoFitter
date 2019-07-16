@@ -165,7 +165,7 @@ struct FitterGaussFull : public Fitter3D<FitterGaussFull> {
   /// \brief 3D Gaussian fit parameters
   ///
   ///
-  struct FitParams {
+  struct FitParams : FitParam3D<FitParams> {
     double norm, lam;
     double Ro, Rs, Rl;
     double Ros, Rol, Rsl;
@@ -212,6 +212,12 @@ struct FitterGaussFull : public Fitter3D<FitterGaussFull> {
     /// Return calculated Rinv: $\sqrt{Ro^2 \gamma + Rs^2 + Rl^2}$
     double PseudoRinv(double gamma) const
       { return std::sqrt((Ro * Ro * gamma + Rs * Rs + Rl * Rl) / 3.0); }
+
+    double Rinv(double gamma=3.0) const
+      { return PseudoRinv(gamma); }
+
+    double evaluate(std::array<double, 3> q, double K) const
+      { return gauss(q, K); }
 
     double gauss(std::array<double, 3> q, double K) const
       {

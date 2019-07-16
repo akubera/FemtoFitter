@@ -150,7 +150,7 @@ struct FitterLevy3D : public Fitter3D<FitterLevy3D> {
   /// \brief 3D Levy fit parameters
   ///
   ///
-  struct FitParams {
+  struct FitParams : FitParam3D<FitParams> {
     double norm, lam, alpha;
     double Ro, Rs, Rl;
     double gamma {1.0};

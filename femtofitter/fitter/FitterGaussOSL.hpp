@@ -155,7 +155,7 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
   /// \brief 3D Gaussian fit parameters
   ///
   ///
-  struct FitParams {
+  struct FitParams : FitParam3D<FitParams> {
     double norm, lam;
     double Ro, Rs, Rl;
 
@@ -221,8 +221,14 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
     double PseudoRinv(double gamma) const
       { return std::sqrt((Ro * Ro * gamma * gamma + Rs * Rs + Rl * Rl) / 3.0); }
 
-    double gauss(const std::array<double, 3> &q, double K) const
+    double Rinv() const
+      { return 1; }
+
+    double evaluate(const std::array<double, 3> &q, double K) const
       { return FitterGaussOSL::gauss(q, {Ro*Ro, Rs*Rs, Rl*Rl}, lam, K, norm); }
+
+    double gauss(const std::array<double, 3> &q, double K) const
+      { return evaluate(q, K); }
 
     void
     apply_to(TH3 &hist, const Data3D &data)
@@ -423,6 +429,17 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
     minuit.mnparm(idx, name, val, stepsize, 0.0, 0.0, errflag);
     minuit.FixParameter(idx);
   }
+
+  double residual_chi2_mrc(const FitParams &p) const
+    {
+      return Fitter3D::resid_calc_mrc(p, *mrc, ResidCalculatorChi2<FitterGaussOSL>::resid_func);
+    }
+
+  double residual_pml_mrc(const FitParams &p) const
+    {
+      return Fitter3D::resid_calc_mrc(p, *mrc, ResidCalculatorPML<FitterGaussOSL>::resid_func);
+      // return ResidCalculatorPML<FitterGaussOSL>::resid_mrc(*this, p);
+    }
 
   FitResult fit_chi2()
     { return Fitter3D::fit_chi2(); }

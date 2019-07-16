@@ -145,53 +145,13 @@ public:
   /// Add parameters to minuit object
   virtual int setup_minuit(TMinuit &) const = 0;
 
-  template <typename FitParams>
-  double
-  resid_chi2_calc(const FitParams &p) const
-    {
-      double result = 0;
-
-      double pseudo_rinv = p.PseudoRinv(data.gamma);
-      // auto coulomb_factor = CoulombHist::GetHistWithRadius(phony_r);
-      // auto Kfsi = [&coulomb_factor] (double q) {
-      //   return coulomb_factor.Interpolate(q);
-      // };
-
-
-      const std::function<double(double)>
-         Kfsi = fsi
-              ? fsi->ForRadius(pseudo_rinv)
-              : [] (double qinv) { return 1.0; };
-
-      // auto Kfsi_ptr = fsi->ForRadius(pseudo_rinv);
-      // auto &Kfsi = *Kfsi_ptr;
-
-
-      // for (size_t i=0; i < data.size(); ++i) {
-      //   const auto &datum = data[i];
-      for (const auto &datum : data) {
-        // double CF = p.gauss(datum.qspace(), *(fsi)(datum.qinv));
-        double CF = p.gauss(datum.qspace(), Kfsi(datum.qinv));
-        result += datum.calc_chi2(CF);
-      }
-
-      return result;
-    }
-
   template <typename ResidFunc, typename FitParams>
   double resid_calc(const FitParams &p, ResidFunc resid_calc) const
   {
-    double retval = 0;
+    double retval = 0.0;
 
     double phony_r = p.PseudoRinv(data.gamma);
-    // auto coulomb_factor = CoulombHist::GetHistWithRadius(phony_r);
-
     auto Kfsi = fsi->ForRadius(phony_r);
-    // std::unique_ptr<FsiQinv> kfsi_ptr = fsi->ForRadius(phony_r);
-    // auto &Kfsi = *kfsi_ptr;
-    // auto Kfsi = [&coulomb_factor] (double q) {
-    //   return coulomb_factor.Interpolate(q);
-    // };
 
     for (const auto &datum : data) {
       const double
@@ -202,7 +162,9 @@ public:
         d = datum.den,
         q = datum.qinv,
 
-        CF = p.gauss({qo, qs, ql}, Kfsi(q));
+        k = Kfsi(q),
+
+        CF = p.gauss({qo, qs, ql}, k);
 
       retval += resid_calc(n, d, CF);
     }
@@ -211,16 +173,16 @@ public:
   }
 
   template <typename ResidFunc, typename FitParams>
-  double resid_calc_mrc(const FitParams &p, Mrc3D &mrc, ResidFunc resid_calc, UInt_t npoints) const
+  double resid_calc_mrc(const FitParams &p, Mrc3D &mrc, ResidFunc resid_calc) const
     {
-      double retval = 0;
+      double retval = 0.0;
 
       if (_tmp_cf == nullptr) {
         _tmp_cf.reset(static_cast<TH3D*>(data.src->num->Clone()));
       }
 
-      auto *cfhist = _tmp_cf.get();
-      mrc.FillSmearedFit(*cfhist, p, *fsi);
+      auto &cfhist = *_tmp_cf;
+      mrc.FillSmearedFit(cfhist, p, *data.src->qinv, *fsi);
 
       for (const auto &datum : data) {
 
@@ -228,24 +190,12 @@ public:
           n = datum.num,
           d = datum.den,
 
-          CF = cfhist->GetBinContent(datum.hist_bin);
+          CF = cfhist.GetBinContent(datum.hist_bin);
 
         retval += resid_calc(n, d, CF);
       }
 
       return retval;
-    }
-
-  template <typename ResidFunc, typename FitParams>
-  double resid_calc_mrc(const FitParams &p, Mrc3D &mrc, ResidFunc resid_calc) const
-    {
-      return resid_calc_mrc(p, mrc, resid_calc);
-    }
-
-  template <typename FitParams>
-  double resid_calc_mrc_chi2(const FitParams &p) const
-    {
-      return resid_calc_mrc<FitParams, ResidCalculatorPML>(p);
     }
 
   void set_use_chi2_func(TMinuit &minuit) const
@@ -307,7 +257,6 @@ public:
       setup_chi2_mrc_minuit(minuit);
       return do_fit_minuit(minuit);
     }
-
 
   auto fit_pml()
     {
@@ -443,6 +392,14 @@ struct FitParam3D : Fit3DParameters {
   virtual ~FitParam3D()
     { }
 
+  // void evalute(double q, double, double k) const
+  double evaluate(std::array<double, 3> q, double k) const
+    {
+      return static_cast<const CRTP*>(this)->gauss(q, k);
+    }
+
+  double Rinv() const { return 1.0; }
+
   void fill(TH3 &h, const TH3 &qinv, FsiCalculator &fsi) const override
     {
       _loop_over_bins(h, qinv, fsi, [&](int i, int j, int k, double cf)
@@ -499,7 +456,7 @@ private:
         const double
           qinv = const_cast<TH3&>(qinvh).Interpolate(qx, qy, qz),
           k = Kfsi(qinv),
-          cf = self.evaluate(qx, qy, qz, k);
+          cf = self.evaluate({qx, qy, qz}, k);
         func(i, j, k, cf);
       } } }
     }
@@ -544,7 +501,7 @@ private:
           const double
             qinv = const_cast<TH3&>(qinvh).Interpolate(qx, qy, qz),
             k = Kfsi(qinv),
-            cf = self.evaluate(qx, qy, qz, k);
+            cf = self.evaluate({qx, qy, qz}, k);
 
           sum += cf;
         } } }

@@ -160,7 +160,7 @@ struct FitterGauss3DLcmsOL : public Fitter3D<FitterGauss3DLcmsOL> {
   /// \brief 3D Gaussian fit parameters
   ///
   ///
-  struct FitParams {
+  struct FitParams : FitParam3D<FitParams> {
     double norm, lam;
     double Ro, Rs, Rl, Rol;
 
