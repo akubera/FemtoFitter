@@ -242,13 +242,23 @@ struct Mrc3D : public Mrc {
     {}
 
   virtual void FillSmearedFit(TH3 &cf, const Fit3DParameters&, const TH3& qinv, FsiCalculator&) const = 0;
-  virtual void FillSmearedFit(TH3 &cf, const Fit3DParameters&, const TH3& qinv, FsiCalculator&, UInt_t npoints=1) const
+  virtual void FillSmearedFit(TH3 &cf, const Fit3DParameters&, const TH3& qinv, FsiCalculator&, UInt_t npoints) const
     {
       throw std::runtime_error("FillSmearedFit::Unimplemented");
     }
 
   virtual void Smear(TH3&) const = 0;
   virtual void Unsmear(TH3&) const = 0;
+
+  virtual std::unique_ptr<TH3D> GetUnsmearedDen() const
+        { return nullptr; }
+
+  virtual std::unique_ptr<TH3D> GetSmearedFit(const Fit3DParameters &p, const TH3& qinv, FsiCalculator &fsi) const
+    {
+      std::unique_ptr<TH3D> res = GetUnsmearedDen();
+      FillSmearedFit(*res, p, qinv, fsi);
+      return res;
+    }
 
 };
 
