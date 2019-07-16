@@ -297,36 +297,8 @@ public:
     minuit.mnexcm("HESSE", hesse_args, 1, errflag);
 
     auto result = typename Impl::FitResult(minuit);
-
-    for (int pidx=1; pidx < Impl::CountParams(); ++pidx) {
-      // Impl
-      double val, _err;
-      if (minuit.GetParameter(pidx, val, _err)) {
-        if (val > 14 || val < 0 || (pidx > 2 && val < 1)) {
-          // std::cout << "Bad Fit" << "\n";
-          // minuit.mnprin(1, 0.0);
-
-        // minuit.SetParameter(2, paramhints->GenLam(), .01);
-        // minuit.SetParameter(3, , .1);
-        // minuit.SetParameter(4, paramhints->GenRs(), .1);
-        // minuit.SetParameter(5, paramhints->GenRl(), .1);
-        /*
-        minuit.mnparm(Impl::LAM_PARAM_IDX, "Lam", paramhints->GenLam(), 0.01, 0.0, 0.0, errflag);
-        minuit.mnparm(Impl::ROUT_PARAM_IDX, "Ro", paramhints->GenRo(), 0.1, 0.0, 0.0, errflag);
-        minuit.mnparm(Impl::RSIDE_PARAM_IDX, "Rs", paramhints->GenRs(), 0.1, 0.0, 0.0, errflag);
-        minuit.mnparm(Impl::RLONG_PARAM_IDX, "Rl", paramhints->GenRl(), 0.1, 0.0, 0.0, errflag);
-        */
-
-        break;
-        }
-      }
-    }
-
     return result;
   }
-
-  // template <typename FitRes>
-  // void fit_with_random_inits(TMinuit &, FitRes &res);
 
   std::size_t size() const
     { return data.size(); }
@@ -374,6 +346,9 @@ struct Fit3DParameters {
   virtual ~Fit3DParameters()
     { }
 
+  template <typename FsiFunc>
+  virtual void fill(TH3 &h,  FsiFunc &fsi) const = 0;
+
   virtual void fill(TH3 &h, const TH3 &qinv, FsiCalculator &fsi) const = 0;
   virtual void multiply(TH3 &h, const TH3 &qinv, FsiCalculator &fsi) const = 0;
 
@@ -408,6 +383,14 @@ struct FitParam3D : Fit3DParameters {
         });
     }
 
+  void fill(TH3 &h, const TH3 &qinv, FsiCalculator &fsi) const override
+    {
+      _loop_over_bins(h, qinv, fsi, [&](int i, int j, int k, double cf)
+        {
+          h.SetBinContent(i, j, k, cf);
+        });
+    }
+
   void multiply(TH3 &h, const TH3 &qinv, FsiCalculator &fsi) const override
     {
       _loop_over_bins(h, qinv, fsi, [&](int i, int j, int k, double cf)
@@ -433,6 +416,30 @@ struct FitParam3D : Fit3DParameters {
     }
 
 private:
+
+  template <typename FsiFunc, typename FuncType>
+  void _loop_over_bins(TH3 &h, FsiFunc &Kfsi, FuncType func) const
+    {
+      auto &self = static_cast<const CRTP&>(*this);
+
+      const TAxis
+        &xaxis = *h.GetXaxis(),
+        &yaxis = *h.GetYaxis(),
+        &zaxis = *h.GetZaxis();
+
+      for (int k=1; k <= zaxis.GetNbins(); ++k) {
+        const double qz = zaxis.GetBinCenter(k);
+      for (int j=1; j <= yaxis.GetNbins(); ++j) {
+        const double qy = yaxis.GetBinCenter(j);
+      for (int i=1; i <= xaxis.GetNbins(); ++i) {
+        const double qx = xaxis.GetBinCenter(i);
+
+        const double
+          k = Kfsi(qx, qy, qz),
+          cf = self.evaluate({qx, qy, qz}, k);
+        func(i, j, k, cf);
+      } } }
+    }
 
   template <typename FuncType>
   void _loop_over_bins(TH3 &h, const TH3 &qinvh, FsiCalculator &fsi, FuncType func) const
