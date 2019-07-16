@@ -335,10 +335,16 @@ struct FitterGauss3DLcmsOS : public Fitter3D<FitterGauss3DLcmsOS> {
   FitResult fit_chi2()
     { return Fitter3D::fit_chi2(); }
 
+  FitResult fit_chi2_mrc()
+    { return Fitter3D::fit_chi2_mrc(); }
+
   FitResult fit_pml()
     { return Fitter3D::fit_pml(); }
 
+  FitResult fit_pml_mrc()
+    { return Fitter3D::fit_pml_mrc(); }
+
   FitResult fit()
-    { return Fitter3D::fit(); }
+    { return Fitter3D::fit_pml_mrc(); }
 
 };

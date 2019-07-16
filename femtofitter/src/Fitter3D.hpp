@@ -12,6 +12,7 @@
 #include "CoulombHist.hpp"
 #include "Data3D.hpp"
 #include "math/fit.hh"
+#include "mrc/Mrc.hpp"
 
 #include "ParamHints.hpp"
 
@@ -182,71 +183,125 @@ public:
     return retval;
   }
 
-  template <typename FitResult>
-  double
-  resid_chi2(const FitResult &r) const
-  {
-    const typename Impl::FitParams &params = r;
-    return resid_chi2_calc(params);
-  }
-
-  template <typename FitResult>
-  double
-  resid_pml(const FitResult &r) const
-  {
-    // auto params = static_cast<const typename Impl::FitParams&>(r);
-    const typename Impl::FitParams &params = r;
-    return resid_calc(params, loglikelihood_calc);
-  }
-
-  /// Automatic Fit Function
-  ///
-  /// Create minuit function and call minuit_func with the
-  /// ResidualCalculation template parameter
-  ///
-  template <typename ResidCalc_t>
-  auto
-  fit(double sigma=1.0)  // -> Impl::FitResult
-  {
-    TMinuit minuit;
-    minuit.SetPrintLevel(-1);
-    static_cast<Impl*>(this)->setup_minuit(minuit);
-
-    minuit.SetFCN(minuit_func<ResidCalc_t>);
-
-    return do_fit_minuit(minuit, sigma);
-  }
-
-  void setup_pml_fitter(TMinuit &minuit)
+  template <typename ResidFunc, typename FitParams>
+  double resid_calc_mrc(const FitParams &p, Mrc3D &mrc, ResidFunc resid_calc, UInt_t npoints) const
     {
-      static_cast<Impl*>(this)->setup_minuit(minuit);
-      minuit.SetFCN(minuit_func<typename Impl::CalcLoglike>);
+      double retval = 0;
+
+      if (_tmp_cf == nullptr) {
+        _tmp_cf.reset(static_cast<TH3D*>(data.src->num->Clone()));
+      }
+
+      auto *cfhist = _tmp_cf.get();
+      mrc.FillSmearedFit(*cfhist, p, *fsi);
+
+      for (const auto &datum : data) {
+
+        const double
+          n = datum.num,
+          d = datum.den,
+
+          CF = cfhist->GetBinContent(datum.hist_bin);
+
+        retval += resid_calc(n, d, CF);
+      }
+
+      return retval;
     }
 
-  void setup_chi2_fitter(TMinuit &minuit)
+  template <typename ResidFunc, typename FitParams>
+  double resid_calc_mrc(const FitParams &p, Mrc3D &mrc, ResidFunc resid_calc) const
     {
-      static_cast<Impl*>(this)->setup_minuit(minuit);
+      return resid_calc_mrc(p, mrc, resid_calc);
+    }
+
+  template <typename FitParams>
+  double resid_calc_mrc_chi2(const FitParams &p) const
+    {
+      return resid_calc_mrc<FitParams, ResidCalculatorPML>(p);
+    }
+
+  void set_use_chi2_func(TMinuit &minuit) const
+    {
       minuit.SetFCN(minuit_func<typename Impl::CalcChi2>);
     }
 
-  auto fit_pml()
+  void set_use_chi2_mrc_func(TMinuit &minuit) const
     {
-      TMinuit minuit;
-      minuit.SetPrintLevel(-1);
-      setup_pml_fitter(minuit);
-      return do_fit_minuit(minuit, 1.0);
+      minuit.SetFCN(minuit_func_mrc<typename Impl::CalcChi2>);
+    }
+
+  void set_use_pml_func(TMinuit &minuit) const
+    {
+      minuit.SetFCN(minuit_func<typename Impl::CalcLoglike>);
+    }
+
+  void set_use_pml_mrc_func(TMinuit &minuit) const
+    {
+      minuit.SetFCN(minuit_func_mrc<typename Impl::CalcLoglike>);
+    }
+
+  void setup_chi2_minuit(TMinuit &minuit)
+    {
+      static_cast<Impl*>(this)->setup_minuit(minuit);
+      set_use_chi2_func(minuit);
+    }
+
+  void setup_chi2_mrc_minuit(TMinuit &minuit)
+    {
+      static_cast<Impl*>(this)->setup_minuit(minuit);
+      set_use_pml_func(minuit);
+    }
+
+  void setup_pml_minuit(TMinuit &minuit)
+    {
+      static_cast<Impl*>(this)->setup_minuit(minuit);
+      set_use_pml_func(minuit);
+    }
+
+  void setup_pml_mrc_minuit(TMinuit &minuit)
+    {
+      static_cast<Impl*>(this)->setup_minuit(minuit);
+      set_use_pml_mrc_func(minuit);
     }
 
   auto fit_chi2()
     {
       TMinuit minuit;
       minuit.SetPrintLevel(-1);
-      setup_chi2_fitter(minuit);
+      setup_chi2_minuit(minuit);
+      return do_fit_minuit(minuit);
+    }
+
+  auto fit_chi2_mrc()
+    {
+      TMinuit minuit;
+      minuit.SetPrintLevel(-1);
+      setup_chi2_mrc_minuit(minuit);
+      return do_fit_minuit(minuit);
+    }
+
+
+  auto fit_pml()
+    {
+      TMinuit minuit;
+      minuit.SetPrintLevel(-1);
+      setup_pml_minuit(minuit);
+      return do_fit_minuit(minuit);
+    }
+
+  auto fit_pml_mrc()
+    {
+      TMinuit minuit;
+      minuit.SetPrintLevel(-1);
+      setup_pml_mrc_minuit(minuit);
       return do_fit_minuit(minuit);
     }
 
   auto fit()
-    { return fit_chi2(); }
+    {
+      return fit_pml_mrc();
+    }
 
   auto
   do_fit_minuit(TMinuit &minuit, double sigma=1.0, int recursive_count=0)  // -> Impl::FitResult

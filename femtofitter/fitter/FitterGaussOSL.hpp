@@ -427,14 +427,16 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
   FitResult fit_chi2()
     { return Fitter3D::fit_chi2(); }
 
+  FitResult fit_chi2_mrc()
+    { return Fitter3D::fit_chi2_mrc(); }
+
   FitResult fit_pml()
     { return Fitter3D::fit_pml(); }
 
-  FitResult fit()
-    { return Fitter3D::fit(); }
+  FitResult fit_pml_mrc()
+    { return Fitter3D::fit_pml_mrc(); }
 
   void fit_with_random_inits(TMinuit &minuit, FitResult &res, int);
-
 };
 
 
