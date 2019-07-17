@@ -181,8 +181,16 @@ public:
         _tmp_cf.reset(static_cast<TH3D*>(data.src->num->Clone()));
       }
 
+      auto KFsi = fsi->ForRadius(p.PseudoRinv(data.gamma));
+
+      auto qinvh = static_cast<const TH3F&>(*data.src->qinv);
+
       auto &cfhist = *_tmp_cf;
-      mrc.FillSmearedFit(cfhist, p, *data.src->qinv, *fsi);
+      mrc.FillSmearedFit(cfhist, p, [&] (double qo, double qs, double ql)
+        {
+          double qinv = const_cast<TH3F&>(qinvh).Interpolate(qo, qs, ql);
+          return KFsi(qinv);
+        });
 
       for (const auto &datum : data) {
 
@@ -343,11 +351,15 @@ public:
 /// \brief Abstract base class for 3D fitter parameters
 struct Fit3DParameters {
 
+  using FsiFuncType = std::function<double(double,double,double)>;
+
   virtual ~Fit3DParameters()
     { }
 
-  template <typename FsiFunc>
-  virtual void fill(TH3 &h,  FsiFunc &fsi) const = 0;
+  // template <typename FsiFunc>
+  // void fill(TH3 &h,  FsiFunc &fsi) const;
+  virtual void fill(TH3&h, const FsiFuncType &fsi) const = 0;
+  virtual void multiply(TH3&h, const FsiFuncType &fsi) const = 0;
 
   virtual void fill(TH3 &h, const TH3 &qinv, FsiCalculator &fsi) const = 0;
   virtual void multiply(TH3 &h, const TH3 &qinv, FsiCalculator &fsi) const = 0;
@@ -375,11 +387,19 @@ struct FitParam3D : Fit3DParameters {
 
   double Rinv() const { return 1.0; }
 
-  void fill(TH3 &h, const TH3 &qinv, FsiCalculator &fsi) const override
+  void fill(TH3 &h, const FsiFuncType &fsi) const override
     {
-      _loop_over_bins(h, qinv, fsi, [&](int i, int j, int k, double cf)
+      _loop_over_bins(h, fsi, [&](int i, int j, int k, double cf)
         {
           h.SetBinContent(i, j, k, cf);
+        });
+    }
+
+  void multiply(TH3 &h, const FsiFuncType &fsi) const override
+    {
+      _loop_over_bins(h, fsi, [&](int i, int j, int k, double cf)
+        {
+          h.SetBinContent(i, j, k, cf * h.GetBinContent(i, j, k));
         });
     }
 
@@ -418,7 +438,7 @@ struct FitParam3D : Fit3DParameters {
 private:
 
   template <typename FsiFunc, typename FuncType>
-  void _loop_over_bins(TH3 &h, FsiFunc &Kfsi, FuncType func) const
+  void _loop_over_bins(TH3 &h, const FsiFunc &Kfsi, FuncType func) const
     {
       auto &self = static_cast<const CRTP&>(*this);
 

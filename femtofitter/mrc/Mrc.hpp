@@ -241,6 +241,10 @@ struct Mrc3D : public Mrc {
   Mrc3D(const Mrc3D&)
     {}
 
+  virtual void FillSmearedFit(TH3 &cf,
+                              const Fit3DParameters &,
+                              const std::function<double(double, double, double)>  &fsi) const = 0;
+
   virtual void FillSmearedFit(TH3 &cf, const Fit3DParameters&, const TH3& qinv, FsiCalculator&) const = 0;
   virtual void FillSmearedFit(TH3 &cf, const Fit3DParameters&, const TH3& qinv, FsiCalculator&, UInt_t npoints) const
     {

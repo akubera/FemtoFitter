@@ -301,3 +301,33 @@ MrcHypercube3D::FillSmearedFit(TH3 &cf,
   auto denom = GetSmearedDenLike(cf);
   cf.Divide(denom.get());
 }
+
+
+void
+MrcHypercube3D::FillSmearedFit(TH3 &cf,
+                               const Fit3DParameters &p,
+                               const TH3 &qinv,
+                               FsiCalculator &fsi) const
+{
+  FillUnsmearedDen(cf);
+  p.multiply(cf, qinv, fsi);
+  Smear(cf);
+
+  auto denom = GetSmearedDenLike(cf);
+  cf.Divide(denom.get());
+}
+
+
+void
+MrcHypercube3D::FillSmearedFit(
+  TH3 &cf,
+  const Fit3DParameters &p,
+  const Fit3DParameters::FsiFuncType &fsi) const
+{
+  FillUnsmearedDen(cf);
+  p.multiply(cf, fsi);
+  Smear(cf);
+
+  auto denom = GetSmearedDenLike(cf);
+  cf.Divide(denom.get());
+}

@@ -65,6 +65,11 @@ public:
   /// Build from Sparse-Histogram
   MrcHypercube3D(const THnSparseI&);
 
+  static std::unique_ptr<MrcHypercube3D> From(const THnSparseI &hist)
+    {
+      return std::make_unique<MrcHypercube3D>(hist);
+    }
+
   /// Smear histogram
   void Smear(TH3 &hist) const override;
 
@@ -78,9 +83,23 @@ public:
   std::shared_ptr<const TH3D> GetSmearedDenLike(TH3 &cf) const;
 
   void FillSmearedFit(TH3 &cf, const Fit3DParameters &p, const TH3 &qinv, FsiCalculator &fsi, UInt_t npoints) const override;
+  void FillSmearedFit(TH3 &cf, const Fit3DParameters &, const TH3& qinv, FsiCalculator&) const override;
 
   std::string Describe() const override
     { return "MrcHypercube3D"; }
+
+  void FillSmearedFit(TH3 &cf,
+                      const Fit3DParameters &p,
+                      // const typename Fit3DParameters::FsiFuncType &fsi
+                      const std::function<double(double,double,double)> &fsi
+                      ) const override;
+  // template <typename FsiFunc>
+  // // void FillSmearedFit(TH3 &cf, const Fit3DParameters &p, FsiFunc &fsi) const
+  //   {
+  //     p.multiply(cf, fsi);
+  //     auto smearing_matrix = GetSmearingFactor(cf);
+  //     cf.Multiply(smearing_matrix.get());
+  //   }
 
 protected:
 
