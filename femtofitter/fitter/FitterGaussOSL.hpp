@@ -430,6 +430,26 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
     minuit.FixParameter(idx);
   }
 
+  double residual_chi2(const FitResult &r) const
+    {
+      return residual_chi2(r.as_params());
+    }
+
+  double residual_chi2(const FitParams &p) const
+    {
+      return Fitter3D::resid_calc(p, ResidCalculatorChi2<FitterGaussOSL>::resid_func);
+    }
+
+  double residual_pml(const FitParams &p) const
+    {
+      return Fitter3D::resid_calc(p, ResidCalculatorPML<FitterGaussOSL>::resid_func);
+    }
+
+  double residual_chi2_mrc(const FitResult &r) const
+    {
+      return residual_chi2_mrc(r.as_params());
+    }
+
   double residual_chi2_mrc(const FitParams &p) const
     {
       return Fitter3D::resid_calc_mrc(p, *mrc, ResidCalculatorChi2<FitterGaussOSL>::resid_func);
