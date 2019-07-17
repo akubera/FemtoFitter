@@ -131,7 +131,7 @@ def find_analyses(file, pattern):
                          'pip' if pion_charge == 1 else
                          'pi?')
 
-            key = config.Clone()
+            key = config.DeepCopy()
             key.pop("is_mc")
             key.pop("track_cut.charge")
             key.pop(cent_range_key)
