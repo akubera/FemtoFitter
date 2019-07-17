@@ -8,13 +8,13 @@ BUILD_DIR ?= build
 
 
 all: $(BUILD_DIR)/Makefile
-	+make -C $(BUILD_DIR)
+	+make -s -C $(BUILD_DIR)
 
 config: $(BUILD_DIR)/Makefile
 	ccmake $(BUILD_DIR)
 
 clean:
-	+make -C $(BUILD_DIR) clean
+	+make -s -C $(BUILD_DIR) clean
 
 cleanup: clean
 	rm -rf $(BUILD_DIR)/CMakeCache.txt $(BUILD_DIR)/CMakeFiles
