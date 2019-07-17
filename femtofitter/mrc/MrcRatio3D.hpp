@@ -72,7 +72,10 @@ public:
           throw std::runtime_error("Missing errors");
         }
 
-        return MrcRatio3D(*ng, *dg, *nr, *dr);
+        return MrcRatio3D(std::move(ng),
+                          std::move(dg),
+                          std::move(nr),
+                          std::move(dr));
       }
 
   };
@@ -86,6 +89,18 @@ public:
     {
     }
 
+  MrcRatio3D(std::unique_ptr<TH3> ng_,
+             std::unique_ptr<TH3> dg_,
+             std::unique_ptr<TH3> nr_,
+             std::unique_ptr<TH3> dr_)
+    : Mrc3D()
+    , ng(std::move(ng_))
+    , dg(std::move(dg_))
+    , nr(std::move(nr_))
+    , dr(std::move(dr_))
+    {
+    }
+
   MrcRatio3D(const MrcRatio3D& orig)
     : Mrc3D(orig)
     , ng(static_cast<TH3*>(orig.ng->Clone()))
@@ -93,6 +108,38 @@ public:
     , nr(static_cast<TH3*>(orig.nr->Clone()))
     , dr(static_cast<TH3*>(orig.dr->Clone()))
     {
+    }
+
+  static std::shared_ptr<Mrc3D> new_shared_ptr(const TH3 &ng,
+                                               const TH3 &dg,
+                                               const TH3 &nr,
+                                               const TH3 &dr)
+    {
+      return std::make_shared<MrcRatio3D>(ng, dg, nr, dr);
+    }
+
+  static std::shared_ptr<Mrc3D> From(TDirectory &tdir,
+                                     const std::array<const TString, 4> &names)
+    {
+      std::unique_ptr<TH3>
+        ng(static_cast<TH3*>(tdir.Get(names[0]))),
+        dg(static_cast<TH3*>(tdir.Get(names[1]))),
+        nr(static_cast<TH3*>(tdir.Get(names[2]))),
+        dr(static_cast<TH3*>(tdir.Get(names[2])));
+
+      if (!ng || !dg || !nr || !dr) {
+        return nullptr;
+      }
+
+      return std::make_shared<MrcRatio3D>(std::move(ng),
+                                          std::move(dg),
+                                          std::move(nr),
+                                          std::move(dr));
+    }
+
+  static std::shared_ptr<Mrc3D> From(TDirectory &tdir)
+    {
+      return From(tdir, {"NumGenUnweighted", "DenGen", "NumRecUnweighted", "DenRec"});
     }
 
   virtual ~MrcRatio3D()
@@ -193,8 +240,8 @@ public:
           nrf = integrate({xlo, xhi}, {ylo, yhi}, {zlo, zhi}, *nr),
           drf = integrate({xlo, xhi}, {ylo, yhi}, {zlo, zhi}, *dr),
 
-          num = ngf * drf,
-          den = dgf * nrf,
+          num = nrf * dgf,
+          den = drf * ngf,
 
           ratio = den == 0.0 ? INFINITY : num / den;
 
