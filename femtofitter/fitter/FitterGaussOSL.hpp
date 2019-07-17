@@ -221,8 +221,8 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
     double PseudoRinv(double gamma) const
       { return std::sqrt((Ro * Ro * gamma * gamma + Rs * Rs + Rl * Rl) / 3.0); }
 
-    double Rinv() const
-      { return 1; }
+    double evaluate(double qo, double qs, double ql, double K) const
+      { return evaluate({qo, qs, ql}, K); }
 
     double evaluate(const std::array<double, 3> &q, double K) const
       { return FitterGaussOSL::gauss(q, {Ro*Ro, Rs*Rs, Rl*Rl}, lam, K, norm); }
