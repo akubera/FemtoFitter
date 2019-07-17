@@ -290,9 +290,9 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
           qo = qout.GetBinCenter(i),
           qs = qside.GetBinCenter(j),
           ql = qlong.GetBinCenter(k),
-          K = 1.0;
+          Kq = 1.0;
 
-        hist.SetBinContent(i,j,k, hist.GetBinContent(i,j,k) * gauss({qo, qs, ql}, K));
+        hist.SetBinContent(i,j,k, hist.GetBinContent(i,j,k) * gauss({qo, qs, ql}, Kq));
       }
     }
 
@@ -319,9 +319,9 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
           qs = qside.GetBinCenter(j),
           ql = qlong.GetBinCenter(k),
           q = qinv.GetBinContent(i, j, k),
-          K = Kfsi(q);// coulomb_factor.Interpolate(q);
+          Kq = Kfsi(q);
 
-        hist.SetBinContent(i,j,k, hist.GetBinContent(i,j,k) * gauss({qo, qs, ql}, K));
+        hist.SetBinContent(i,j,k, hist.GetBinContent(i,j,k) * gauss({qo, qs, ql}, Kq));
       }
     }
 
@@ -368,18 +368,18 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
       return fitter;
     }
 
-  FitterGaussOSL(const Data3D &data)
-    : Fitter3D(data)
+  FitterGaussOSL(const Data3D &dat)
+    : Fitter3D(dat)
     {
     }
 
-  FitterGaussOSL(Data3D &&data)
-    : Fitter3D(std::move(data))
+  FitterGaussOSL(Data3D &&dat)
+    : Fitter3D(std::move(dat))
     {
     }
 
-  FitterGaussOSL(std::unique_ptr<Data3D> data)
-    : Fitter3D(std::move(data))
+  FitterGaussOSL(std::unique_ptr<Data3D> dat)
+    : Fitter3D(std::move(dat))
     {
     }
 

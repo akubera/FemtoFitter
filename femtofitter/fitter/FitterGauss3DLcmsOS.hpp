@@ -200,9 +200,9 @@ struct FitterGauss3DLcmsOS : public Fitter3D<FitterGauss3DLcmsOS> {
     void
     apply_to(TH3 &hist, TH3& qinv, double gamma)
     {
-      const int I = hist.GetNbinsX(),
-                J = hist.GetNbinsY(),
-                K = hist.GetNbinsZ();
+      const int Nx = hist.GetNbinsX(),
+                Ny = hist.GetNbinsY(),
+                Nz = hist.GetNbinsZ();
 
       const double phony_r = PseudoRinv(gamma);
       auto coulomb_factor = CoulombHist::GetHistWithRadius(phony_r);
@@ -211,9 +211,9 @@ struct FitterGauss3DLcmsOS : public Fitter3D<FitterGauss3DLcmsOS> {
                   &qside = *hist.GetYaxis(),
                   &qlong = *hist.GetZaxis();
 
-      for (int k=1; k<=K; ++k)
-      for (int j=1; j<=J; ++j)
-      for (int i=1; i<=I; ++i) {
+      for (int k=1; k<=Nz; ++k)
+      for (int j=1; j<=Ny; ++j)
+      for (int i=1; i<=Nx; ++i) {
         const double
           qo = qout.GetBinCenter(i),
           qs = qside.GetBinCenter(j),
@@ -269,18 +269,18 @@ struct FitterGauss3DLcmsOS : public Fitter3D<FitterGauss3DLcmsOS> {
       return std::make_unique<FitterGauss3DLcmsOS>(std::move(data));
     }
 
-  FitterGauss3DLcmsOS(const Data3D &data)
-    : Fitter3D(data)
+  FitterGauss3DLcmsOS(const Data3D &dat)
+    : Fitter3D(dat)
   {
   }
 
-  FitterGauss3DLcmsOS(Data3D &&data)
-    : Fitter3D(std::move(data))
+  FitterGauss3DLcmsOS(Data3D &&dat)
+    : Fitter3D(std::move(dat))
   {
   }
 
-  FitterGauss3DLcmsOS(std::unique_ptr<Data3D> data)
-    : Fitter3D(std::move(data))
+  FitterGauss3DLcmsOS(std::unique_ptr<Data3D> dat)
+    : Fitter3D(std::move(dat))
   {
   }
 

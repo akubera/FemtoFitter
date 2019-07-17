@@ -74,10 +74,10 @@ struct Data3D {
     std::shared_ptr<const TH3> den;
     std::shared_ptr<const TH3> qinv;
 
-    Source(const TH3& n, const TH3& d, const TH3& qinv)
+    Source(const TH3& n, const TH3& d, const TH3& qi)
       : num(static_cast<TH3*>(n.Clone()))
       , den(static_cast<TH3*>(d.Clone()))
-      , qinv(static_cast<TH3*>(qinv.Clone()))
+      , qinv(static_cast<TH3*>(qi.Clone()))
       { }
 
     Source(std::shared_ptr<const TH3> n,
@@ -91,6 +91,7 @@ struct Data3D {
     Source(std::unique_ptr<const TH3> n, std::unique_ptr<const TH3> d)
       : num(std::move(n))
       , den(std::move(d))
+      , qinv(nullptr)
       { }
 
     Source(const Source &orig) = default;

@@ -64,7 +64,7 @@ public:
   virtual ~Fitter1D() = default;
 
   template <typename ResidFunc, typename FitParams>
-  double resid_calc(const FitParams &p, ResidFunc resid_calc) const
+  double resid_calc(const FitParams &p, ResidFunc resid_func) const
     {
       double retval = 0;
 
@@ -81,14 +81,14 @@ public:
 
           CF = p.evaluate(q, Kfsi(q));
 
-        retval += resid_calc(n, d, CF);
+        retval += resid_func(n, d, CF);
       }
 
       return retval;
     }
 
   template <typename ResidFunc, typename FitParams>
-  double resid_calc_mrc(const FitParams &p, Mrc1D &mrc, ResidFunc resid_calc, UInt_t npoints=1) const
+  double resid_calc_mrc(const FitParams &p, Mrc1D &mrc1d, ResidFunc resid_func, UInt_t npoints=1) const
     {
       double retval = 0;
 
@@ -97,7 +97,7 @@ public:
       }
 
       auto *cfhist = _tmp_cf.get();
-      mrc.FillSmearedFit(*cfhist, p, *fsi);
+      mrc1d.FillSmearedFit(*cfhist, p, *fsi);
 
       for (const auto &datum : data) {
 
@@ -107,16 +107,16 @@ public:
 
           CF = cfhist->GetBinContent(datum.hist_bin);
 
-        retval += resid_calc(n, d, CF);
+        retval += resid_func(n, d, CF);
       }
 
       return retval;
     }
 
   template <typename ResidFunc, typename FitParams>
-  double resid_calc_mrc(const FitParams &p, ResidFunc resid_calc) const
+  double resid_calc_mrc(const FitParams &p, ResidFunc resid_func) const
     {
-      return resid_calc_mrc(p, mrc, resid_calc);
+      return resid_calc_mrc(p, mrc, resid_func);
     }
 
   virtual int setup_minuit(TMinuit &minuit) const = 0;

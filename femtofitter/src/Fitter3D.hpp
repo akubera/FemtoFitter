@@ -146,7 +146,7 @@ public:
   virtual int setup_minuit(TMinuit &) const = 0;
 
   template <typename ResidFunc, typename FitParams>
-  double resid_calc(const FitParams &p, ResidFunc resid_calc) const
+  double resid_calc(const FitParams &p, ResidFunc resid_func) const
   {
     double retval = 0.0;
 
@@ -166,14 +166,14 @@ public:
 
         CF = p.gauss({qo, qs, ql}, k);
 
-      retval += resid_calc(n, d, CF);
+      retval += resid_func(n, d, CF);
     }
 
     return retval;
   }
 
   template <typename ResidFunc, typename FitParams>
-  double resid_calc_mrc(const FitParams &p, Mrc3D &mrc, ResidFunc resid_calc) const
+  double resid_calc_mrc(const FitParams &p, Mrc3D &mrc3d, ResidFunc resid_func) const
     {
       double retval = 0.0;
 
@@ -186,7 +186,7 @@ public:
       auto qinvh = static_cast<const TH3F&>(*data.src->qinv);
 
       auto &cfhist = *_tmp_cf;
-      mrc.FillSmearedFit(cfhist, p, [&] (double qo, double qs, double ql)
+      mrc3d.FillSmearedFit(cfhist, p, [&] (double qo, double qs, double ql)
         {
           double qinv = const_cast<TH3F&>(qinvh).Interpolate(qo, qs, ql);
           return KFsi(qinv);
@@ -200,7 +200,7 @@ public:
 
           CF = cfhist.GetBinContent(datum.hist_bin);
 
-        retval += resid_calc(n, d, CF);
+        retval += resid_func(n, d, CF);
       }
 
       return retval;
@@ -447,16 +447,21 @@ private:
         &yaxis = *h.GetYaxis(),
         &zaxis = *h.GetZaxis();
 
-      for (int k=1; k <= zaxis.GetNbins(); ++k) {
+      const int
+        Nx = xaxis.GetNbins(),
+        Ny = yaxis.GetNbins(),
+        Nz = zaxis.GetNbins();
+
+      for (int k=1; k <= Nz; ++k) {
         const double qz = zaxis.GetBinCenter(k);
-      for (int j=1; j <= yaxis.GetNbins(); ++j) {
+      for (int j=1; j <= Ny; ++j) {
         const double qy = yaxis.GetBinCenter(j);
-      for (int i=1; i <= xaxis.GetNbins(); ++i) {
+      for (int i=1; i <= Nx; ++i) {
         const double qx = xaxis.GetBinCenter(i);
 
         const double
-          k = Kfsi(qx, qy, qz),
-          cf = self.evaluate({qx, qy, qz}, k);
+          K = Kfsi(qx, qy, qz),
+          cf = self.evaluate({qx, qy, qz}, K);
         func(i, j, k, cf);
       } } }
     }
@@ -481,9 +486,10 @@ private:
         const double qx = xaxis.GetBinCenter(i);
 
         const double
-          qinv = const_cast<TH3&>(qinvh).Interpolate(qx, qy, qz),
-          k = Kfsi(qinv),
-          cf = self.evaluate({qx, qy, qz}, k);
+          // qinv = const_cast<TH3&>(qinvh).Interpolate(qx, qy, qz),
+          qinv = qinvh.GetBinContent(i, j, k),
+          K = Kfsi(qinv),
+          cf = self.evaluate({qx, qy, qz}, K);
         func(i, j, k, cf);
       } } }
     }
@@ -527,8 +533,8 @@ private:
         for (double qx=qxstart; qx < qxhi; qx += qxstep) {
           const double
             qinv = const_cast<TH3&>(qinvh).Interpolate(qx, qy, qz),
-            k = Kfsi(qinv),
-            cf = self.evaluate({qx, qy, qz}, k);
+            K = Kfsi(qinv),
+            cf = self.evaluate({qx, qy, qz}, K);
 
           sum += cf;
         } } }

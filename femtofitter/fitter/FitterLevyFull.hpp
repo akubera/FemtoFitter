@@ -168,7 +168,6 @@ struct FitterLevyFull : public Fitter3D<FitterLevyFull> {
     double norm, lam;
     double alphao, alphas, alphal;
     double Ro, Rs, Rl;
-    double gamma {1.0};
 
     FitParams(const double *par)
       : norm(par[NORM_PARAM_IDX])
@@ -218,9 +217,6 @@ struct FitterLevyFull : public Fitter3D<FitterLevyFull> {
     double PseudoRinv(double gamma) const
       { return std::sqrt((Ro * Ro * gamma + Rs * Rs + Rl * Rl) / 3.0); }
 
-    double Rinv() const
-      { return PseudoRinv(gamma); }
-
     double gauss(const std::array<double, 3> &q, double K) const
       {
         std::array<double, 3> Rsq = {Ro*Ro, Rs*Rs, Rl*Rl};
@@ -263,13 +259,13 @@ struct FitterLevyFull : public Fitter3D<FitterLevyFull> {
   {
   }
 
-  FitterLevyFull(const Data3D &data)
-    : Fitter3D(data)
+  FitterLevyFull(const Data3D &dat)
+    : Fitter3D(dat)
     {
     }
 
-  FitterLevyFull(Data3D &&data)
-    : Fitter3D(std::move(data))
+  FitterLevyFull(Data3D &&dat)
+    : Fitter3D(std::move(dat))
     {
     }
 

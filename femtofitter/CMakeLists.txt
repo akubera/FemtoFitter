@@ -91,7 +91,7 @@ set(INCS
 list(TRANSFORM INCS PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/)
 set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -march=native -ffast-math")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -pedantic -fopenmp")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -Wshadow -pedantic -fopenmp")
 
 set(SRCS
   src/Data3D.cpp

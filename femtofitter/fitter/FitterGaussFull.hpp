@@ -210,10 +210,10 @@ struct FitterGaussFull : public Fitter3D<FitterGaussFull> {
     }
 
     /// Return calculated Rinv: $\sqrt{Ro^2 \gamma + Rs^2 + Rl^2}$
-    double PseudoRinv(double gamma) const
-      { return std::sqrt((Ro * Ro * gamma + Rs * Rs + Rl * Rl) / 3.0); }
+    double PseudoRinv(double gama) const
+      { return std::sqrt((Ro * Ro * gama + Rs * Rs + Rl * Rl) / 3.0); }
 
-    double Rinv(double gamma=3.0) const
+    double Rinv() const
       { return PseudoRinv(gamma); }
 
     double evaluate(std::array<double, 3> q, double K) const
@@ -228,13 +228,13 @@ struct FitterGaussFull : public Fitter3D<FitterGaussFull> {
 
     /// Multiply histogram with values from this correlation function
     void
-    apply_to(TH3 &hist, TH3 &qinv, double gamma)
+    apply_to(TH3 &hist, TH3 &qinv, double gama)
       {
         const int I = hist.GetNbinsX(),
                   J = hist.GetNbinsY(),
                   K = hist.GetNbinsZ();
 
-        const double phony_r = PseudoRinv(gamma);
+        const double phony_r = PseudoRinv(gama);
         auto coulomb_factor = CoulombHist::GetHistWithRadius(phony_r);
 
         const TAxis &qout = *hist.GetXaxis(),
@@ -249,9 +249,9 @@ struct FitterGaussFull : public Fitter3D<FitterGaussFull> {
             qs = qside.GetBinCenter(j),
             ql = qlong.GetBinCenter(k),
             q = qinv.GetBinContent(i, j, k),
-            K = coulomb_factor.Interpolate(q),
+            Kq = coulomb_factor.Interpolate(q),
 
-            CF = gauss({qo, qs, ql}, K),
+            CF = gauss({qo, qs, ql}, Kq),
             factor = hist.GetBinContent(i,j,k);
 
           hist.SetBinContent(i,j,k, CF * factor );
@@ -295,13 +295,13 @@ struct FitterGaussFull : public Fitter3D<FitterGaussFull> {
     {
     }
 
-  FitterGaussFull(const Data3D &data)
-    : Fitter3D(data)
+  FitterGaussFull(const Data3D &dat)
+    : Fitter3D(dat)
     {
     }
 
-  FitterGaussFull(Data3D &&data)
-    : Fitter3D(std::move(data))
+  FitterGaussFull(Data3D &&dat)
+    : Fitter3D(std::move(dat))
     {
     }
 

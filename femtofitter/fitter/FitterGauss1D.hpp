@@ -243,8 +243,8 @@ struct FitterGauss1D : public Fitter1D<FitterGauss1D> {
     : Fitter1D(tdir, limit)
     { }
 
-  FitterGauss1D(const Data1D &data)
-    : Fitter1D(data)
+  FitterGauss1D(const Data1D &dat)
+    : Fitter1D(dat)
     { }
 
   virtual ~FitterGauss1D() = default;

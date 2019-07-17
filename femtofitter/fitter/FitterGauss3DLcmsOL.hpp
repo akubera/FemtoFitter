@@ -229,9 +229,9 @@ struct FitterGauss3DLcmsOL : public Fitter3D<FitterGauss3DLcmsOL> {
           ql = qlong.GetBinCenter(k),
           q = qinv.GetBinContent(i, j, k),
           // q = qinv.Interpolate(qo, qs, ql),
-          K = coulomb_factor.Interpolate(q);
+          Kq = coulomb_factor.Interpolate(q);
 
-        hist.SetBinContent(i,j,k, hist.GetBinContent(i,j,k) * gauss({qo, qs, ql}, K));
+        hist.SetBinContent(i,j,k, hist.GetBinContent(i,j,k) * gauss({qo, qs, ql}, Kq));
       }
     }
 
@@ -279,18 +279,18 @@ struct FitterGauss3DLcmsOL : public Fitter3D<FitterGauss3DLcmsOL> {
       return std::make_unique<FitterGauss3DLcmsOL>(std::move(data));
     }
 
-  FitterGauss3DLcmsOL(const Data3D &data)
-    : Fitter3D(data)
+  FitterGauss3DLcmsOL(const Data3D &dat)
+    : Fitter3D(dat)
   {
   }
 
-  FitterGauss3DLcmsOL(Data3D &&data)
-    : Fitter3D(std::move(data))
+  FitterGauss3DLcmsOL(Data3D &&dat)
+    : Fitter3D(std::move(dat))
   {
   }
 
-  FitterGauss3DLcmsOL(std::unique_ptr<Data3D> data)
-    : Fitter3D(std::move(data))
+  FitterGauss3DLcmsOL(std::unique_ptr<Data3D> dat)
+    : Fitter3D(std::move(dat))
   {
   }
 

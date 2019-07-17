@@ -33,8 +33,8 @@ struct FsiKFile : public FsiCalculator {
   /// buffer
   std::shared_ptr<const TProfile> _qinv_src;
 
-  FsiKFile(TString filename)
-    : FsiKFile(*std::make_unique<TFile>(filename))
+  FsiKFile(TString fname)
+    : FsiKFile(*std::make_unique<TFile>(fname))
     {
     }
 

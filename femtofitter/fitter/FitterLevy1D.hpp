@@ -244,8 +244,8 @@ struct FitterLevy1D : Fitter1D<FitterLevy1D> {
     : Fitter1D(tdir, limit)
     { }
 
-  FitterLevy1D(const Data1D &data)
-    : Fitter1D(data)
+  FitterLevy1D(const Data1D &dat)
+    : Fitter1D(dat)
     { }
 
   int
