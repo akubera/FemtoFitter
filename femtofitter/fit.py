@@ -286,6 +286,7 @@ def parallel_fit_all(tfile,
                      output_path=None,
                      fsi: Tuple[str, Tuple[Any]]=('FsiKFile', 'KFile2.root'),
                      fitter_t='FitterGausOSL',
+                     mrc_class="MrcRatio3D",
                      mrc=False,
                      mrc_only=False,
                      fitrange=0.11,
@@ -307,6 +308,13 @@ def parallel_fit_all(tfile,
     except (AttributeError, TypeError):
         print(f"Could not load fitter {fitter_t!r}", file=sys.stderr)
         return
+
+    if not isinstance(mrc_class, type):
+        try:
+            mrc_class = getattr(ROOT, mrc_class)
+        except (AttributeError, TypeError):
+            print(f"Could not load fitter {fitter_t!r}", file=sys.stderr)
+            return
 
     filename = Path(str(tfile.GetName()))
 
