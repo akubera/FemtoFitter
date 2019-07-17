@@ -6,15 +6,16 @@
 #pragma once
 
 
+#include <iostream>
 #include <array>
 #include <vector>
 #include <valarray>
 #include <memory>
 
 #include <TH3.h>
+#include <TDirectory.h>
 
 class TH3;
-class TDirectory;
 
 
 template <typename T> struct data_traits;
@@ -93,8 +94,6 @@ struct Data3D {
       , den(std::move(d))
       , qinv(nullptr)
       { }
-
-    Source(const Source &orig) = default;
   };
 
   std::vector<Datum> data;
@@ -107,7 +106,22 @@ struct Data3D {
   double gamma;
 
   /// Build out of standard tdirectory;
-  static std::unique_ptr<Data3D> FromDirectory(TDirectory &, double limit=0.0);
+  static std::unique_ptr<Data3D> FromDirectory(TDirectory &tdir, double limit=0.0)
+    {
+      return FromDirectory(tdir, {"num", "den", "qinv"}, limit);
+    }
+
+  static std::unique_ptr<Data3D> FromDirectory(TDirectory &tdir, const std::array<TString, 3> &names, double limit=0.0)
+    {
+      return From(tdir, names[0], names[1], names[2], limit);
+    }
+
+  /// Build from directory and histogram names
+  static std::unique_ptr<Data3D> From(TDirectory &tdir,
+                                      const TString &num_name,
+                                      const TString &den_name,
+                                      const TString &qinv_name,
+                                      double limit=0.0);
 
   static std::unique_ptr<Data3D> FromDirectory(TDirectory &, double limit, double minimum);
 
@@ -133,6 +147,9 @@ struct Data3D {
   /// It is assumed the axes of the three histograms are the same.
   ///
   Data3D(const TH3& num, const TH3& den, const TH3& qinv, double limit=0.0);
+
+  /// Construct with unique pointers
+  Data3D(std::unique_ptr<TH3> num, std::unique_ptr<TH3> den, std::unique_ptr<TH3> qinv, double limit=0.0);
 
   /// Data limit
   Data3D(std::vector<Datum> data, double limit, double true_limit);
@@ -162,7 +179,8 @@ struct Data3D {
     , limit(ptr->limit)
     , true_limit(ptr->true_limit)
     , gamma(ptr->gamma)
-  {}
+  {
+  }
 
   size_t size() const
     { return data.size(); }
@@ -235,4 +253,60 @@ struct Data3D {
       return std::make_unique<Data3D>(subset, limit, true_limit);
     }
 
+  /// Estimate gamma from TDirectory name
+  ///
+  /// TDirectory name should have form <kTlo>_<kThi>.
+  /// Mother directory is also checked.
+  /// If sibling TH1 "kTDist" is found, it is used to find more accurate
+  /// mean kT of pairs.
+  ///
+  static double calc_gamma_from_tdir(const TDirectory &tdir, double mass=0.13957);
 };
+
+
+inline
+double Data3D::calc_gamma_from_tdir(const TDirectory &tdir, double mass)
+{
+  double gamma = 0.0;
+
+  TString ktname = tdir.GetName();
+  Ssiz_t underscore = ktname.First('_');
+
+  // check parent directory for kt name
+  if (underscore == TString::kNPOS || ktname.First('.') == TString::kNPOS) {
+    if (const auto *mdir = tdir.GetMotherDir()) {
+      ktname = mdir->GetName();
+      underscore = ktname.First('_');
+    }
+  }
+
+  if (underscore == TString::kNPOS || ktname.First('.') == TString::kNPOS) {
+    std::cerr << "Warning: Could not determine kt-range from directory\n";
+    return gamma;
+  }
+
+  const double
+    mass_sqr = mass * mass,
+    kt_lo = TString(ktname(0, underscore)).Atof(),
+    kt_hi = TString(ktname(underscore+1, ktname.Length())).Atof(),
+    est_mean_kt = (kt_hi + kt_lo) / 2.0,
+    est_mean_kt_sqr = est_mean_kt * est_mean_kt;
+
+  gamma = std::sqrt(1.0 + 4 * est_mean_kt_sqr / mass_sqr);
+
+  if (auto *cent_dir = tdir.GetMotherDir()) {
+    if (auto obj = std::unique_ptr<TObject>(cent_dir->Get("kTDist"))) {
+      if (auto *kthist = dynamic_cast<TH1*>(obj.get())) {
+        kthist->GetXaxis()->SetRangeUser(kt_lo, kt_hi);
+
+        const double
+          mean_kt = kthist->GetMean(),
+          kt_mass_ratio_sqr = mean_kt * mean_kt / mass_sqr;
+
+        gamma = std::sqrt(1.0 + 4 * kt_mass_ratio_sqr);
+      }
+    }
+  }
+
+  return gamma;
+}

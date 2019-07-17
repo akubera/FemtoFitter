@@ -17,91 +17,61 @@ void store_into(std::vector<double> &v, std::vector<double> &dest)
 void store_into(std::vector<double> &v, std::valarray<double> &dest)
   { dest = std::valarray<double>(v.data(), v.size()); }
 
-double
-calc_gamma_from_dir(TDirectory *kt_dir)
-{
-  // default
-  double gamma = 3.0;
-
-  if (!kt_dir) {
-    return gamma;
-  }
-
-  TString ktname = kt_dir->GetName();
-
-  Ssiz_t underscore = ktname.First('_');
-
-  const double
-    pion_mass_sqr = 0.13957 * 0.13957,
-    kt_lo = TString(ktname(0, underscore)).Atof(),
-    kt_hi = TString(ktname(underscore, ktname.Length())).Atof(),
-    est_mean_kt = (kt_hi + kt_lo) / 2.0,
-    est_mean_kt_sqr = est_mean_kt * est_mean_kt;
-
-  // estimated gamma
-  gamma = std::sqrt(1.0 + 4 * est_mean_kt_sqr / pion_mass_sqr);
-
-  // load histogram ../kTDist
-  if (auto *cent_dir = kt_dir->GetMotherDir()) {
-    if (auto *tobject = cent_dir->Get("kTDist")) {
-      std::unique_ptr<TH1> kthist { dynamic_cast<TH1*>(tobject) };
-      if (!kthist) {
-        delete tobject;
-      } else {
-
-        kthist->GetXaxis()->SetRangeUser(kt_lo, kt_hi);
-
-        const double
-          mean_kt = kthist->GetMean(),
-          kt_mass_ratio_sqr = mean_kt * mean_kt / pion_mass_sqr;
-
-        gamma = std::sqrt(1.0 + 4 * kt_mass_ratio_sqr);
-      }
-    }
-  }
-
-  return gamma;
-}
-
 
 Data3D::Data3D()
   : data()
-  , limit(0.0)
-  , true_limit(0.0)
-  , gamma(3.0)
+  , limit(NAN)
+  , true_limit(NAN)
+  , gamma(NAN)
 {
 }
 
 Data3D::Data3D(const TH3 &n, const TH3 &d, const TH3 &q, double limit_)
+  : Data3D(std::unique_ptr<TH3>(static_cast<TH3*>(n.Clone())),
+           std::unique_ptr<TH3>(static_cast<TH3*>(d.Clone())),
+           std::unique_ptr<TH3>(static_cast<TH3*>(q.Clone())),
+           limit_)
+{
+}
+
+Data3D::Data3D(std::unique_ptr<TH3> hnum,
+               std::unique_ptr<TH3> hden,
+               std::unique_ptr<TH3> hqinv,
+               double limit_)
   : data()
-  , src(std::make_shared<Source>(n, d, q))
+  , src(std::make_shared<Source>(std::move(hnum), std::move(hden), std::move(hqinv)))
   , limit(limit_)
   , true_limit(NAN)
-  , gamma(3.0)
+  , gamma(NAN)
 {
+  const TH3
+    &n = *src->num,
+    &d = *src->den,
+    &q = *src->qinv;
+
   const TAxis
     *xaxis = n.GetXaxis(),
     *yaxis = n.GetYaxis(),
     *zaxis = n.GetZaxis();
 
   if (limit == 0.0) {
-    limit = xaxis->GetXmax();
+    limit = xaxis->GetBinCenter(xaxis->GetNbins());
   }
 
   const size_t
-    nbinsx = n.GetNbinsX(),
-    nbinsy = n.GetNbinsY(),
-    nbinsz = n.GetNbinsZ(),
+    nbinsx = xaxis->GetNbins(),
+    nbinsy = yaxis->GetNbins(),
+    nbinsz = zaxis->GetNbins(),
     nbins = nbinsx * nbinsy * nbinsz,
 
-    lo_binX = xaxis->FindBin(-limit),
-    hi_binX = xaxis->FindBin(limit),
+    lo_binX = std::max(1, xaxis->FindBin(-limit)),
+    hi_binX = std::min(nbinsx, (size_t)xaxis->FindBin(limit)),
 
-    lo_binY = yaxis->FindBin(-limit),
-    hi_binY = yaxis->FindBin(limit),
+    lo_binY = std::max(1, yaxis->FindBin(-limit)),
+    hi_binY = std::min(nbinsy, (size_t)yaxis->FindBin(limit)),
 
-    lo_binZ = zaxis->FindBin(-limit),
-    hi_binZ = zaxis->FindBin(limit);
+    lo_binZ = std::max(1, zaxis->FindBin(-limit)),
+    hi_binZ = std::min(nbinsz, (size_t)zaxis->FindBin(limit));
 
   true_limit = xaxis->GetBinUpEdge(hi_binX);
 
@@ -114,7 +84,7 @@ Data3D::Data3D(const TH3 &n, const TH3 &d, const TH3 &q, double limit_)
         const double
           den = d.GetBinContent(i, j, k);
 
-        if (__builtin_expect(den == 0.0, 0)) {
+        if (__builtin_expect(den == 0.0, false)) {
           continue;
         }
 
@@ -123,7 +93,6 @@ Data3D::Data3D(const TH3 &n, const TH3 &d, const TH3 &q, double limit_)
           qs = yaxis->GetBinCenter(j),
           ql = zaxis->GetBinCenter(k),
           num = n.GetBinContent(i, j, k),
-          num_err = n.GetBinError(i, j, k),
           qinv = q.GetBinContent(i, j, k);
 
         const unsigned hist_bin = n.GetBin(i, j, k);
@@ -135,31 +104,12 @@ Data3D::Data3D(const TH3 &n, const TH3 &d, const TH3 &q, double limit_)
   data.shrink_to_fit();
 }
 
-
 Data3D::Data3D(std::vector<Datum> data_, double limit_, double true_limit_)
   : data(data_)
   , limit(limit_)
   , true_limit(true_limit_)
-  , gamma(3.0)
+  , gamma(NAN)
 {
-}
-
-
-std::unique_ptr<Data3D>
-Data3D::FromDirectory(TDirectory &tdir, double limit)
-{
-  const auto n = std::unique_ptr<TH3>((TH3*)tdir.Get("num")),
-             d = std::unique_ptr<TH3>((TH3*)tdir.Get("den")),
-             q = std::unique_ptr<TH3>((TH3*)tdir.Get("qinv"));
-
-  if (!n or !d or !q) {
-    return nullptr;
-  }
-
-  auto data = std::make_unique<Data3D>(*n, *d, *q, limit);
-  data->gamma = calc_gamma_from_dir(tdir.GetMotherDir());
-
-  return data;
 }
 
 std::unique_ptr<Data3D>
@@ -198,10 +148,36 @@ Data3D::FromDirectory(TDirectory &tdir, double limit, double minimum)
   }
 
   auto data = std::make_unique<Data3D>(*n, *d, *q, limit);
-  data->gamma = calc_gamma_from_dir(tdir.GetMotherDir());
+  data->gamma = calc_gamma_from_tdir(tdir);
 
   return data;
 }
+
+
+std::unique_ptr<Data3D>
+Data3D::From(TDirectory &tdir,
+             const TString &num_name,
+             const TString &den_name,
+             const TString &qinv_name,
+             double limit)
+{
+   std::unique_ptr<TH3>
+     num(static_cast<TH3*>(tdir.Get(num_name))),
+     den(static_cast<TH3*>(tdir.Get(den_name))),
+     qinv(static_cast<TH3*>(tdir.Get(qinv_name)));
+
+   if (!num || !den || !qinv) {
+     return nullptr;
+   }
+
+  auto data = std::make_unique<Data3D>(std::move(num),
+                                       std::move(den),
+                                       std::move(qinv),
+                                       limit);
+  data->gamma = calc_gamma_from_tdir(tdir);
+
+  return data;
+ }
 
 
 std::unique_ptr<Data3D>
@@ -258,7 +234,7 @@ Data3D::FromDirectory(TDirectory &tdir, const TH3 &mrc, double limit)
   }
 
   auto data = std::make_unique<Data3D>(*n, *d, *q, limit);
-  data->gamma = calc_gamma_from_dir(tdir.GetMotherDir());
+  data->gamma = calc_gamma_from_tdir(tdir);
 
   return data;
 }
@@ -319,8 +295,6 @@ Data3D::FromDirectory(TDirectory &tdir, TDirectory &mrcdir, double limit)
     &mrcxaxis = *nr->GetXaxis(),
     &mrcyaxis = *nr->GetYaxis(),
     &mrczaxis = *nr->GetZaxis();
-
-  const bool posquad = xaxis.GetBinLowEdge(1) == 0.0;
 
   for (int k=1; k <= mrc->GetNbinsZ(); ++k) {
     const double
@@ -393,7 +367,7 @@ Data3D::FromDirectory(TDirectory &tdir, TDirectory &mrcdir, double limit)
   }
 
   auto data = std::make_unique<Data3D>(*n, *d, *q, limit);
-  data->gamma = calc_gamma_from_dir(tdir.GetMotherDir());
+  data->gamma = calc_gamma_from_tdir(tdir);
 
   return data;
 }
@@ -458,7 +432,7 @@ Data3D::FromDirectory(TDirectory &tdir, const TH3 &mrc, double limit, double min
   }
 
   auto data = std::make_unique<Data3D>(*n, *d, *q, limit);
-  data->gamma = calc_gamma_from_dir(tdir.GetMotherDir());
+  data->gamma = calc_gamma_from_tdir(tdir);
 
   return data;
 }
