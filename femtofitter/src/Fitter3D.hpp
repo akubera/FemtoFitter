@@ -52,6 +52,13 @@ public:
   /// Used to initialize parameters
   std::unique_ptr<ParamHints> paramhints = nullptr;
 
+  Fitter3D(std::unique_ptr<TH3> n,
+           std::unique_ptr<TH3> d,
+           std::unique_ptr<TH3> q,
+           double limit)
+    : data(std::move(n), std::move(d), std::move(q), limit)
+    { }
+
   Fitter3D(const TH3 &n,
            const TH3 &d,
            const TH3 &q,
