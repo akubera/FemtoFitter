@@ -3,9 +3,12 @@
 #include "fitter/FitterGauss1D.hpp"
 #include "mrc/MrcMatrix1D.hpp"
 #include "fsi/FsiKFile.hpp"
+#include "fsi/FsiGamov.hpp"
 #include "src/Data1D.hpp"
 // #include "fitter/FitterLevy3D.hpp"
 // #include "fitter/FitterLevyFull.hpp"
+
+#include "mrc/MrcRatio3D.hpp"
 
 #include "Data3D.hpp"
 
@@ -18,17 +21,38 @@
 template <typename Fitter_t>
 void runfit(TDirectory &tdir, double limit)
 {
-  auto data = Data3D::FromDirectory(tdir, limit);
+  auto data = Data3D::FromDirectory(tdir, {"Num", "Den", "Qinv"}, limit);
+  std::cout << "Loaded " << data->size() << " bins of data\n";
+  std::cout << "> gamma: " << data->gamma << "\n";
   auto fitter = std::make_unique<Fitter_t>(std::move(data));
   std::cout << "fitter: " << fitter.get() << "\n";
 
-  auto res = fitter->fit_pml();
+  // auto file = std::make_unique<TFile>("KFile4.root");
+
+  auto fsi = FsiKFile::new_shared_ptr("KFile2.root");
+  std::cout << "> fsi: " << fsi.get() << "\n";
+
+  auto *k2ss = dynamic_cast<const TH2D*>(static_cast<FsiKFile&>(*fsi).k2ss.get());
+
+  fitter->fsi = fsi;
+  // fitter->fsi = FsiKFile::new_shared_ptr("KFile4.root");
+
+  TFile mrcfile("MRC-07.root");
+  auto *mrc_tdir = static_cast<TDirectory*>(mrcfile.Get("AnalysisTrueQ3D/cfg855847557EDA507A/pip/00_90/0.4_0.5/--"));
+  fitter->mrc = MrcRatio3D::From(*mrc_tdir, {"ng", "dg", "nr", "dr"});
+
+  // std::cout << "k2ss: " << static_cast<FsiKFile*>(fitter->fsi.get())->k2ss->GetNbinsX() << "\n";
+
+  auto res = fitter->fit_pml_mrc();
+  // auto res = fitter->fit_pml_mrc_quick();
   res.print();
 }
+
 
 int
 main(int argc, char** argv)
 {
+  TH1::AddDirectory(false);
   TApplication app("App", &argc, argv);
   // auto path = "AnalysisQ3D/cfgD3F0AFA546B3D616/pip/10_20/0.4_0.5/++",
   //      filename = "Data-varyphi.root";
@@ -48,6 +72,12 @@ main(int argc, char** argv)
     std::cerr << "No such dir " << path << "\n";
     return 1;
   }
+
+  auto *data3d_dir = static_cast<TDirectory*>(tdir->Get("KT_PQ3D/0.3_0.4"));
+
+  // sleep(5);
+  runfit<FitterGaussOSL>(*data3d_dir, 0.09);
+  return 0;
 
   auto *datadir = dynamic_cast<TDirectory*>(tdir->Get("KT_Qinv/0.4_0.5"));
 
@@ -73,7 +103,6 @@ main(int argc, char** argv)
   mrc->Smear(*background);
 
   FitterGauss1D fitter(data);
-
   fitter.mrc = mrc;
   fitter.fsi = FsiKFile::new_shared_ptr("KFile4.root");
 
@@ -88,8 +117,6 @@ main(int argc, char** argv)
   //   gSystem->ProcessEvents();
   // }
 
-  // sleep(5);
-  // runfit<FitterGaussOSL>(*tdir, limit);
 
   // runfit<FitterLevy>(*tdir, limit);
   // runfit<FitterLevyFull>(*tdir, limit);
