@@ -149,6 +149,16 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
       #undef Add
     }
 
+    void FillMinuit(TMinuit &minuit)
+      {
+        int errflag = 0;
+        minuit.mnparm(NORM_PARAM_IDX, "Norm", norm.value, 0.02, 0.0, 0.0, errflag);
+        minuit.mnparm(LAM_PARAM_IDX, "Lam", lam.value, 0.05, 0.0, 1.0, errflag);
+        minuit.mnparm(ROUT_PARAM_IDX, "Ro", Ro.value, 0.5, 0.0, 0.0, errflag);
+        minuit.mnparm(RSIDE_PARAM_IDX, "Rs", Rs.value, 0.5, 0.0, 0.0, errflag);
+        minuit.mnparm(RLONG_PARAM_IDX, "Rl", Rl.value, 0.5, 0.0, 0.0, errflag);
+      }
+
     FitParams as_params() const;
   };
 
@@ -472,6 +482,34 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
 
   FitResult fit_pml_mrc()
     { return Fitter3D::fit_pml_mrc(); }
+
+  FitResult fit_pml_mrc_quick()
+    {
+     if (mrc == nullptr) {
+       throw std::runtime_error("Fitter missing Mrc1D object");
+     }
+     if (fsi == nullptr) {
+       throw std::runtime_error("Fitter missing Fsi object");
+     }
+     TMinuit minuit;
+     minuit.SetPrintLevel(-1);
+     // first fit without smearing (faster)
+     setup_pml_mrc_minuit(minuit);
+     // auto tmp_res = do_fit_minuit(minuit);
+     double strat_args[] = {1.0};
+     double migrad_args[] = {2000.0, 1.0};
+     int errflag;
+     minuit.mnexcm("SET STRategy", strat_args, 1, errflag);
+     minuit.mnexcm("MIGRAD", migrad_args, 2, errflag);
+
+     FitResult tmp_res(minuit);
+     // then fit with mrc-smearing (slower)
+     TMinuit mminuit;
+     mminuit.SetPrintLevel(-1);
+     setup_pml_mrc_minuit(mminuit);
+     tmp_res.FillMinuit(mminuit);
+     return do_fit_minuit(mminuit);
+   }
 
   void fit_with_random_inits(TMinuit &minuit, FitResult &res, int);
 };
