@@ -42,6 +42,10 @@ def arg_parser():
     parser.add_argument("--mrc-only",
                         action='store_true',
                         help='Only run fits with mrc corrections')
+    parser.add_argument("--mrc-class",
+                        nargs='?',
+                        default='MrcRatio3D',
+                        help="Classname of MRC object")
     parser.add_argument("--mrc-path",
                         nargs='?',
                         default=False,
@@ -94,7 +98,8 @@ def main(argv=None):
     elif args.output:
         dest = args.output
     else:
-        dest_filename = "fitres-%s.json" % input_path.name
+        from datetime import datetime as dt
+        dest_filename = "fitres-%s-%s.json" % (dt.now().strftime("%y%m%d%H%M%S"), input_path.stem)
         dest_dir = Path("fit-results")
         dest_dir.mkdir(exist_ok=True, parents=True)
         dest = dest_dir / dest_filename

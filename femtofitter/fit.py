@@ -6,6 +6,8 @@
 Fitting routines
 """
 
+from typing import Any, Tuple, Optional, Union
+
 import sys
 from copy import copy
 from itertools import chain
@@ -17,8 +19,6 @@ import json
 import pandas as pd
 
 from femtofitter import PathQuery
-
-from typing import Any, Tuple, Optional
 
 
 def run_fitter(fitter, *args, **kwargs):
@@ -40,6 +40,7 @@ class FitArgs:
     minimum: float = 0.0
     fit_chi2: bool = False
     mrc_path: str = None
+    mrc_class: Union[type,str] = None
     subset: str = None
 
     @classmethod
@@ -84,6 +85,7 @@ def run_fit(fitter_classname: str,
             minimum: float = 0.0,
             fit_chi2: bool = False,
             mrc_path: str = None,
+            mrc_class: str = None,
             subset: str = None,
             ) -> dict:
     """
@@ -120,12 +122,15 @@ def run_fit(fitter_classname: str,
     tdir = tfile.Get(path)
     assert tdir
 
+    if mrc_class:
+        mrc_class = getattr(ROOT, mrc_class)
+
     if mrc_path is not None:
         #from ROOT import apply_momentum_resolution_correction
         if mrc_path is True:
             mrc_filename = filename
         elif mrc_path is ...:
-            mrc_filename = "Data-MRC-1987.root"
+            mrc_filename = "MRC-7028.root"
         else:
             #mrc_filename = 'Data-sbin.root'
             mrc_filename, _, cfg = mrc_path.partition(':')
@@ -147,22 +152,26 @@ def run_fit(fitter_classname: str,
                 mrc_path = mrc_query.as_path()
             #     mrc_path = mrc_rootpath + "/mrc"
 
-                mrc = mrc_tfile.Get(mrc_path)
-                if mrc:
+                mrc_tdir = mrc_tfile.Get(mrc_path)
+                if mrc_tdir:
                     break
             else:
                 print(f"Could not find MRC at {mrc_filename}:{mrc_rootpath}")
                 return {}
+
+            mrc_args = ('fng', 'dg', 'fnr', 'dr')
+            mrc = mrc_class.From(mrc_tdir, *mrc_args)
 
             # if mrc_tfile is not tfile:
             #     mrc_tfile.Close()
 
             # print(f"Loaded MRC from file {mrc_filename} {mrc_rootpath}", )
 
-        data = Data3D.FromDirectory(tdir, mrc, fit_range)
+        data = Data3D.FromDirectory(tdir, fit_range)
         # apply_momentum_resolution_correction(fitter.data, mrc)
     else:
         data = Data3D.FromDirectory(tdir, fit_range, minimum)
+        mrc = None
 
     if not subset:
         subset = None
@@ -185,13 +194,18 @@ def run_fit(fitter_classname: str,
 
     fitter = fitter_class(data)
     fitter.fsi = fsi_class.new_shared_ptr(*fsi_args)
+    if mrc:
+        fitter.mrc = mrc
     # fitter.SetParamHintsFromDir(tdir)
 
     results = {
         'fsi': str(fitter.fsi.ClassName()),
         'mrc': mrc_path,
     }
-    fit_results = fitter.fit_chi2() if fit_chi2 else fitter.fit_pml()
+    if mrc:
+        fit_results = fitter.fit_pml_mrc()
+    else:
+        fit_results = fitter.fit_chi2() if fit_chi2 else fitter.fit_pml()
     if not fit_results:
         print(f"Could not fit: {query.as_path()}")
         return {}
@@ -223,7 +237,8 @@ class ParallelFitArgs:
     fsi_classname: str = 'FsiKFile'
     fsi_args: Tuple[any] = ('KFile2.root', )
     fitter_t: str = 'FitterGausOSL'
-    mrc: bool = False
+    mrc: Optional[str] = None
+    mrc_class: str = 'MrcRatio3D'
     mrc_only: bool = False
     fitrange: float = 0.11
     subset: Optional[str] = None
@@ -256,6 +271,7 @@ class ParallelFitArgs:
                    fsi_args,
                    cli_args.fitter,
                    cli_args.mrc_path,
+                   cli_args.mrc_class,
                    cli_args.mrc_only,
                    cli_args.fitrange,
                    cli_args.subset,
@@ -266,12 +282,13 @@ class ParallelFitArgs:
                    cli_args.threads)
 
 
-def pfit_all(args):
+def pfit_all(args: ParallelFitArgs):
     return parallel_fit_all(args.tfile,
                             args.output_path,
                             (args.fsi_classname, args.fsi_args),
                             args.fitter_t,
                             args.mrc,
+                            args.mrc_class,
                             args.mrc_only,
                             args.fitrange,
                             args.subset,
@@ -286,8 +303,8 @@ def parallel_fit_all(tfile,
                      output_path=None,
                      fsi: Tuple[str, Tuple[Any]]=('FsiKFile', 'KFile2.root'),
                      fitter_t='FitterGausOSL',
-                     mrc_class="MrcRatio3D",
                      mrc=False,
+                     mrc_class: Union[type,str]="MrcRatio3D",
                      mrc_only=False,
                      fitrange=0.11,
                      subset=None,
@@ -311,7 +328,7 @@ def parallel_fit_all(tfile,
 
     if not isinstance(mrc_class, type):
         try:
-            mrc_class = getattr(ROOT, mrc_class)
+            getattr(ROOT, mrc_class)
         except (AttributeError, TypeError):
             print(f"Could not load fitter {fitter_t!r}", file=sys.stderr)
             return
@@ -376,11 +393,10 @@ def parallel_fit_all(tfile,
                        minimum=ratio_min,
                        fit_chi2=chi2,
                        mrc_path=None,
+                       mrc_class=mrc_class,
                        subset=subset)
 
-    nomrc_fits = ()
-    if not mrc_only:
-        nomrc_fits = (replace(fit_args, query=p) for p in paths)
+    nomrc_fits = () if not mrc_only else (replace(fit_args, query=p) for p in paths)
     mrc_fits = (replace(fit_args, query=p, mrc_path=m) for p, m in mrc_paths)
 
     work = chain(nomrc_fits, mrc_fits)
