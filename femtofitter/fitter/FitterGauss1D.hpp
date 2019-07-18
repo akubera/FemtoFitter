@@ -288,4 +288,10 @@ struct FitterGauss1D : public Fitter1D<FitterGauss1D> {
     }
 };
 
+inline auto
+FitterGauss1D::FitResult::as_params() const -> FitParams
+{
+  return FitParams(*this);
+}
+
 #endif
