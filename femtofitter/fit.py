@@ -396,7 +396,7 @@ def parallel_fit_all(tfile,
                        mrc_class=mrc_class,
                        subset=subset)
 
-    nomrc_fits = () if not mrc_only else (replace(fit_args, query=p) for p in paths)
+    nomrc_fits = () if mrc_only else (replace(fit_args, query=p) for p in paths)
     mrc_fits = (replace(fit_args, query=p, mrc_path=m) for p, m in mrc_paths)
 
     work = chain(nomrc_fits, mrc_fits)
