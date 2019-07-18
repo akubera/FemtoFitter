@@ -34,7 +34,6 @@ struct Data3D {
            qs,
            ql,
            num,
-           num_err,
            den,
            qinv;
 
@@ -45,7 +44,6 @@ struct Data3D {
       , qs(q1)
       , ql(q2)
       , num(n)
-      , num_err(std::sqrt(n))
       , den(d)
       , qinv(qi)
       , hist_bin(bin)
@@ -58,7 +56,7 @@ struct Data3D {
       const double
         ratio = num / den,
         diff = ratio - model,
-        variance = num_err * num_err / den / den + ratio * ratio / den;
+        variance = ratio / den * (1.0 + ratio);
 
       return variance == 0.0 ? 0.0 : diff * diff / variance;
     }
