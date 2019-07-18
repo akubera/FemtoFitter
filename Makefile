@@ -13,6 +13,10 @@ all: $(BUILD_DIR)/Makefile
 config: $(BUILD_DIR)/Makefile
 	ccmake $(BUILD_DIR)
 
+debug:
+	cmake -S femtofitter -B $(BUILD_DIR) -DCMAKE_BUILD_TYPE=Debug
+	+make -s -C $(BUILD_DIR)
+
 clean:
 	+make -s -C $(BUILD_DIR) clean
 
@@ -39,7 +43,7 @@ help:
 
 
 $(BUILD_DIR)/Makefile: femtofitter/CMakeLists.txt
-	cmake -S femtofitter -B $(BUILD_DIR)
+	cmake -S femtofitter -B $(BUILD_DIR) -DCMAKE_BUILD_TYPE=Release
 
 docs-html:
 	+make -C docs html
