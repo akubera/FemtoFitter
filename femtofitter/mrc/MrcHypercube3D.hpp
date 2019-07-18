@@ -82,6 +82,9 @@ public:
 
   std::shared_ptr<const TH3D> GetSmearedDenLike(TH3 &cf) const;
 
+  /// Fill smeared fit using FSI values
+  void FillSmearedFit(TH3 &cf, const Fit3DParameters &p, const TH3 &fsi) const override;
+
   void FillSmearedFit(TH3 &cf, const Fit3DParameters &p, const TH3 &qinv, FsiCalculator &fsi, UInt_t npoints) const override;
   void FillSmearedFit(TH3 &cf, const Fit3DParameters &, const TH3& qinv, FsiCalculator&) const override;
 

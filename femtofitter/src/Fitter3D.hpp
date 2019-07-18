@@ -49,6 +49,8 @@ public:
   /// temporary histogram used during fitting
   mutable std::unique_ptr<TH3D> _tmp_cf = nullptr;
 
+  mutable std::unique_ptr<TH3> _tmp_fsi = nullptr;
+
   /// Used to initialize parameters
   std::unique_ptr<ParamHints> paramhints = nullptr;
 
@@ -187,17 +189,29 @@ public:
       if (_tmp_cf == nullptr) {
         _tmp_cf.reset(static_cast<TH3D*>(data.src->num->Clone()));
       }
-
-      auto KFsi = fsi->ForRadius(p.PseudoRinv(data.gamma));
-
-      auto qinvh = static_cast<const TH3F&>(*data.src->qinv);
-
       auto &cfhist = *_tmp_cf;
-      mrc3d.FillSmearedFit(cfhist, p, [&] (double qo, double qs, double ql)
-        {
-          double qinv = const_cast<TH3F&>(qinvh).Interpolate(qo, qs, ql);
-          return KFsi(qinv);
-        });
+
+      if (_tmp_fsi == nullptr) {
+        _tmp_fsi.reset(static_cast<TH3D*>(data.src->qinv->Clone()));
+      } else {
+        // _tmp_fsi->Copy(*data.src->qinv);
+        data.src->qinv->Copy(*_tmp_fsi);
+      }
+      auto &fsi_hist = *_tmp_fsi;
+
+      const double Rinv = p.PseudoRinv(data.gamma);
+      auto KFsi = fsi->ForRadius(Rinv);
+
+      for (int k=1; k<=fsi_hist.GetNbinsZ(); ++k) {
+        for (int j=1; j<=fsi_hist.GetNbinsY(); ++j) {
+          for (int i=1; i<=fsi_hist.GetNbinsX(); ++i) {
+            const double q = fsi_hist.GetBinContent(i, j, k);
+            fsi_hist.SetBinContent(i, j, k, KFsi(q));
+          }
+        }
+      }
+
+      mrc3d.FillSmearedFit(cfhist, p, fsi_hist);
 
       for (const auto &datum : data) {
 
@@ -363,6 +377,9 @@ struct Fit3DParameters {
   virtual ~Fit3DParameters()
     { }
 
+  virtual void fill(TH3 &h, const TH3 &fsi) const = 0;
+  virtual void multiply(TH3 &h, const TH3 &fsi) const = 0;
+
   // template <typename FsiFunc>
   // void fill(TH3 &h,  FsiFunc &fsi) const;
   virtual void fill(TH3&h, const FsiFuncType &fsi) const = 0;
@@ -393,6 +410,22 @@ struct FitParam3D : Fit3DParameters {
     }
 
   double Rinv() const { return 1.0; }
+
+  void fill(TH3 &h, const TH3 &fsi) const override
+    {
+      _loop_over_bins(h, fsi, [&](int i, int j, int k, double cf)
+        {
+          h.SetBinContent(i, j, k, cf);
+        });
+    }
+
+  void multiply(TH3 &h, const TH3 &fsi) const override
+    {
+      _loop_over_bins(h, fsi, [&](int i, int j, int k, double cf)
+        {
+          h.SetBinContent(i, j, k, cf * h.GetBinContent(i, j, k));
+        });
+    }
 
   void fill(TH3 &h, const FsiFuncType &fsi) const override
     {
@@ -443,6 +476,36 @@ struct FitParam3D : Fit3DParameters {
     }
 
 private:
+
+  template <typename FuncType>
+  void _loop_over_bins(TH3 &h, const TH3 &Kfsi, const FuncType &func) const
+    {
+      auto &self = static_cast<const CRTP&>(*this);
+
+      const TAxis
+        &xaxis = *h.GetXaxis(),
+        &yaxis = *h.GetYaxis(),
+        &zaxis = *h.GetZaxis();
+
+      const int
+        Nx = xaxis.GetNbins(),
+        Ny = yaxis.GetNbins(),
+        Nz = zaxis.GetNbins();
+
+      for (int k=1; k <= Nz; ++k) {
+        const double qz = zaxis.GetBinCenter(k);
+      for (int j=1; j <= Ny; ++j) {
+        const double qy = yaxis.GetBinCenter(j);
+      for (int i=1; i <= Nx; ++i) {
+        const double qx = xaxis.GetBinCenter(i);
+
+        const double
+          K = Kfsi.GetBinContent(i, j, k),
+          cf = self.evaluate({qx, qy, qz}, K);
+
+        func(i, j, k, cf);
+      } } }
+    }
 
   template <typename FsiFunc, typename FuncType>
   void _loop_over_bins(TH3 &h, const FsiFunc &Kfsi, FuncType func) const

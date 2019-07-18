@@ -253,6 +253,13 @@ public:
       return mrc;
     }
 
+  void FillSmearedFit(TH3 &cf, const Fit3DParameters &p, const TH3 &fsi) const override
+    {
+      p.fill(cf, fsi);
+      auto smearing_matrix = GetSmearingFactor(cf);
+      cf.Multiply(smearing_matrix.get());
+    }
+
   void FillSmearedFit(TH3 &cf, const Fit3DParameters &p, const std::function<double(double, double, double)> &fsi) const override
     {
       p.fill(cf, fsi);
