@@ -77,6 +77,11 @@ Data3D::Data3D(std::unique_ptr<TH3> hnum,
 
   data.reserve(nbins);
 
+  // check to see if q has been normalized - if not, divide by denominator counts
+  if (q.GetBinContent(const_cast<TH3&>(q).FindBin(0.05, 0.05, 0.05)) > 10) {
+    const_cast<TH3&>(q).Divide(&d);
+  }
+
   for (size_t k = lo_binZ; k <= hi_binZ; ++k) {
     for (size_t j = lo_binY; j <= hi_binY; ++j) {
       for (size_t i = lo_binX; i <= hi_binX; ++i) {
