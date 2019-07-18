@@ -11,6 +11,10 @@
 #pragma link C++ class FitterGauss1D::FitParams;
 #pragma link C++ class FitterGauss1D::FitResult;
 
+#pragma link C++ class Fitter1D<Fitter1DLinGauss>;
+#pragma link C++ class Fitter1DLinGauss::FitParams;
+#pragma link C++ class Fitter1DLinGauss::FitResult;
+
 #pragma link C++ class Fitter1D<FitterLevy1D>;
 #pragma link C++ class FitterLevy1D::FitParams;
 #pragma link C++ class FitterLevy1D::FitResult;
