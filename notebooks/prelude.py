@@ -47,6 +47,7 @@ from femtofitter.pyfitter import (
 
 import ROOT
 from ROOT import gROOT, gStyle, cppyy, TFile
+from ROOT import TMinuit
 from ROOT import TCanvas, TLegend, TLine, TText
 from ROOT import TGraph, TGraphErrors
 from ROOT import TH1, TH3, TF1
