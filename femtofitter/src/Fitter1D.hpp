@@ -295,6 +295,22 @@ public:
     {
       mrc->FillSmearedFit(h, p, *fsi, 1);
     }
+
+  std::array<std::vector<double>, 3> as_array() const
+    {
+      std::array<std::vector<double>, 3> result;
+      result[0].reserve(data.size());
+      result[1].reserve(data.size());
+      result[2].reserve(data.size());
+
+      for (const auto &datum : data) {
+        result[0].push_back(datum.qinv);
+        result[1].push_back(datum.num);
+        result[2].push_back(datum.den);
+      }
+
+      return result;
+    }
 };
 
 
