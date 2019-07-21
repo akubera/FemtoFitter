@@ -2,6 +2,7 @@
 #include "fitter/FitterGaussOSL.hpp"
 #include "fitter/FitterGauss1D.hpp"
 #include "mrc/MrcMatrix1D.hpp"
+#include "mrc/MrcHypercube3D.hpp"
 #include "fsi/FsiKFile.hpp"
 #include "fsi/FsiGamov.hpp"
 #include "src/Data1D.hpp"
@@ -40,6 +41,16 @@ void runfit(TDirectory &tdir, double limit)
   TFile mrcfile("MRC-07.root");
   auto *mrc_tdir = static_cast<TDirectory*>(mrcfile.Get("AnalysisTrueQ3D/cfg855847557EDA507A/pip/00_90/0.4_0.5/--"));
   fitter->mrc = MrcRatio3D::From(*mrc_tdir, {"ng", "dg", "nr", "dr"});
+
+  // TFile mrcfile("~/Physics/data/MrcResult-20190701180906.root");
+  // auto *mrc_tdir = static_cast<TDirectory*>(mrcfile.Get("femtotask/AnalysisMrc_pip/KT_HYPERCUBE/0.4_0.5"));
+  // auto *hypercube = dynamic_cast<THnSparseI*>(mrc_tdir->Get("MRCHyperCube"));
+  // if (!hypercube) {
+  //   std::cerr << "Error: Could not load hypercube from " << mrc_tdir->GetPath() << "\n";
+  //   exit(1);
+  // }
+
+  // fitter->mrc = MrcHypercube3D::From(*hypercube);
 
   // std::cout << "k2ss: " << static_cast<FsiKFile*>(fitter->fsi.get())->k2ss->GetNbinsX() << "\n";
 
