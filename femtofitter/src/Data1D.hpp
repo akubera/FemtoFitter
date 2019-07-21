@@ -9,7 +9,6 @@
 #define DATA1D_HPP
 
 #include <TH1.h>
-#include <TH1C.h>
 
 #include <array>
 #include <memory>
@@ -55,8 +54,6 @@ struct Data1D {
          gamma;
 
   std::shared_ptr<Source> src;
-
-  std::unique_ptr<TH1C> mask;
 
   /// Build out of standard tdirectory;
   static std::unique_ptr<Data1D> From(TDirectory &data, double limit=0.0);
