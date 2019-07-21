@@ -126,6 +126,15 @@ struct Data1D {
 
       return result;
     }
+
+  /// Return correlation function of source numerator and denominator histograms
+  std::unique_ptr<TH1> cf_src() const
+    {
+      const char *cfname = Form("cf%p", (const void*)this);
+      std::unique_ptr<TH1> cf(static_cast<TH1*>(src->num->Clone(cfname)));
+      cf->Divide(src->den.get());
+      return cf;
+    }
 };
 
 
