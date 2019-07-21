@@ -7,8 +7,9 @@
 #ifndef CALCULATORRESID_HPP_
 #define CALCULATORRESID_HPP_
 
-
 #include "math/fit.hh"
+
+#include <cstdint>
 
 
 /// \brief static minuit function, forwards paramters to
@@ -18,7 +19,7 @@
 /// to the data
 ///
 template <typename ResidCalculator>
-static void minuit_func(Int_t&, Double_t*, Double_t &retval, Double_t *par, Int_t)
+static void minuit_func(int&, double*, double &retval, double *par, int)
 {
   using Fitter_t = typename ResidCalculator::Fitter;
   using FitterParams_t = typename ResidCalculator::FitParams;
@@ -38,7 +39,7 @@ static void minuit_func(Int_t&, Double_t*, Double_t &retval, Double_t *par, Int_
 
 /// Fit using momentum-resolution smearing of the correlation function
 template <typename ResidCalculator>
-static void minuit_func_mrc(Int_t&, Double_t*, Double_t &retval, Double_t *par, Int_t)
+static void minuit_func_mrc(int&, double*, double &retval, double *par, int)
 {
   using Fitter_t = typename ResidCalculator::Fitter;
   using FitterParams_t = typename ResidCalculator::FitParams;
