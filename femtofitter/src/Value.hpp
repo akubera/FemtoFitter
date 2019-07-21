@@ -19,9 +19,19 @@ struct Value {
     { return value; }
 
   Value(const TMinuit &m, size_t idx);
+
+  Value(double v, double e)
+    : value(v)
+    , error(e)
+    { }
+
+  Value(double v)
+    : Value(v, NAN)
+    { }
+
+  Value()
+    : Value(NAN, NAN)
+    { }
 };
-
-
-
 
 #endif
