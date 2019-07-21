@@ -249,6 +249,11 @@ struct FitterGauss1D : public Fitter1D<FitterGauss1D> {
 
   virtual ~FitterGauss1D() = default;
 
+  double resid_calc_chi2_mrc(const FitResult &fr)
+    {
+      return Fitter1D::resid_calc_mrc(fr.as_params(), *mrc, CalcChi2::resid_func);
+    }
+
   FitResult fit_chi2()
     { return Fitter1D::fit_chi2(); }
 
