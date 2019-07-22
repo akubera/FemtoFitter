@@ -35,7 +35,7 @@ Data1D::Data1D(const TH1& num, const TH1& den, double limit_)
       n = num.GetBinContent(i),
       d = den.GetBinContent(i);
 
-    if (n == 0) {
+    if (d == 0) {
       continue;
     }
 
@@ -75,7 +75,7 @@ Data1D::Data1D(TDirectory &dir, double limit_)
       n = num->GetBinContent(i),
       d = den->GetBinContent(i);
 
-    if (n == 0) {
+    if (d == 0) {
       continue;
     }
 
