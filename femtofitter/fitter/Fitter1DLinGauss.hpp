@@ -9,6 +9,9 @@
 
 #include "Fitter1D.hpp"
 
+#include <TF1.h>
+#include <TFitResult.h>
+
 
 /// \class Fitter1DLinGauss
 /// \brief Gaussian 1D fit with linear background
@@ -214,11 +217,24 @@ struct Fitter1DLinGauss : public Fitter1D<Fitter1DLinGauss> {
   int
   setup_minuit(TMinuit &minuit) const override
     {
+      return setup_minuit(minuit, 0.18, 1.0);
+    }
+
+  int
+  setup_minuit(TMinuit &minuit, double bglo, double bghi) const
+    {
+      auto cf = data.cf_src();
+
+      TF1 fg("linbg", "[0] + x * [1]");
+      auto bg = cf->Fit(&fg, "SQ0", "", bglo, bghi);
+      const double *bg_params = bg->GetParams();
+
       int errflag = 0;
       minuit.mnparm(NORM_PARAM_IDX, "Norm", 0.2, 0.02, 0.0, 0.0, errflag);
       minuit.mnparm(LAM_PARAM_IDX, "Lam", 0.5, 0.01, 0.0, 0.0, errflag);
       minuit.mnparm(R_PARAM_IDX, "Radius", 5, 0.2, 0.0, 0.0, errflag);
-      minuit.mnparm(SLOPE_PARAM_IDX, "Slope", 0.0, 0.01, 0.0, 0.0, errflag);
+      minuit.mnparm(SLOPE_PARAM_IDX, "Slope", bg_params[1], 0.0, 0.0, 0.0, errflag);
+      minuit.FixParameter(SLOPE_PARAM_IDX);
 
       const double this_dbl = static_cast<double>((intptr_t)this);
       minuit.mnparm(DATA_PARAM_IDX, "DATA_PTR", this_dbl, 0, 0, INTPTR_MAX, errflag);
@@ -302,6 +318,17 @@ struct Fitter1DLinGauss : public Fitter1D<Fitter1DLinGauss> {
     {
       Fitter1D::fill_smeared_fit(h, p);
     }
+  double resid_calc_chi2_mrc(const FitResult &fr) const
+    {
+      if (mrc == nullptr) {
+        std::cerr << "mrc is null\n";
+        return NAN;
+      }
+
+      auto params = fr.as_params();
+      return Fitter1D::resid_calc_mrc(params, *mrc, CalcChi2::resid_func);
+    }
+
 };
 
 inline auto
