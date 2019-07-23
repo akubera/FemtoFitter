@@ -162,6 +162,23 @@ public:
       }
     }
 
+  static void SmearInto(TH1 &dest, const TH1 &source, const TH2D &smear)
+    {
+      assert(smear.GetNbinsX() == source.GetNbinsX());
+      assert(smear.GetNbinsY() == dest.GetNbinsX());
+
+      const int Ny = dest.GetNbinsX()+1;
+      const int Nx = smear.GetNbinsX()+1;
+
+      for (int j=0; j <= Ny; ++j) {
+        double sum = 0.0;
+        for (int i=0; i <= Nx; ++i) {
+          sum += source.GetBinContent(i) * smear.GetBinContent(i, j);
+        }
+        dest.SetBinContent(j, sum);
+      }
+    }
+
   void Unsmear(TH1 &h) const override
     { throw std::runtime_error("Unimplemented method"); }
 
