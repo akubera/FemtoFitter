@@ -126,12 +126,17 @@ struct HistCache {
   // std::map<std::tuple<int, double, double>, std::unique_ptr<HistType>> hist;
   std::map<Key_t, std::shared_ptr<OutHistType>> storage;
 
-  std::shared_ptr<OutHistType> operator[](const HistType &h)
+  std::shared_ptr<OutHistType> operator[](const HistType &h) const
     {
-      return get(h);
+      return storage.get(h);
     }
 
-  std::shared_ptr<OutHistType> get(const HistType &h)
+  std::shared_ptr<OutHistType>& operator[](const HistType &h)
+    {
+      return storage[h];
+    }
+
+  std::shared_ptr<OutHistType> get(const HistType &h) const
     {
       Key_t key(h);
 
@@ -147,7 +152,7 @@ struct HistCache {
   insert(const HistType &keyhist, std::shared_ptr<OutHistType> hist)
     {
       Key_t key(keyhist);
-      storage.emplace(key, hist);
+      storage[key] = hist;
     }
 
   static Key_t make_key(const HistType &hist)
