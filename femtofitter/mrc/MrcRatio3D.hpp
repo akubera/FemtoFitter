@@ -220,7 +220,7 @@ public:
           mrc->Divide(ptr_ng.get());
         }
 
-        cache[hist] = mrc;
+        cache.insert(hist, mrc);
         return mrc;
       }
 

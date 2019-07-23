@@ -73,7 +73,7 @@ public:
       std::shared_ptr<const TH1D> res(tmp->ProjectionY());
       // static_cast<TArrayD*>(res.get())->Reset(1);
       // Smear(*res);
-      bg_cache[h] = res;
+      bg_cache.insert(h, res);
       return res;
     }
 
@@ -84,8 +84,7 @@ public:
         auto tmp = static_cast<TH1D*>(h.Clone());
         FillUnsmearedDen(*tmp);
         bg.reset(tmp);
-        denom_cache[h] = bg;
-        // denom_cache[h].reset(tmp);
+        denom_cache.insert(h, bg);
       }
 
       auto *ptr = static_cast<TH1D*>(bg->Clone());
@@ -98,7 +97,7 @@ public:
       if (!bg) {
         auto tmp = rebin_matrix_like(h, *raw_matrix);
         bg = std::shared_ptr<const TH1D>(tmp->ProjectionX());
-        denom_cache[h] = bg;
+        denom_cache.insert(h, bg);
       }
 
       for (int i=0; i<=h.GetNbinsX()+1; ++i) {
