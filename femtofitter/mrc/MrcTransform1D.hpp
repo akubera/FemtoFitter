@@ -59,8 +59,14 @@ public:
         const std::pair<double, double> yrang = {ybins[j-1], ybins[j]};
 
         for (int i=1; i<=Nx+1; ++i) {
-          double val = integrate({xbins[i-1], xbins[i]}, yrang, *raw_matrix);
-          mrc->SetBinContent(i, j, val / unsmeared_denominator->GetBinContent(i));
+          const double den = unsmeared_denominator->GetBinContent(i);
+          if (den == 0) {
+            mrc->SetBinContent(i, j, 0);
+            continue;
+          }
+
+          const double val = integrate({xbins[i-1], xbins[i]}, yrang, *raw_matrix);
+          mrc->SetBinContent(i, j, val / den);
         }
       }
 
