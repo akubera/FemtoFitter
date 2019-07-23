@@ -329,6 +329,13 @@ struct Fitter1DLinGauss : public Fitter1D<Fitter1DLinGauss> {
       return Fitter1D::resid_calc_mrc(params, *mrc, CalcChi2::resid_func);
     }
 
+  std::unique_ptr<TH1> get_cf(const FitParams &p) const
+    {
+      std::unique_ptr<TH1> cf(static_cast<TH1*>(data.src->num->Clone()));
+      cf->Reset();
+      fill(p, *cf);
+      return cf;
+    }
 };
 
 inline auto
