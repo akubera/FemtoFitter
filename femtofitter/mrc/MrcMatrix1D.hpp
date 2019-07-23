@@ -41,12 +41,16 @@ public:
 
   MrcMatrix1D(const TH2& hist)
     : raw_matrix(static_cast<TH2*>(hist.Clone()))
-    , unsmeared_denominator(raw_matrix->ProjectionX("unsmeared_den"))
-    , smeared_denominator(raw_matrix->ProjectionY("smeared_den"))
+    , unsmeared_denominator(nullptr)
+    , smeared_denominator(nullptr)
     , norm_cache()
     , rnorm_cache()
     , source_name()
     {
+      raw_matrix->GetXaxis()->SetRange();
+      raw_matrix->GetYaxis()->SetRange();
+      unsmeared_denominator.reset(raw_matrix->ProjectionX(Form("unsmeared_den_%p", (void*)this)));
+      smeared_denominator.reset(raw_matrix->ProjectionY(Form("smeared_den_%p", (void*)this)));
     }
 
   virtual ~MrcMatrix1D()
@@ -68,11 +72,8 @@ public:
         return bg;
       }
 
-      // auto res = std::make_shared<TH1D>("bg", "Smeared Background", h.GetNbinsX(), h.GetXaxis()->GetXmin(), h.GetXaxis()->GetXmax());
       auto tmp = rebin_matrix_like(h, *raw_matrix);
       std::shared_ptr<const TH1D> res(tmp->ProjectionY());
-      // static_cast<TArrayD*>(res.get())->Reset(1);
-      // Smear(*res);
       bg_cache.insert(h, res);
       return res;
     }
