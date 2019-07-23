@@ -86,6 +86,7 @@ set(INCS
   mrc/MrcRatio3D.hpp
   mrc/MrcRatio1D.hpp
   mrc/MrcMatrix1D.hpp
+  mrc/MrcTransform1D.hpp
   mrc/MrcHypercube3D.hpp
   src/CalculatorFsi.hpp
   src/ParamHints.hpp

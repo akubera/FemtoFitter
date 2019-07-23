@@ -60,6 +60,7 @@
 #pragma link C++ class MrcRatio1D;
 #pragma link C++ class MrcMatrix1D;
 #pragma link C++ class MrcMatrix1DJesse;
+#pragma link C++ class MrcTransform1D;
 
 #pragma link C++ class MrcRatio3D;
 #pragma link C++ class MrcHypercube3D;
