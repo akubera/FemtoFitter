@@ -356,6 +356,8 @@ struct Fitter1DGaussPolybg : public Fitter1D<Fitter1DGaussPolybg> {
     {
       std::unique_ptr<TH1> cf(static_cast<TH1*>(data.src->num->Clone()));
       cf->Reset();
+      cf->SetTitle(Form("Correlation Function (R=%0.2f  \\lambda=%0.3f); q_{inv}; CF(q_{inv});", p.radius, p.lam));
+      cf->SetStats(false);
       fill(p, *cf);
       return cf;
     }
