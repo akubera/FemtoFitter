@@ -93,6 +93,9 @@ struct FitterLevy1D : Fitter1D<FitterLevy1D> {
                     radius.value, lam.value, alpha.value, norm.value);
       }
 
+    FitParams
+    as_params() const;
+
     std::map<std::string, double>
     as_map() const
       {
@@ -175,11 +178,7 @@ struct FitterLevy1D : Fitter1D<FitterLevy1D> {
 
     double evaluate(const double qinv, const double K) const
       {
-        const double
-          s = qinv * radius / HBAR_C,
-          e = std::pow(s*s, alpha / 2.0);
-
-        return norm * ((1.0 - lam) + lam * K * std::exp(-e));
+         return FitterLevy1D::levy(qinv, radius * radius, lam, alpha, K, norm);
       }
 
     void apply_to(TH1 &hist)
@@ -215,25 +214,6 @@ struct FitterLevy1D : Fitter1D<FitterLevy1D> {
         PyDict_SetItemString(dict, "norm", PyFloat_FromDouble(norm));
         return dict;
       }
-
-    // void fill(TH1 &h, FsiCalculator *fsi=nullptr) const
-    //   {
-    //     std::function<double(double)> K = fsi ? fsi->ForRadius(radius)
-    //                                           : [] (double) { return 1.0; };
-
-    //     const TAxis &xaxis = *h.GetXaxis();
-    //     for (int i=1; i <= xaxis.GetLast(); ++i) {
-    //       double q = xaxis.GetBinCenter(i);
-    //       double cf = evaluate(q, K(q));
-    //       h.SetBinContent(i, cf);
-    //     }
-    //   }
-
-    // void fill(TH1 &h, FsiCalculator &fsi, UInt_t npoints=1) const
-    //   {
-    //     FitParam1D<FitParams>::fill(h, fsi, npoints);
-    //   }
-
   };
 
   FitterLevy1D(const TH1 &num, const TH1 &den, double limit)
@@ -280,6 +260,9 @@ struct FitterLevy1D : Fitter1D<FitterLevy1D> {
   FitResult fit_pml_mrc()
     { return Fitter1D::fit_pml_mrc(); }
 
+  FitResult fit_pml_mrc_quick()
+    { return Fitter1D::fit_pml_mrc_quick(); }
+
   void fill(const FitParams &p, TH1 &h, UInt_t npoints=1) const
     {
       p.fill(h, *fsi, npoints);
@@ -300,5 +283,12 @@ struct FitterLevy1D : Fitter1D<FitterLevy1D> {
       Fitter1D::fill_smeared_fit(h, p);
     }
 };
+
+
+auto
+FitterLevy1D::FitResult::as_params() const -> FitParams
+{
+  return FitParams(*this);
+}
 
 #endif
