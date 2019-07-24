@@ -1,11 +1,11 @@
 ///
-/// \file fitter/Fitter1DLinGauss.hpp
+/// \file fitter/Fitter1DGaussLin.hpp
 ///
 
 #pragma once
 
-#ifndef FITTER_FITTER1DLINGAUSS_HPP
-#define FITTER_FITTER1DLINGAUSS_HPP
+#ifndef FITTER_FITTER1DGAUSSLIN_HPP
+#define FITTER_FITTER1DGAUSSLIN_HPP
 
 #include "Fitter1D.hpp"
 
@@ -13,12 +13,12 @@
 #include <TFitResult.h>
 
 
-/// \class Fitter1DLinGauss
+/// \class Fitter1DGaussLin
 /// \brief Gaussian 1D fit with linear background
 ///
-struct Fitter1DLinGauss : public Fitter1D<Fitter1DLinGauss> {
+struct Fitter1DGaussLin : public Fitter1D<Fitter1DGaussLin> {
 
-  using Super = Fitter1D<Fitter1DLinGauss>;
+  using Super = Fitter1D<Fitter1DGaussLin>;
 
   struct FitParams;
 
@@ -51,7 +51,7 @@ struct Fitter1DLinGauss : public Fitter1D<Fitter1DLinGauss> {
   /// \class FitResult
   /// \brief Result of the fit
   ///
-  struct FitResult : FitResult1D<FitResult, Fitter1DLinGauss> {
+  struct FitResult : FitResult1D<FitResult, Fitter1DGaussLin> {
 
     Value norm,
           lam,
@@ -106,7 +106,7 @@ struct Fitter1DLinGauss : public Fitter1D<Fitter1DLinGauss> {
     std::string
     __repr__() const
       {
-        return Form("<Fitter1DLinGauss::FitResult radius=%f lambda=%f norm=%f slope=%g>",
+        return Form("<Fitter1DGaussLin::FitResult radius=%f lambda=%f norm=%f slope=%g>",
                     radius.value, lam.value, norm.value, slope.value);
       }
 
@@ -126,7 +126,7 @@ struct Fitter1DLinGauss : public Fitter1D<Fitter1DLinGauss> {
       }
 
     double evaluate(const double q, const double K) const
-      { return Fitter1DLinGauss::gauss(q, radius * radius, lam, slope, K, norm); }
+      { return Fitter1DGaussLin::gauss(q, radius * radius, lam, slope, K, norm); }
 
     FitParams as_params() const;
 
@@ -192,7 +192,7 @@ struct Fitter1DLinGauss : public Fitter1D<Fitter1DLinGauss> {
     std::string
     __repr__() const
       {
-        return Form("<Fitter1DLinGauss::FitParam radius=%g lambda=%g norm=%g slope=%g>",
+        return Form("<Fitter1DGaussLin::FitParam radius=%g lambda=%g norm=%g slope=%g>",
                     radius, lam, norm, slope);
       }
 
@@ -209,7 +209,7 @@ struct Fitter1DLinGauss : public Fitter1D<Fitter1DLinGauss> {
 
     double evaluate(const double q, const double K) const
       {
-        return Fitter1DLinGauss::gauss(q, radius * radius, lam, slope, K, norm);
+        return Fitter1DGaussLin::gauss(q, radius * radius, lam, slope, K, norm);
       }
 
   };
@@ -267,19 +267,19 @@ struct Fitter1DLinGauss : public Fitter1D<Fitter1DLinGauss> {
       minuit.FixParameter(idx);
     }
 
-  Fitter1DLinGauss(const TH1 &num, const TH1 &den, double limit)
+  Fitter1DGaussLin(const TH1 &num, const TH1 &den, double limit)
     : Fitter1D(num, den, limit)
     { }
 
-  Fitter1DLinGauss(TDirectory &tdir, double limit)
+  Fitter1DGaussLin(TDirectory &tdir, double limit)
     : Fitter1D(tdir, limit)
     { }
 
-  Fitter1DLinGauss(const Data1D &dat)
+  Fitter1DGaussLin(const Data1D &dat)
     : Fitter1D(dat)
     { }
 
-  virtual ~Fitter1DLinGauss() = default;
+  virtual ~Fitter1DGaussLin() = default;
 
   FitResult fit_chi2()
     { return Fitter1D::fit_chi2(); }
@@ -339,7 +339,7 @@ struct Fitter1DLinGauss : public Fitter1D<Fitter1DLinGauss> {
 };
 
 inline auto
-Fitter1DLinGauss::FitResult::as_params() const -> FitParams
+Fitter1DGaussLin::FitResult::as_params() const -> FitParams
 {
   return FitParams(*this);
 }
