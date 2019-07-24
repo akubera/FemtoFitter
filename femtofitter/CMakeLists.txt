@@ -74,6 +74,7 @@ set(INCS
   fitter/Fitter1DLinGauss.hpp
   fitter/Fitter1DGaussPolybg.hpp
   fitter/FitterLevy1D.hpp
+  fitter/Fitter1DLevyPolyBg.hpp
   fitter/FitterGaussOSL.hpp
   fitter/FitterGauss3DLcmsOS.hpp
   fitter/FitterGauss3DLcmsOL.hpp
