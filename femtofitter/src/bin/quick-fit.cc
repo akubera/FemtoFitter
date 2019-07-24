@@ -28,17 +28,14 @@ void runfit(TDirectory &tdir, double limit)
   auto fitter = std::make_unique<Fitter_t>(std::move(data));
   std::cout << "fitter: " << fitter.get() << "\n";
 
-  // auto file = std::make_unique<TFile>("KFile4.root");
-
-  auto fsi = FsiKFile::new_shared_ptr("KFile2.root");
+  auto fsi = FsiKFile::new_shared_ptr("KFile4.root");
   std::cout << "> fsi: " << fsi.get() << "\n";
-
-  auto *k2ss = dynamic_cast<const TH2D*>(static_cast<FsiKFile&>(*fsi).k2ss.get());
-
   fitter->fsi = fsi;
   // fitter->fsi = FsiKFile::new_shared_ptr("KFile4.root");
 
-  TFile mrcfile("MRC-07.root");
+  //TFile mrcfile("MRC-07.root");
+  //auto *mrc_tdir = static_cast<TDirectory*>(mrcfile.Get("AnalysisTrueQ3D/cfg855847557EDA507A/pip/00_90/0.4_0.5/--"));
+  TFile mrcfile("~/Downloads/AnalysisResults.root");
   auto *mrc_tdir = static_cast<TDirectory*>(mrcfile.Get("AnalysisTrueQ3D/cfg855847557EDA507A/pip/00_90/0.4_0.5/--"));
   fitter->mrc = MrcRatio3D::From(*mrc_tdir, {"ng", "dg", "nr", "dr"});
 
