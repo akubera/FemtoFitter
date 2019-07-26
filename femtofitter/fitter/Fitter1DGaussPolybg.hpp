@@ -101,14 +101,12 @@ struct Fitter1DGaussPolybg : public Fitter1D<Fitter1DGaussPolybg> {
         #undef OUT
       }
 
-    std::string
+    void
     print() const
       {
-        std::string result;
-        result += Form("Radius: %f ± %f\n", radius.value, radius.error);
-        result += Form("Lambda: %f ± %f\n", lam.value, lam.error);
-        result += Form("backgound: [%f, %f %f, %f]\n", bg[0].value, bg[1].value, bg[2].value, bg[2].value);
-        return result;
+        std::cout << Form("Radius: %f ± %f\n", radius.value, radius.error)
+                  << Form("Lambda: %f ± %f\n", lam.value, lam.error)
+                  << Form("backgound: [%f, %f %f, %f]\n", bg[0].value, bg[1].value, bg[2].value, bg[2].value);
       }
 
     std::string
@@ -197,13 +195,11 @@ struct Fitter1DGaussPolybg : public Fitter1D<Fitter1DGaussPolybg> {
         #undef INVALID
       }
 
-    std::string
+    void
     print() const
       {
-        std::string result;
-        result += Form("Radius: %f \n", radius);
-        result += Form("Lambda: %f\n", lam);
-        return result;
+        std::cout << Form("Radius: %f \n", radius)
+                  << Form("Lambda: %f\n", lam);
       }
 
     std::string
@@ -240,10 +236,7 @@ struct Fitter1DGaussPolybg : public Fitter1D<Fitter1DGaussPolybg> {
   int
   setup_minuit(TMinuit &minuit, double bglo, double bghi) const
     {
-      auto cf = data.cf_src();
-
-      TF1 fg("polybg", "[0] + x * x * ([1] + x * x * ([2] + x * x * [3]))");
-      auto bg = cf->Fit(&fg, "SQ0", "", bglo, bghi);
+      auto bg = fit_background(bglo, bghi);
       const double *bg_params = bg->GetParams();
 
       int errflag = 0;
@@ -303,6 +296,21 @@ struct Fitter1DGaussPolybg : public Fitter1D<Fitter1DGaussPolybg> {
 
   virtual ~Fitter1DGaussPolybg() = default;
 
+  TFitResultPtr fit_background(double bglo, double bghi, TH1 *cf_input=nullptr) const
+    {
+      auto cf = cf_input ? nullptr : data.cf_src();
+      TF1 fg("polybg", "[0] + x * x * ([1] + x * x * ([2] + x * x * [3]))");
+      auto bg = (cf_input ? cf_input : cf.get())->Fit(&fg, "SQ0", "", bglo, bghi);
+
+      return bg;
+    }
+
+  void setup_pml_mrc_fitter(TMinuit &minuit, double bglo, double bghi)
+    {
+      setup_minuit(minuit, bglo, bghi);
+      set_pml_mrc_func(minuit);
+    }
+
   FitResult fit_chi2()
     { return Fitter1D::fit_chi2(); }
 
@@ -339,6 +347,23 @@ struct Fitter1DGaussPolybg : public Fitter1D<Fitter1DGaussPolybg> {
   void fill_smeared_fit(TH1 &h, const FitParams &p)
     {
       Fitter1D::fill_smeared_fit(h, p);
+    }
+
+  auto fit_pml_mrc(double bglo, double bghi)
+    {
+      if (mrc == nullptr) {
+        throw std::runtime_error("Fitter missing Mrc1D object");
+      }
+
+      if (fsi == nullptr) {
+        throw std::runtime_error("Fitter missing Fsi object");
+      }
+
+      TMinuit minuit;
+      minuit.SetPrintLevel(-1);
+
+      setup_pml_mrc_fitter(minuit, bglo, bghi);
+      return do_fit_minuit(minuit);
     }
 
   double resid_calc_chi2_mrc(const FitResult &fr) const

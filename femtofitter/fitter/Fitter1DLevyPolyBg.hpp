@@ -257,19 +257,27 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
     : Fitter1D(dat)
     { }
 
+  virtual ~Fitter1DLevyPolyBg() = default;
+
+  TFitResultPtr fit_background(double bglo, double bghi, TH1 *cf_input=nullptr) const
+    {
+      auto cf = cf_input ? nullptr : data.cf_src();
+      TF1 fg("polybg", "[0] + x * x * ([1] + x * x * ([2] + x * x * [3]))");
+      auto bg = (cf_input ? cf_input : cf.get())->Fit(&fg, "SQ0", "", bglo, bghi);
+
+      return bg;
+    }
+
   int
   setup_minuit(TMinuit &minuit) const override
     {
-      return setup_minuit(minuit, 0.18, 1.0);
+      return setup_minuit(minuit, 0.3, 1.0);
     }
 
   int
   setup_minuit(TMinuit &minuit, double bglo, double bghi) const
     {
-      auto cf = data.cf_src();
-
-      TF1 fg("polybg", "[0] + x * x * ([1] + x * x * ([2] + x * x * [3]))");
-      auto bg = cf->Fit(&fg, "SQ0", "", bglo, bghi);
+      auto bg = fit_background(bglo, bghi);
       const double *bg_params = bg->GetParams();
 
       int errflag = 0;
@@ -296,7 +304,11 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
       return errflag;
     }
 
-  virtual ~Fitter1DLevyPolyBg() = default;
+  void setup_pml_mrc_fitter(TMinuit &minuit, double bglo, double bghi)
+    {
+      setup_minuit(minuit, bglo, bghi);
+      set_pml_mrc_func(minuit);
+    }
 
   FitResult fit_chi2()
     { return Fitter1D::fit_chi2(); }
@@ -310,6 +322,23 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
   /// Fit with log-likelihood method and momentum-correction smearing
   FitResult fit_pml_mrc()
     { return Fitter1D::fit_pml_mrc(); }
+
+  FitResult fit_pml_mrc(double bglo, double bghi)
+    {
+      if (mrc == nullptr) {
+        throw std::runtime_error("Fitter missing Mrc1D object");
+      }
+
+      if (fsi == nullptr) {
+        throw std::runtime_error("Fitter missing Fsi object");
+      }
+
+      TMinuit minuit;
+      minuit.SetPrintLevel(-1);
+
+      setup_pml_mrc_fitter(minuit, bglo, bghi);
+      return do_fit_minuit(minuit);
+    }
 
   FitResult fit_pml_mrc_quick()
     { return Fitter1D::fit_pml_mrc_quick(); }
