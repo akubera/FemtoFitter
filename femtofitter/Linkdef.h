@@ -15,9 +15,9 @@
 #pragma link C++ class Fitter1DGaussLin::FitParams;
 #pragma link C++ class Fitter1DGaussLin::FitResult;
 
-#pragma link C++ class Fitter1D<Fitter1DGaussPolybg>;
-#pragma link C++ class Fitter1DGaussPolybg::FitParams;
-#pragma link C++ class Fitter1DGaussPolybg::FitResult;
+#pragma link C++ class Fitter1D<Fitter1DGaussPolyBg>;
+#pragma link C++ class Fitter1DGaussPolyBg::FitParams;
+#pragma link C++ class Fitter1DGaussPolyBg::FitResult;
 
 #pragma link C++ class Fitter1D<FitterLevy1D>;
 #pragma link C++ class FitterLevy1D::FitParams;

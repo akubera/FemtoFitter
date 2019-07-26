@@ -72,7 +72,7 @@ set(INCS
   src/Data3D.hpp
   fitter/FitterGauss1D.hpp
   fitter/Fitter1DGaussLin.hpp
-  fitter/Fitter1DGaussPolybg.hpp
+  fitter/Fitter1DGaussPolyBg.hpp
   fitter/FitterLevy1D.hpp
   fitter/Fitter1DLevyPolyBg.hpp
   fitter/FitterGaussOSL.hpp
