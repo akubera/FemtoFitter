@@ -249,6 +249,9 @@ def run_fit(params: RunFitParams) -> Optional[dict]:
     if not fit_results:
         return None
 
+    chi2 = (fitter.resid_calc_chi2_mrc(fit_results)
+            if mrc else fitter.resid_calc_chi2(fit_results))
+
     results = dict(fit_results.as_map())
 
     results["fsi"] = str(fitter.fsi.ClassName())
@@ -256,7 +259,7 @@ def run_fit(params: RunFitParams) -> Optional[dict]:
     results["pair"] = params.pathquery.pair
     results["magfield"] = params.pathquery.magfield
     results["kt"] = params.pathquery.kt
-    results["kT"] = params.pathquery.mean_kt()
+    results["kT"] = float('%g' % params.pathquery.mean_kt())
     results["cfg"] = params.pathquery.cfg
 
     results["analysis"] = params.pathquery.analysis
@@ -264,9 +267,8 @@ def run_fit(params: RunFitParams) -> Optional[dict]:
     results["mrc"] = params.mrc_path
     results["gamma"] = fitter.data.gamma
     results["ndof"] = fitter.degrees_of_freedom()
-    results["chi2"] = fitter.resid_chi2(fit_results)
+    results["chi2"] = chi2
     results["rchi2"] = results["chi2"] / results["ndof"]
-    #print(results)
 
     return results
 
