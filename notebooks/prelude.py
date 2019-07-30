@@ -19,7 +19,7 @@ for p in map(Path, pathlist):
         sys.path.insert(1, str(p))
 del p, pathlist
 
-from itertools import chain, repeat, cycle, islice
+from itertools import chain, repeat, cycle, islice, product
 from functools import partial, reduce
 from copy import copy
 
@@ -56,6 +56,10 @@ from ROOT import TProfile, TProfile2D
 TH1.AddDirectory(False)
 
 from ROOT import AliFemtoConfigObject
-from ROOT import Data3D, FitterGaussOSL, FitterLevy3D
-from ROOT import Data1D, FitterGauss1D, FitterLevy1D
+from ROOT import Data3D, Data1D
+from ROOT import FitterGaussOSL, FitterLevy3D
+from ROOT import FitterGauss1D, Fitter1DGaussLin, Fitter1DGaussPolyBg
+from ROOT import FitterLevy1D, Fitter1DLevyPolyBg
 from ROOT import FsiKFile, FsiGamov, FsiStatic
+from ROOT import MrcRatio1D, MrcMatrix1D
+from ROOT import MrcRatio3D, MrcHypercube3D
