@@ -366,15 +366,29 @@ struct Fitter1DGaussPolyBg : public Fitter1D<Fitter1DGaussPolyBg> {
       return do_fit_minuit(minuit);
     }
 
-  double resid_calc_chi2_mrc(const FitResult &fr) const
+  double resid_calc_chi2(const FitParams &params) const
+    {
+      return Fitter1D::resid_calc(params, CalcChi2::resid_func);
+    }
+
+  double resid_calc_chi2(const FitResult &fr) const
+    {
+      return resid_calc_chi2(fr.as_params());
+    }
+
+  double resid_calc_chi2_mrc(const FitParams &params) const
     {
       if (mrc == nullptr) {
         std::cerr << "mrc is null\n";
         return NAN;
       }
 
-      auto params = fr.as_params();
       return Fitter1D::resid_calc_mrc(params, *mrc, CalcChi2::resid_func);
+    }
+
+  double resid_calc_chi2_mrc(const FitResult &fr) const
+    {
+      return resid_calc_chi2_mrc(fr.as_params());
     }
 
   std::unique_ptr<TH1> get_cf(const FitParams &p) const
