@@ -1,5 +1,5 @@
 ///
-/// \file femtofitter/fitter/FitterLevy1D.hpp
+/// \file femtofitter/fitter/Fitter1DLevy.hpp
 ///
 
 #pragma once
@@ -10,10 +10,10 @@
 #include "Fitter1D.hpp"
 
 
-/// \class FitterLevy1D
+/// \class Fitter1DLevy
 /// \brief Fit 1D Levy function
 ///
-struct FitterLevy1D : Fitter1D<FitterLevy1D> {
+struct Fitter1DLevy : Fitter1D<Fitter1DLevy> {
 
   using Super = Fitter1D<FitterGauss1D>;
 
@@ -47,7 +47,7 @@ struct FitterLevy1D : Fitter1D<FitterLevy1D> {
 
   /// \class Fit results from TMinuit
   ///
-  struct FitResult : FitResult1D<FitResult, FitterLevy1D> {
+  struct FitResult : FitResult1D<FitResult, Fitter1DLevy> {
 
     Value norm,
           lam,
@@ -89,7 +89,7 @@ struct FitterLevy1D : Fitter1D<FitterLevy1D> {
     std::string
     __repr__() const
       {
-        return Form("<FitterLevy1D::FitParam radius=%g lambda=%g alpha=%g norm=%g>",
+        return Form("<Fitter1DLevy::FitParam radius=%g lambda=%g alpha=%g norm=%g>",
                     radius.value, lam.value, alpha.value, norm.value);
       }
 
@@ -178,7 +178,7 @@ struct FitterLevy1D : Fitter1D<FitterLevy1D> {
 
     double evaluate(const double qinv, const double K) const
       {
-         return FitterLevy1D::levy(qinv, radius * radius, lam, alpha, K, norm);
+         return Fitter1DLevy::levy(qinv, radius * radius, lam, alpha, K, norm);
       }
 
     void apply_to(TH1 &hist)
@@ -200,7 +200,7 @@ struct FitterLevy1D : Fitter1D<FitterLevy1D> {
     std::string
     __repr__() const
       {
-        return Form("<FitterLevy1D::FitParam radius=%g lambda=%g alpha=%g norm=%g>",
+        return Form("<Fitter1DLevy::FitParam radius=%g lambda=%g alpha=%g norm=%g>",
                     radius, lam, alpha, norm);
       }
 
@@ -216,15 +216,15 @@ struct FitterLevy1D : Fitter1D<FitterLevy1D> {
       }
   };
 
-  FitterLevy1D(const TH1 &num, const TH1 &den, double limit)
+  Fitter1DLevy(const TH1 &num, const TH1 &den, double limit)
     : Fitter1D(num, den, limit)
     { }
 
-  FitterLevy1D(TDirectory &tdir, double limit)
+  Fitter1DLevy(TDirectory &tdir, double limit)
     : Fitter1D(tdir, limit)
     { }
 
-  FitterLevy1D(const Data1D &dat)
+  Fitter1DLevy(const Data1D &dat)
     : Fitter1D(dat)
     { }
 
@@ -286,7 +286,7 @@ struct FitterLevy1D : Fitter1D<FitterLevy1D> {
 
 
 auto
-FitterLevy1D::FitResult::as_params() const -> FitParams
+Fitter1DLevy::FitResult::as_params() const -> FitParams
 {
   return FitParams(*this);
 }
