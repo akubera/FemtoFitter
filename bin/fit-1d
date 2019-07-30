@@ -138,7 +138,7 @@ def find_fit_data(tfile, args):
     Load data file and find available analyses results
     """
 
-    pathquery = PathQuery('*', 'cfg*', '*', '*', '*', '*')
+    pathquery = PathQuery('AnalysisQinv', 'cfg*', '*', '*', '*', '*')
     pattern = pathquery.as_path()
 
     paths = []
