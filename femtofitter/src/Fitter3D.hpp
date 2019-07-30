@@ -616,4 +616,37 @@ private:
 
 };
 
+/// \class Fit3DParameters
+/// \brief Abstract base class for 3D fitter parameters
+template <typename CRTP, typename FitterType>
+struct FitResult3D {
+  using Paramters = typename FitterType::FitParams;
+
+  virtual void FillMinuit(TMinuit &) const = 0;
+
+  Paramters as_params() const
+    {
+      return Paramters(static_cast<const CRTP&>(*this));
+    }
+
+  /// fill histogram with values of the correlation function
+  /// represented by this fit result
+  void fill_cf(TH3 &h, FsiCalculator &fsi, Mrc3D *mrc=nullptr) const
+    {
+      if (mrc == nullptr) {
+        as_params().fill(h, fsi, 1);
+      } else {
+        mrc->FillSmearedFit(h, as_params(), fsi, 1);
+      }
+    }
+
+  double calc_chi2(FitterType &fitter) const
+    {
+      auto params = as_params();
+      // ResidCalculatorChi2
+      fitter.resid_calc(params, FitterType::CalcChi2::resid_func);
+      return 0.0;
+    }
+};
+
 #endif
