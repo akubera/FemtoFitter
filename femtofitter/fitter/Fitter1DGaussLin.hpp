@@ -318,15 +318,16 @@ struct Fitter1DGaussLin : public Fitter1D<Fitter1DGaussLin> {
     {
       Fitter1D::fill_smeared_fit(h, p);
     }
+
+  double resid_calc_chi2_mrc(const FitParams &params) const
+    {
+      return Fitter1D::resid_calc_chi2_mrc(params);
+    }
+
   double resid_calc_chi2_mrc(const FitResult &fr) const
     {
-      if (mrc == nullptr) {
-        std::cerr << "mrc is null\n";
-        return NAN;
-      }
-
       auto params = fr.as_params();
-      return Fitter1D::resid_calc_mrc(params, *mrc, CalcChi2::resid_func);
+      return Fitter1D::resid_calc_chi2_mrc(params);
     }
 
   std::unique_ptr<TH1> get_cf(const FitParams &p) const

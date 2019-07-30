@@ -148,9 +148,6 @@ public:
 
   virtual ~Fitter3D() = default;
 
-  size_t degrees_of_freedom() const
-    { return data.size() - Impl::CountParams(); }
-
   /// Add parameters to minuit object
   virtual int setup_minuit(TMinuit &) const = 0;
 
@@ -225,6 +222,12 @@ public:
       }
 
       return retval;
+    }
+
+  template <typename FitParams>
+  double resid_calc_chi2_mrc(const FitParams &p) const
+    {
+      return resid_calc_mrc(p, mrc, Impl::CalcChi2::resid_func);
     }
 
   void set_use_chi2_func(TMinuit &minuit) const
@@ -329,14 +332,17 @@ public:
     return result;
   }
 
+  void SetFsi(std::shared_ptr<FsiCalculator> ptr)
+    { fsi = ptr; }
+
+  size_t degrees_of_freedom() const
+    { return data.size() - Impl::CountParams(); }
+
   std::size_t size() const
     { return data.size(); }
 
   auto num_as_vec() const -> std::vector<double>
     { return numerator_as_vec(*this); }
-
-  void SetFsi(std::shared_ptr<FsiCalculator> ptr)
-    { fsi = ptr; }
 
   /// Extract a number from a python object and store in dest
   ///

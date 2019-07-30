@@ -165,15 +165,6 @@ public:
       minuit.SetFCN(minuit_func_mrc<typename Impl::CalcLoglike>);
     }
 
-  size_t size() const
-    { return data.size(); }
-
-  size_t degrees_of_freedom() const
-    { return data.size() - Impl::CountParams(); }
-
-  auto num_as_vec() const -> std::vector<double>
-    { return numerator_as_vec(*this); }
-
   auto do_fit_minuit(TMinuit &minuit)
     {
       double strat_args[] = {1.0};
@@ -295,6 +286,26 @@ public:
     {
       mrc->FillSmearedFit(h, p, *fsi, 1);
     }
+
+  template <typename Params>
+  double resid_calc_chi2_mrc(const Params &params) const
+    {
+      if (mrc == nullptr) {
+        std::cerr << "MRC is null\n";
+        return NAN;
+      }
+
+      return resid_calc_mrc(params, *mrc, Impl::CalcChi2::resid_func);
+    }
+
+  size_t size() const
+    { return data.size(); }
+
+  size_t degrees_of_freedom() const
+    { return data.size() - Impl::CountParams(); }
+
+  auto num_as_vec() const -> std::vector<double>
+    { return numerator_as_vec(*this); }
 
   std::array<std::vector<double>, 3> as_array() const
     {
