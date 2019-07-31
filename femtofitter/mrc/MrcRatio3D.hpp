@@ -161,7 +161,14 @@ public:
 
   static std::shared_ptr<Mrc3D> From(TDirectory &tdir)
     {
-      return From(tdir, {"NumGenUnweighted", "DenGen", "NumRecUnweighted", "DenRec"});
+      auto result = From(tdir, {"NumGenUnweighted", "DenGen", "NumRecUnweighted", "DenRec"});
+      if (!result) {
+        result = From(tdir, {"ng", "dg", "nr", "dr"});
+      }
+      if (!result) {
+        result = From(tdir, {"ngu", "dg", "nru", "dr"});
+      }
+      return result;
     }
 
   virtual ~MrcRatio3D()
