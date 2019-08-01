@@ -33,6 +33,9 @@ def arg_parser():
                         nargs="?",
                         default='PWG2FEMTO/*',
                         help="")
+    parser.add_argument("--combined",
+                        action="store_true",
+                        help="Look for merged datafiles")
     parser.add_argument("-n", "--dry-run",
                         action="store_true",
                         help="Do not write output file")
@@ -57,23 +60,14 @@ def main(argv=None):
 
     train_path = Path('~/alice/data').expanduser()
     print(train_path)
+
     for train_number in args.train_nums:
-        for path in train_path.glob(f"**/*-{train_number}*.root"):
+        for path in train_path.glob(f"**/*-{train_number}*-{'combined*' if args.combined else ''}.root"):
             print("Loading", path, Path(path))
             process_file(path, output, args.container_pattern)
-    print("\nOutput file:", output)
+
+    print("\nOutput file:", output.GetName())
     return 0
-    paths = set(Path(p).absolute() for p in args.files)
-
-    for path in copy(paths):
-        if path.is_dir():
-            paths.remove(path)
-            print("Scanning directory %s for all .root files" % path)
-            paths.update(s.absolute() for s in path.glob("**/*.root"))
-
-    for path in paths:
-        print(f"\nBeginning scan of {path}")
-
 
 
 def process_file(path, output, pattern=None):
