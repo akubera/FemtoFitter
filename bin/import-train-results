@@ -135,7 +135,7 @@ def find_analyses(file, pattern):
                          'pip' if pion_charge == 1 else
                          'pi?')
 
-            key = config.Clone()
+            key = config.DeepCopy()
             key.pop("is_mc")
             key.pop("track_cut.charge")
             key.pop(cent_range_key)
@@ -296,58 +296,25 @@ class AnalysisTrueQinv(AnalysisResults):
     @classmethod
     def From(cls, container) -> Optional['AnalysisTrueQinv']:
 
-        qgqr = get_tobject(container, "QgenQrec")
-        sm = qgqr.Clone("SmearMatrix")
-        sm.SetTitle("Normalized Smearing Matrix; q_{inv,gen}; q_{inv,rec};")
-        um = qgqr.Clone("UnsmearMatrix")
-        um.SetTitle("Normalized Unsmearing Matrix; q_{inv,rec}; q_{inv,gen};")
-
-        Ny, Nx = qgqr.GetNbinsY() + 2, qgqr.GetNbinsX() + 2
-
-        for y in range(Ny):
-            s = sum(qgqr.GetBinContent(x, y) for x in range(Nx))
-            for x in range(Nx):
-                um.SetBinContent(y, x, 0 if s == 0.0 else qgqr.GetBinContent(x, y) / s)
-
-        for x in range(Nx):
-            s = sum(qgqr.GetBinContent(x, y) for y in range(Ny))
-            for y in range(Ny):
-                sm.SetBinContent(x, y, 0 if s == 0.0 else qgqr.GetBinContent(x, y) / s)
-
-        self = cls(sm)
-
-        self.smear_matrix = sm
-        self.unsmear_matrix = um
-        self.nr = numrec = get_tobject(container, "NumTrue")
-        self.dr = denrec = get_tobject(container, "Den")
-        self.ng = numgen = get_tobject(container, "NumTrueIdeal")
-        self.dg = dengen = get_tobject(container, "DenIdeal")
-
-        self.mrc_factor = numgen.Clone("mrc")
-        self.mrc_factor.Multiply(denrec)
-        self.mrc_factor.Divide(numrec)
-        self.mrc_factor.Divide(dengen)
-
-        self.fnr = get_tobject(container, "NumFake")
-        if not self.fnr:
-            self.fnr = None
-
-        self.fng = get_tobject(container, "NumFakeIdeal")
-        if not self.fng:
-            self.fng = None
-
+        self = cls(container)
         return self
 
-    def __init__(self, mrcmatrix):
-        self.mrc = mrcmatrix
+    def __init__(self, container):
+        self.smear_matrix = get_tobject(container, "QgenQrec")
+        self.nr = get_tobject(container, "NumTrue")
+        self.dr = get_tobject(container, "Den")
+        self.ng = get_tobject(container, "NumTrueIdeal")
+        self.dg = get_tobject(container, "DenIdeal")
+
+        self.fnr = get_tobject(container, "NumFake") or None
+        self.fng = get_tobject(container, "NumFakeIdeal") or None
 
     def write_to_file(self, dest):
         dest.mkdir(self.storage_key)
         self.write_config(dest)
 
         dest.cd(self.storage_key)
-        self.mrc_factor.Write("mrc_factor")
-        self.mrc.Write("mrc_matrix")
+        self.smear_matrix.Write("mrc_matrix")
 
         self.nr.Write("nr")
         self.dr.Write("dr")
@@ -534,7 +501,8 @@ class AnalysisTrueQ3D(AnalysisResults):
             print("Could not find files in", obj)
             return None
 
-        nr, ng, dr, dg = map(cls.symmetrize_histogram, hists)
+        # nr, ng, dr, dg = map(cls.symmetrize_histogram, hists)
+        nr, ng, dr, dg = hists
 
         mrc = ng.Clone("mrc")
         mrc.SetStats(False)
@@ -552,17 +520,10 @@ class AnalysisTrueQ3D(AnalysisResults):
         self.ng = ng
         self.dg = dg
 
-        self.fnr = get_tobject(obj, "NumRecUnweighted")
-        if not self.fnr:
-            self.fnr = None
-        else:
-            self.symmetrize_histogram(self.fnr)
-
-        self.fng = get_tobject(obj, "NumGenUnweighted")
-        if not self.fng:
-            self.fng = None
-        else:
-            self.symmetrize_histogram(self.fng)
+        self.nru = get_tobject(obj, "NumRecUnweighted") or None
+        self.ngu = get_tobject(obj, "NumGenUnweighted") or None
+        self.drw = get_tobject(obj, "DenRecWeighted") or None
+        self.dgw = get_tobject(obj, "DenGenWeighted") or None
 
         return self
 
@@ -581,11 +542,17 @@ class AnalysisTrueQ3D(AnalysisResults):
         self.ng.Write("ng")
         self.dg.Write("dg")
 
-        if self.fnr:
-            self.fnr.Write("fnr")
+        if self.nru:
+            self.nru.Write("nru")
 
-        if self.fng:
-            self.fng.Write("fng")
+        if self.ngu:
+            self.ngu.Write("ngu")
+
+        if self.drw:
+            self.drw.Write("drw")
+
+        if self.dgw:
+            self.dgw.Write("dgw")
 
     @staticmethod
     def symmetrize_histogram(h):
