@@ -86,6 +86,15 @@ public:
     {
     }
 
+  MrcRatio1D(MrcRatio1D&& orig)
+    : Mrc1D(orig)
+    , ng(std::move(orig.ng))
+    , dg(std::move(orig.dg))
+    , nr(std::move(orig.nr))
+    , dr(std::move(orig.dr))
+    {
+    }
+
   virtual ~MrcRatio1D()
     {
     }
@@ -93,6 +102,13 @@ public:
   static std::shared_ptr<Mrc1D> new_shared_ptr(const TH1 &ng, const TH1 &dg, const TH1 &nr, const TH1 &dr)
     {
       return std::make_shared<MrcRatio1D>(ng, dg, nr, dr);
+    }
+
+  static std::shared_ptr<Mrc1D> From(TDirectory &tdir)
+    {
+      MrcRatio1D ratio = Builder::Unweighted()(tdir);
+
+      return std::make_shared<MrcRatio1D>(std::move(ratio));
     }
 
   void Smear(TH1 &hist) const override
