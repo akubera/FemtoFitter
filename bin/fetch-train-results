@@ -56,13 +56,22 @@ def main(argv=None):
 
     train = args.train or (DEFAULT_DATA_TRAIN if not args.mc else DEFAULT_MC_TRAIN)
 
+    file_list = []
+
     if not args.run_numbers:
         interactive_fetch(cnx, train=train)
     else:
         print(f"Fetching {set(map(int, args.run_numbers))} from train {train!r}")
 
         for run in map(int, args.run_numbers):
-            fetch_train_files(cnx, train, run)
+            files = fetch_train_files(cnx, train, run)
+            file_list.extend(files)
+
+    print("\nRetrieved Files:")
+    for file in file_list:
+        print(file)
+
+    return 0
 
 
 def interactive_fetch(cnx, train="CF_PbPb"):
@@ -258,6 +267,8 @@ def fetch_train_files(cnx, train, number):
     env_json_path = dest_dir / f"{prefix}-env.json"
     env_json_path.write_text(json.dumps(env, indent=0))
 
+    result_files = []
+
     # download analysis result root files
     for file_info in all_files:
         if not file_info['lfn'].endswith("AnalysisResults.root"):
@@ -285,6 +296,7 @@ def fetch_train_files(cnx, train, number):
         if not link_path.exists():
             dest_dir.mkdir(exist_ok=True, parents=True)
             link_path.symlink_to(lfn)
+        result_files.append(link_path)
 
     train_definition_md5s = defaultdict(list)
     for file_info in all_files:
@@ -294,6 +306,7 @@ def fetch_train_files(cnx, train, number):
     for file_list in train_definition_md5s.values():
         fetch_similar_files(file_list)
 
+    return result_files
 
 def tmap_to_dict(tmap: 'TMap') -> dict:
     from ROOT import TMapIter
