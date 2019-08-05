@@ -10,6 +10,7 @@
 
 #include "Mrc.hpp"
 
+#include <TDirectory.h>
 #include <THnSparse.h>
 #include <TNamed.h>
 #include <TH3.h>
@@ -40,9 +41,7 @@ public:
   // template <typename T> using Trie = std::map<u8, std::map<u8, std::pair<std::vector<u8>, std::vector<T>>>>;
   template <typename T> using Trie = std::map<u8,
                                               std::pair<std::vector<std::array<u8, 2>>,
-                                                        std::vector<T>
-                                                       >
-                                             >;
+                                                        std::vector<T>> >;
 
   std::array<std::unique_ptr<TAxis>, 3> axes;
 
@@ -68,6 +67,13 @@ public:
   static std::unique_ptr<MrcHypercube3D> From(const THnSparseI &hist)
     {
       return std::make_unique<MrcHypercube3D>(hist);
+    }
+
+  /// Read from directory
+  static std::unique_ptr<Mrc3D> From(TDirectory &tdir)
+    {
+      auto *mrc = dynamic_cast<MrcHypercube3D*>(tdir.Get("mrc"));
+      return std::unique_ptr<MrcHypercube3D>(mrc);
     }
 
   /// Smear histogram
