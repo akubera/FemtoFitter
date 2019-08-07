@@ -6,7 +6,7 @@
 Fitting routines
 """
 
-from typing import Any, Tuple, Optional, Union
+from typing import Any, Tuple, List, Optional, Union
 
 import sys
 from copy import copy
@@ -421,14 +421,14 @@ def parallel_fit_all(tfile,
         pprint(output_data)
 
 
-def get_configuration_json(tfile, queries):
+def get_configuration_json(tfile: 'TFile', queries: List[PathQuery]) -> dict:
     from ROOT import AliFemtoConfigObject
 
     result = {}
     for c in {"%s/%s" % (q.analysis, q.cfg) for q in queries}:
         path = f"{c}/config"
         config = tfile.Get(path)
-        # if not config:
+
         if not isinstance(config, AliFemtoConfigObject):
             print("Missing AliFemtoConfigObject 'config' in %r" % path)
             continue
