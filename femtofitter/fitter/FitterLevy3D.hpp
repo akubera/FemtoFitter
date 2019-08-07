@@ -46,12 +46,12 @@ struct FitterLevy3D : public Fitter3D<FitterLevy3D> {
     { return 6; }
 
   static double
-  gauss(const std::array<double, 3> &q,
-        const std::array<double, 3> &RSq,
-        double lam,
-        double alpha,
-        double K=1.0,
-        double norm=1.0)
+  levy(const std::array<double, 3> &q,
+       const std::array<double, 3> &RSq,
+       double lam,
+       double alpha,
+       double K=1.0,
+       double norm=1.0)
   {
     const double
       Eo = std::pow(q[0] * q[0] * RSq[0] / HBAR_C_SQ, alpha/2),
@@ -189,8 +189,7 @@ struct FitterLevy3D : public Fitter3D<FitterLevy3D> {
       , Ro(par[ROUT_PARAM_IDX])
       , Rs(par[RSIDE_PARAM_IDX])
       , Rl(par[RLONG_PARAM_IDX])
-    {
-    }
+      { }
 
     FitParams(const FitResult &res)
       : norm(res.norm)
@@ -199,8 +198,34 @@ struct FitterLevy3D : public Fitter3D<FitterLevy3D> {
       , Ro(res.Ro)
       , Rs(res.Rs)
       , Rl(res.Rl)
-    {
-    }
+      { }
+
+    FitParams(PyObject *pyobj)
+      {
+        std::vector<std::string> missing_keys;
+
+        if (!PyMapping_Check(pyobj)) {
+          TPython::Exec(Form("raise TypeError('Object not a collection!')"));
+          throw std::runtime_error("Object not a python collection");
+        }
+
+        ExtractPythonNumber(pyobj, "norm", norm, missing_keys);
+        ExtractPythonNumber(pyobj, "lam", lam, missing_keys);
+        ExtractPythonNumber(pyobj, "alpha", alpha, missing_keys);
+        ExtractPythonNumber(pyobj, "Ro", Ro, missing_keys);
+        ExtractPythonNumber(pyobj, "Rs", Rs, missing_keys);
+        ExtractPythonNumber(pyobj, "Rl", Rl, missing_keys);
+
+        if (!missing_keys.empty()) {
+          std::string msg = "Python object missing required items:";
+          for (const auto &key : missing_keys) {
+            msg += " ";
+            msg += key;
+          }
+          TPython::Exec(Form("raise ValueError('%s')", msg.c_str()));
+          throw std::runtime_error(msg);
+        }
+      }
 
     bool is_invalid() const
     {
@@ -225,7 +250,7 @@ struct FitterLevy3D : public Fitter3D<FitterLevy3D> {
     double evaluate(const std::array<double, 3> &q, double K) const
       {
         std::array<double, 3> Rsq = {Ro*Ro, Rs*Rs, Rl*Rl};
-        return FitterLevy3D::gauss(q, Rsq, lam, alpha, K, norm);
+        return FitterLevy3D::levy(q, Rsq, lam, alpha, K, norm);
       }
 
     double evaluate(double qo, double qs, double ql, double K) const
