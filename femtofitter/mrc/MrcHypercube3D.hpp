@@ -10,6 +10,7 @@
 
 #include "Mrc.hpp"
 
+#include <TDirectory.h>
 #include <THnSparse.h>
 #include <TNamed.h>
 #include <TH3.h>
@@ -40,9 +41,7 @@ public:
   // template <typename T> using Trie = std::map<u8, std::map<u8, std::pair<std::vector<u8>, std::vector<T>>>>;
   template <typename T> using Trie = std::map<u8,
                                               std::pair<std::vector<std::array<u8, 2>>,
-                                                        std::vector<T>
-                                                       >
-                                             >;
+                                                        std::vector<T>> >;
 
   std::array<std::unique_ptr<TAxis>, 3> axes;
 
@@ -62,12 +61,57 @@ public:
   /// Construct with name and title
   MrcHypercube3D(TString &name, TString &title);
 
+  MrcHypercube3D(const MrcHypercube3D &orig)
+    : TNamed(orig)
+    , Mrc3D(orig)
+    , axes()
+    , count_trie(orig.count_trie)
+    , frac_trie(orig.frac_trie)
+    {
+      axes[0].reset(static_cast<TAxis*>(orig.axes[0]->Clone()));
+      axes[1].reset(static_cast<TAxis*>(orig.axes[1]->Clone()));
+      axes[2].reset(static_cast<TAxis*>(orig.axes[2]->Clone()));
+    }
+
+  MrcHypercube3D(MrcHypercube3D &&orig)
+    : TNamed(orig)
+    , Mrc3D(orig)
+    , axes(std::move(orig.axes))
+    , count_trie(std::move(orig.count_trie))
+    , frac_trie(std::move(orig.frac_trie))
+    , fUnsmearedHist(std::move(orig.fUnsmearedHist))
+    , fSmearedHist(std::move(orig.fSmearedHist))
+    {
+    }
+
   /// Build from Sparse-Histogram
   MrcHypercube3D(const THnSparseI&);
 
-  static std::unique_ptr<MrcHypercube3D> From(const THnSparseI &hist)
+  /// make shared pointer from histogram
+  static std::shared_ptr<MrcHypercube3D> From(const THnSparseI &hist)
     {
-      return std::make_unique<MrcHypercube3D>(hist);
+      return std::make_shared<MrcHypercube3D>(hist);
+    }
+
+  static std::shared_ptr<MrcHypercube3D> From(const MrcHypercube3D &mrc)
+    {
+      return std::make_shared<MrcHypercube3D>(mrc);
+    }
+
+  /// Read from directory (Looks for either MrcHypercube3D or THnSparseI)
+  static std::shared_ptr<Mrc3D> From(TDirectory &tdir, const TString name="mrc")
+    {
+      auto tobject = std::unique_ptr<TObject>(tdir.Get(name));
+
+      if (auto *cube = dynamic_cast<MrcHypercube3D*>(tobject.get())) {
+        tobject.release();
+        return std::shared_ptr<MrcHypercube3D>(cube);
+      }
+      else if (auto *sparsehist = dynamic_cast<THnSparseI*>(tobject.get())) {
+        return std::make_shared<MrcHypercube3D>(*sparsehist);
+      }
+
+      return nullptr;
     }
 
   /// Smear histogram

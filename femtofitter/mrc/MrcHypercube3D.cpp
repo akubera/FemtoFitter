@@ -79,11 +79,9 @@ MrcHypercube3D::MrcHypercube3D(const THnSparseI& hyp)
     Int_t percent = (bin_num * 100 / total_bins);
     if (prev_percent < percent) {
       prev_percent = percent;
-      std::cout << Form("%lld / %lu ~ ", bin_num, total_bins) << percent << "%\n";
+      // std::cout << Form("%lld / %lu ~ ", bin_num, total_bins) << percent << "%\n";
     }
   }
-
-  std::cout << "Done. Loaded counts:" << count_trie.size() << "\n";
 
   auto insert_hint = frac_trie.begin();
   for (auto &ideal_and_spread : count_trie) {
