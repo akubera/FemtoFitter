@@ -170,7 +170,7 @@ public:
 
         k = Kfsi(q),
 
-        CF = p.gauss({qo, qs, ql}, k);
+        CF = p.evaluate({qo, qs, ql}, k);
 
       retval += resid_func(n, d, CF);
     }
