@@ -62,7 +62,7 @@ def main(argv=None):
     print(train_path)
 
     for train_number in args.train_nums:
-        for path in train_path.glob(f"**/*-{train_number}*-{'combined*' if args.combined else ''}.root"):
+        for path in train_path.glob(f"**/*-{train_number}*-{'combined*' if args.combined else '*'}.root"):
             print("Loading", path, Path(path))
             process_file(path, output, args.container_pattern)
 
