@@ -11,6 +11,8 @@ fit-results/
 *.zip
 *.svg*
 
+*.npy
+
 # default build destination
 /build/
 CMakeCache.txt
