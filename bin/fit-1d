@@ -61,6 +61,10 @@ def arg_parser():
                         nargs='?',
                         default=False,
                         help="Path to Momentum Resolution Correction, format is <filename:cfg>")
+    parser.add_argument("--mrc-args",
+                        nargs='*',
+                        default=(),
+                        help="Arguments used to build MRC object")
     parser.add_argument("--fitter",
                         default='FitterGauss1D',
                         help="Name of fitter class")
@@ -132,6 +136,8 @@ def main(argv=None):
     else:
         pprint(output_data)
 
+    return 0
+
 
 def find_fit_data(tfile, args):
     """
@@ -182,8 +188,9 @@ class RunFitParams:
     fit_range: float
     fsi_classname: str
     fsi_args: Tuple[str]
-    mrc_classname: Optional[str] = None
+    mrc_classname: str = ''
     mrc_path: Optional[str] = None
+    mrc_args: Tuple = ()
     fit_chi2: bool = False
 
     @classmethod
@@ -200,6 +207,7 @@ class RunFitParams:
             fsi_args=args.fsi_args,
             mrc_classname=args.mrc,
             mrc_path=args.mrc_path,
+            mrc_args=args.mrc_params,
             fit_chi2=args.chi2,
         )
 
@@ -260,7 +268,7 @@ def run_fit(params: RunFitParams) -> Optional[dict]:
     fitter.fsi = fsi_class.new_shared_ptr(*params.fsi_args)
 
     if params.mrc_path:
-        fitter.mrc = mrc_class.new_shared_ptr(mrc_dir)
+        fitter.mrc = mrc_class.From(mrc_dir, *params.mrc_args)
 
     fit_results = fitter.fit_chi2() if params.fit_chi2 else fitter.fit_pml()
     if not fit_results:
@@ -289,9 +297,6 @@ def run_fit(params: RunFitParams) -> Optional[dict]:
     results["rchi2"] = results["chi2"] / results["ndof"]
 
     return results
-
-
-# def get_build_params(file) -> List[RunFitParams]:
 
 
 if __name__ == "__main__":
