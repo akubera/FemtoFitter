@@ -135,18 +135,12 @@ public:
   std::string Describe() const override
     { return "MrcHypercube3D"; }
 
+  /// Fill smeared fit with generic FSI-function
   void FillSmearedFit(TH3 &cf,
                       const Fit3DParameters &p,
                       // const typename Fit3DParameters::FsiFuncType &fsi
                       const std::function<double(double,double,double)> &fsi
                       ) const override;
-  // template <typename FsiFunc>
-  // // void FillSmearedFit(TH3 &cf, const Fit3DParameters &p, FsiFunc &fsi) const
-  //   {
-  //     p.multiply(cf, fsi);
-  //     auto smearing_matrix = GetSmearingFactor(cf);
-  //     cf.Multiply(smearing_matrix.get());
-  //   }
 
 protected:
 
