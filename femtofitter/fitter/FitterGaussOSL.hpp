@@ -31,6 +31,9 @@
 ///
 struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
 
+  struct FitParams;
+  struct FitResult;
+
   /// constants used to lookup data from pointer
   enum {
     DATA_PARAM_IDX = 0,
@@ -41,9 +44,6 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
     RSIDE_PARAM_IDX = 4,
     RLONG_PARAM_IDX = 5,
   };
-
-  struct FitParams;
-  struct FitResult;
 
   static unsigned char CountParams()
     { return 5; }
@@ -64,9 +64,6 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
 
     return norm * result;
   }
-
-  int degrees_of_freedom() const
-    { return data.size() - 5; }
 
   /// \class FitResult
   /// \brief Values and stderr from minuit results
