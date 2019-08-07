@@ -27,6 +27,9 @@
 ///
 struct FitterLevy3D : public Fitter3D<FitterLevy3D> {
 
+  struct FitParams;
+  struct FitResult;
+
   /// constants used to lookup data from pointer
   enum {
     DATA_PARAM_IDX = 0,
@@ -64,13 +67,23 @@ struct FitterLevy3D : public Fitter3D<FitterLevy3D> {
   /// \class FitResult
   /// \brief Values and stderr from minuit results
   ///
-  struct FitResult {
+  struct FitResult : FitResult3D<FitResult, FitterLevy3D> {
     Value lam,
           norm,
           alpha,
           Ro,
           Rs,
           Rl;
+
+    FitResult()
+      : lam({0, 0})
+      , norm({0, 0})
+      , Ro({0, 0})
+      , Rs({0, 0})
+      , Rl({0, 0})
+      {}
+
+    FitResult(const FitResult &orig) = default;
 
     FitResult(const TMinuit &minuit)
       : lam(minuit, LAM_PARAM_IDX)
@@ -81,6 +94,8 @@ struct FitterLevy3D : public Fitter3D<FitterLevy3D> {
       , Rl(minuit, RLONG_PARAM_IDX)
     {
     }
+
+    virtual ~FitResult() = default;
 
     void print() const
       { std::cout << __str__(); }
@@ -145,6 +160,19 @@ struct FitterLevy3D : public Fitter3D<FitterLevy3D> {
       return dict;
       #undef Add
     }
+
+    void FillMinuit(TMinuit &minuit) const
+      {
+        int errflag = 0;
+        minuit.mnparm(NORM_PARAM_IDX, "Norm", norm.value, 0.02, 0.0, 0.0, errflag);
+        minuit.mnparm(LAM_PARAM_IDX, "Lam", lam.value, 0.05, 0.0, 1.0, errflag);
+        minuit.mnparm(ALPHA_PARAM_IDX, "alpha", alpha.value, 0.15, 0.0, 0.0, errflag);
+        minuit.mnparm(ROUT_PARAM_IDX, "Ro", Ro.value, 0.5, 0.0, 0.0, errflag);
+        minuit.mnparm(RSIDE_PARAM_IDX, "Rs", Rs.value, 0.5, 0.0, 0.0, errflag);
+        minuit.mnparm(RLONG_PARAM_IDX, "Rl", Rl.value, 0.5, 0.0, 0.0, errflag);
+      }
+
+    FitParams as_params() const;
   };
 
   /// \brief 3D Levy fit parameters
@@ -153,7 +181,6 @@ struct FitterLevy3D : public Fitter3D<FitterLevy3D> {
   struct FitParams : FitParam3D<FitParams> {
     double norm, lam, alpha;
     double Ro, Rs, Rl;
-    double gamma {1.0};
 
     FitParams(double *par)
       : norm(par[NORM_PARAM_IDX])
@@ -192,14 +219,17 @@ struct FitterLevy3D : public Fitter3D<FitterLevy3D> {
     }
 
     /// Return calculated Rinv: $\sqrt{Ro^2 \gamma + Rs^2 + Rl^2}$
-    double PseudoRinv(double gama) const
-      { return std::sqrt((Ro * Ro * gama + Rs * Rs + Rl * Rl) / 3.0); }
+    double PseudoRinv(double gamma) const
+      { return std::sqrt((Ro * Ro * gamma * gamma + Rs * Rs + Rl * Rl) / 3.0); }
 
-    double gauss(const std::array<double, 3> &q, double K) const
+    double evaluate(const std::array<double, 3> &q, double K) const
       {
         std::array<double, 3> Rsq = {Ro*Ro, Rs*Rs, Rl*Rl};
         return FitterLevy3D::gauss(q, Rsq, lam, alpha, K, norm);
       }
+
+    double evaluate(double qo, double qs, double ql, double K) const
+      { return evaluate({qo, qs, ql}, K); }
 
     std::string
     __repr__() const
@@ -247,7 +277,7 @@ struct FitterLevy3D : public Fitter3D<FitterLevy3D> {
 
   static double
   gauss(const std::array<double, 3> &q, const FitParams &p, double K)
-    { return p.gauss(q, K); }
+    { return p.evaluate(q, K); }
 
   int
   setup_minuit(TMinuit &minuit) const override
@@ -287,4 +317,30 @@ struct FitterLevy3D : public Fitter3D<FitterLevy3D> {
   FitResult fit()
     { return Fitter3D::fit_pml_mrc(); }
 
+  double residual_chi2(const FitResult &r) const
+    {
+      return residual_chi2(r.as_params());
+    }
+
+  double residual_chi2(const FitParams &p) const
+    {
+      return Fitter3D::resid_calc(p, CalcChi2::resid_func);
+    }
+
+  double residual_chi2_mrc(const FitResult &r) const
+    {
+      return residual_chi2_mrc(r.as_params());
+    }
+
+  double residual_chi2_mrc(const FitParams &p) const
+    {
+      return Fitter3D::resid_calc_mrc(p, *mrc, CalcChi2::resid_func);
+    }
 };
+
+
+inline auto
+FitterLevy3D::FitResult::as_params() const -> FitParams
+{
+  return FitParams(*this);
+}
