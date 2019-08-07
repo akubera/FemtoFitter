@@ -111,7 +111,8 @@ def main(argv=None):
     data = find_fit_data(tfile, args)
 
     _skipped_data = list(islice(data, args.skip))
-    data = islice(data, args.limit)
+    data = list(islice(data, args.limit))
+    queries: List[PathQuery] = [d.pathquery for d in data]
 
     loop = asyncio.get_event_loop()
     executor = ProcessPoolExecutor()
@@ -129,7 +130,7 @@ def main(argv=None):
             'duration': duration.total_seconds() / 60,
             'command': sys.argv,
             'df': df.to_dict(orient='records'),
-            'config': get_configuration_json(tfile, data),
+            'config': get_configuration_json(tfile, queries),
             }
 
     if output_path:
@@ -294,6 +295,9 @@ def run_fit(params: RunFitParams) -> Optional[dict]:
     results["cfg"] = params.pathquery.cfg
 
     results["analysis"] = params.pathquery.analysis
+
+    results["fitrange"] = params.fit_range
+    results["true_fitrange"] = data.true_limit
 
     results["mrc"] = params.mrc_path
     results["gamma"] = fitter.data.gamma
