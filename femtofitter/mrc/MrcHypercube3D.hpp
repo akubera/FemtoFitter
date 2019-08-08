@@ -88,12 +88,12 @@ public:
   MrcHypercube3D(const THnSparseI&);
 
   /// make shared pointer from histogram
-  static std::shared_ptr<MrcHypercube3D> From(const THnSparseI &hist)
+  static std::shared_ptr<Mrc3D> From(const THnSparseI &hist)
     {
       return std::make_shared<MrcHypercube3D>(hist);
     }
 
-  static std::shared_ptr<MrcHypercube3D> From(const MrcHypercube3D &mrc)
+  static std::shared_ptr<Mrc3D> From(const MrcHypercube3D &mrc)
     {
       return std::make_shared<MrcHypercube3D>(mrc);
     }
