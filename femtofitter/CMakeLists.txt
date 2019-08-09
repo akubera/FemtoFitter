@@ -85,6 +85,7 @@ set(INCS
   fsi/FsiGamov.hpp
   fsi/FsiStatic.hpp
   mrc/MrcRatio3D.hpp
+  mrc/Mrc3DRatioMixed.hpp
   mrc/MrcRatio1D.hpp
   mrc/MrcMatrix1D.hpp
   mrc/MrcTransform1D.hpp

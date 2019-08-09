@@ -67,6 +67,7 @@
 #pragma link C++ class MrcTransform1D;
 
 #pragma link C++ class MrcRatio3D;
+#pragma link C++ class Mrc3DRatioMixed;
 #pragma link C++ class MrcHypercube3D;
 
 #pragma link C++ class ParamHints;
