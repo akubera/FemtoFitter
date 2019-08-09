@@ -173,6 +173,53 @@ class FitResults:
         tdir = tfile.Get(query.as_path())
         return tdir
 
+    @staticmethod
+    def merge_table(tbl, *keys, xkey='kT', as_dataframe=True):
+        result = {xkey: pd.np.array(tbl.index)}
+
+        for key in keys:
+            v = tbl[key]
+            e = tbl[key + '_err']
+
+            weights = 1.0 / e
+            vals = (v * weights).sum(axis=1) / weights.sum(axis=1)
+            err = pd.np.sqrt((e**2).sum(axis=1))
+            result[key] = pd.np.array(vals)
+            result[key + '_err'] = pd.np.array(err)
+
+        if as_dataframe:
+            return pd.DataFrame(result)
+
+        return result
+
+    def combined_data(self,
+                      df=None,
+                      group='cent',
+                      xkey='kT',
+                      keys=("Ro", "Rs", "Rl", "lam"),
+                      cols=('pair', 'magfield')):
+        """
+        Merge data correctly with statistical errors
+        """
+
+        keys = set(keys)
+
+        pivot_keys = keys | {key + "_err" for key in keys}
+
+        df = df or self.df
+
+        tbls = []
+        for subkey, sdf in df.groupby(group):
+            pivot = sdf.pivot_table(index=xkey,
+                                    columns=cols,
+                                    values=pivot_keys)
+            tbl = self.merge_table(pivot, *keys)
+            if isinstance(xkey, str):
+                tbl.insert(0, group, subkey)
+            tbls.append(tbl)
+
+        return pd.concat(tbls).reset_index(drop=True)
+
     @classmethod
     def get_file(cls, filename):
         from ROOT import TFile
