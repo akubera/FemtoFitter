@@ -33,6 +33,7 @@ MACRO_SOURCE = """
 #include <TProfile2D.h>
 #include <vector>
 #include <AliFemtoModelWeightGeneratorLednicky.h>
+#include <AliFemtoModelGausRinvFreezeOutGenerator.h>
 
 void
 FillTProfile(int seed, int counts, TProfile2D* result)
@@ -120,9 +121,10 @@ FillTProfile(int seed, int counts, TProfile2D* result)
   weight_gen.SetCoulOn();
   weight_gen.SetSphere();
 
+  auto *freezout_generator = new AliFemtoModelGausRinvFreezeOutGenerator();
+
   auto *info1 = (AliFemtoModelHiddenInfo*)pair.Track1()->Track()->GetHiddenInfo(),
        *info2 = (AliFemtoModelHiddenInfo*)pair.Track2()->Track()->GetHiddenInfo();
-
 
   int skipcount = 0;
 
@@ -131,7 +133,10 @@ FillTProfile(int seed, int counts, TProfile2D* result)
     pair.ClearWeightCache();
 
     double R = rng->Uniform(2e-4, MaxR);
-    fill_pair(pair, R);
+    // fill_pair(pair, R);
+
+    freezout_generator->SetSizeInv(R);
+    freezout_generator->GenerateFreezeOut(&pair);
 
     double qinv = pair.QInv();
 
@@ -214,6 +219,8 @@ Gen(TString filename, TString histname="k2ss")
 
   FillTProfile(seed, {count}, result);
 
+  std::cout << "Done." << std::endl;
+
   result->Write();
   tfile.Close();
 }}
@@ -245,6 +252,14 @@ def arg_parser():
                         type=int,
                         default=60,
                         help='Bin count in radius')
+    parser.add_argument("--counts",
+                        type=float,
+                        default=2e6,
+                        help='Number of pairs to make (per-thread)')
+    parser.add_argument("--threads",
+                        type=int,
+                        default=None,
+                        help='Number of threads to use')
     parser.add_argument("--hist-name",
                         default='k2ss',
                         help='Histogram name')
@@ -274,28 +289,31 @@ def main(argv=None):
     if args.analytic_method:
         build_analytic_kfile(orig_dir / output, nbins_qinv, max_qinv, nbins_R, max_R)
     else:
-        build_mc_kfile(output, nbins_qinv, max_qinv, nbins_R, max_R)
+        build_mc_kfile(output, nbins_qinv, max_qinv, nbins_R, max_R, args.counts, args.threads)
 
 
-def build_mc_kfile(dest, nbins_qinv, max_qinv, nbins_R, max_R):
+def build_mc_kfile(dest, nbins_qinv, max_qinv, nbins_R, max_R, count, threads=None):
 
     from tempfile import TemporaryDirectory
     import sh
 
+    threads = threads or os.cpu_count()
+
     with TemporaryDirectory() as tmpdir:
         os.chdir(tmpdir)
+
         with open("Gen.C", "w") as tmp:
             tmp.write(MACRO_SOURCE.format(nxbins=nbins_qinv,
-                                          qlo=1e-3,
+                                          qlo=5e-4,
                                           qhi=max_qinv,
                                           nybins=nbins_R,
                                           radius_max=max_R,
-                                          count=2e6))
+                                          count=count))
 
         # precompile
         sh.aliroot("-q", "-b", "-l", "-e", '.L Gen.C+')
 
-        files = ["f%0d.root" % i for i in range(15)]
+        files = ["f%0d.root" % i for i in range(threads)]
         with Pool() as pool:
             pool.map(run, files)
 
