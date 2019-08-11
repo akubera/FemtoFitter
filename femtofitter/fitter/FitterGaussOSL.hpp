@@ -452,6 +452,11 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
       return Fitter3D::resid_calc(p, ResidCalculatorPML<FitterGaussOSL>::resid_func);
     }
 
+  double residual_pml(const FitResult &p) const
+    {
+      return residual_pml(p.as_params());
+    }
+
   double residual_chi2_mrc(const FitResult &r) const
     {
       return residual_chi2_mrc(r.as_params());
