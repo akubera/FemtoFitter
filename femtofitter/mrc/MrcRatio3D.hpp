@@ -134,29 +134,25 @@ public:
         return nullptr;
       }
 
-      return std::make_shared<MrcRatio3D>(std::move(ng),
-                                          std::move(dg),
-                                          std::move(nr),
-                                          std::move(dr));
+      auto mrc = std::make_shared<MrcRatio3D>(std::move(ng),
+                                              std::move(dg),
+                                              std::move(nr),
+                                              std::move(dr));
+      mrc->source_name = tdir.GetPath();
+      return mrc;
     }
 
+  /// Build with array of names: Order is [NG, DG, NR, DR]
   static std::shared_ptr<Mrc3D> From(TDirectory &tdir,
                                      const std::array<const TString, 4> &names)
     {
-      std::unique_ptr<TH3>
-        ng(static_cast<TH3*>(tdir.Get(names[0]))),
-        dg(static_cast<TH3*>(tdir.Get(names[1]))),
-        nr(static_cast<TH3*>(tdir.Get(names[2]))),
-        dr(static_cast<TH3*>(tdir.Get(names[3])));
+      const TString
+        &ng_name = names[0],
+        &dg_name = names[1],
+        &nr_name = names[2],
+        &dr_name = names[3];
 
-      if (!ng || !dg || !nr || !dr) {
-        return nullptr;
-      }
-
-      return std::make_shared<MrcRatio3D>(std::move(ng),
-                                          std::move(dg),
-                                          std::move(nr),
-                                          std::move(dr));
+      return From(tdir, ng_name, dg_name, nr_name, dr_name);
     }
 
   static std::shared_ptr<Mrc3D> From(TDirectory &tdir)
