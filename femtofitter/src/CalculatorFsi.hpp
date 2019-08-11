@@ -67,6 +67,10 @@ struct FsiCalculator {
   // virtual double eval(double qinv) const = 0;
 
   virtual std::string ClassName() const = 0;
+  virtual std::string Describe() const
+    {
+      return ClassName();
+    }
 };
 
 

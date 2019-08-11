@@ -218,10 +218,17 @@ struct FsiKFile : public FsiCalculator {
     }
     */
 
-  std::string ClassName() const override
-    { return "FsiKFile[" + filename + "]"; }
+  std::string Describe() const override
+    {
+      return "FsiKFile[" + filename + "]";
+    }
 
-  static std::shared_ptr<FsiCalculator> new_shared_ptr(std::string fname="KFile2.root")
+  std::string ClassName() const override
+    {
+      return Describe();
+    }
+
+  static std::shared_ptr<FsiCalculator> From(std::string fname="KFile4.root")
     {
       // auto file = std::make_unique<TFile>(fname, "READ");
       std::unique_ptr<TFile> file(TFile::Open(fname.c_str(), "READ"));
@@ -248,11 +255,30 @@ struct FsiKFile : public FsiCalculator {
       return result;
     }
 
-  static std::shared_ptr<FsiCalculator> new_shared_ptr(std::unique_ptr<TFile> file)
-    { return std::make_shared<FsiKFile>(std::move(file)); }
+  static std::shared_ptr<FsiCalculator> From(std::unique_ptr<TFile> file)
+    {
+      return std::make_shared<FsiKFile>(std::move(file));
+    }
+
+  static std::shared_ptr<FsiCalculator> From(TFile &file)
+    {
+      return std::make_shared<FsiKFile>(file);
+    }
+
+  static std::shared_ptr<FsiCalculator> new_shared_ptr(std::string fname="KFile4.root")
+    {
+      return FsiKFile::From(fname);
+    }
 
   static std::shared_ptr<FsiCalculator> new_shared_ptr(TFile& file)
-    { return std::make_shared<FsiKFile>(file); }
+    {
+      return FsiKFile::From(file);
+    }
+
+  static std::shared_ptr<FsiCalculator> new_shared_ptr(std::unique_ptr<TFile> file)
+    {
+      return FsiKFile::From(std::move(file));
+    }
 };
 
 
