@@ -259,7 +259,7 @@ public:
   void setup_chi2_mrc_minuit(TMinuit &minuit)
     {
       static_cast<Impl*>(this)->setup_minuit(minuit);
-      set_use_pml_func(minuit);
+      set_use_chi2_mrc_func(minuit);
     }
 
   void setup_pml_minuit(TMinuit &minuit)
