@@ -124,6 +124,8 @@ def main(argv=None):
     print("Returned %d results" % len(results))
 
     df = pd.DataFrame(results)
+    df = df.sort_values(['cfg', 'cent', 'kt', 'magfield', 'pair'])
+
     output_data = {
             'filename': args.input,
             'timestamp': timestamp.isoformat(timespec='milliseconds'),
