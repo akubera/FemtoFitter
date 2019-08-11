@@ -147,7 +147,7 @@ public:
         ng(static_cast<TH3*>(tdir.Get(names[0]))),
         dg(static_cast<TH3*>(tdir.Get(names[1]))),
         nr(static_cast<TH3*>(tdir.Get(names[2]))),
-        dr(static_cast<TH3*>(tdir.Get(names[2])));
+        dr(static_cast<TH3*>(tdir.Get(names[3])));
 
       if (!ng || !dg || !nr || !dr) {
         return nullptr;
