@@ -93,10 +93,20 @@ set(INCS
   src/CalculatorFsi.hpp
   src/ParamHints.hpp
 )
+
 list(TRANSFORM INCS PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/)
-set(CMAKE_CXX_FLAGS_DEBUG "-O1 -g")
-set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -march=native -ffast-math")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -Wshadow -pedantic -fopenmp")
+
+set(CMAKE_CXX_FLAGS_DEBUG
+    "-O1 -g -fPIC"
+    CACHE STRING "Debug compile flags" FORCE)
+
+set(CMAKE_CXX_FLAGS_RELEASE
+    "-Ofast -march=native -ffast-math -DNDEBUG"
+    CACHE STRING "fast flags" FORCE)
+
+set(CMAKE_CXX_FLAGS
+    "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -Wshadow -pedantic -fopenmp"
+    CACHE STRING "std flags" FORCE)
 
 set(SRCS
   src/Data3D.cpp
