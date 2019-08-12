@@ -62,7 +62,13 @@ def plot_projected_cf(num, den,
     return c
 
 
-def plot_projections(fit_results, data, mrc, limit=0.1, ylim=(0.98, 1.15), c=None):
+def plot_projections(fit_results,
+                     data,
+                     mrc,
+                     limit=0.1,
+                     ylim=(0.98, 1.15),
+                     c=None,
+                     FitterClass=None):
     import ROOT
     from ROOT import TFile, TCanvas, TH3
     from random import randint
@@ -90,7 +96,7 @@ def plot_projections(fit_results, data, mrc, limit=0.1, ylim=(0.98, 1.15), c=Non
 
     basename = 'h%03d' % randint(0, 10000)
     names = ('_x', '_y', '_z')
-    titles = ('q_{out}', 'q_{side}', 'q_{long}')
+    titles = ('q_{out};;', 'q_{side};;', 'q_{long};;')
     for i, (name, projection) in enumerate(zip(names, projections3D()), 1):
         n = projection(num, basename + 'n' + name, *limits)
         d = projection(den, basename + 'd' + name, *limits)
@@ -102,7 +108,6 @@ def plot_projections(fit_results, data, mrc, limit=0.1, ylim=(0.98, 1.15), c=Non
         r.Scale(scale_factor)
         r.GetYaxis().SetRangeUser(*ylim)
         r.SetTitle(titles[i-1])
-        r.SetTitleSize(29)
 
         c.cd(i)
         r.DrawCopy("HE")
@@ -112,13 +117,14 @@ def plot_projections(fit_results, data, mrc, limit=0.1, ylim=(0.98, 1.15), c=Non
     fithist.Divide(mrc)
     fithist.SetLineColorAlpha(RED, 0.7)
 
-    from ROOT import FitterGaussOSL
-    params = FitterGaussOSL.FitParams(fit_results)
+    if FitterClass is None:
+        from ROOT import FitterGaussOSL as FitterClass
+    params = FitterClass.FitParams(fit_results)
     params.norm = 1.0
 #     params.gamma = data.data.gamma
 
     qinv = data.get_qinv()
-    params.apply_to(fithist, qinv)
+    params.apply_to(fithist, qinv, 6.5)
 
     for i, (name, projection) in enumerate(zip(names, projections3D()), 1):
         f = projection(fithist, basename + 'f' + name, *limits)
