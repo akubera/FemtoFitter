@@ -22,9 +22,12 @@
 template <typename Fitter_t>
 void runfit(TDirectory &tdir, double limit)
 {
-  auto data = Data3D::FromDirectory(tdir, {"Num", "Den", "Qinv"}, limit);
+  // auto data = Data3D::FromDirectory(tdir, {"Num", "Den", "Qinv"}, limit);
+  auto data = Data3D::From(tdir, "num", "den", "qinv", limit);
+
   std::cout << "Loaded " << data->size() << " bins of data\n";
   std::cout << "> gamma: " << data->gamma << "\n";
+
   auto fitter = std::make_unique<Fitter_t>(std::move(data));
   std::cout << "fitter: " << fitter.get() << "\n";
 
@@ -33,10 +36,18 @@ void runfit(TDirectory &tdir, double limit)
   fitter->fsi = fsi;
   // fitter->fsi = FsiKFile::new_shared_ptr("KFile4.root");
 
-  //TFile mrcfile("MRC-07.root");
-  //auto *mrc_tdir = static_cast<TDirectory*>(mrcfile.Get("AnalysisTrueQ3D/cfg855847557EDA507A/pip/00_90/0.4_0.5/--"));
-  TFile mrcfile("~/Downloads/AnalysisResults.root");
-  auto *mrc_tdir = static_cast<TDirectory*>(mrcfile.Get("AnalysisTrueQ3D/cfg855847557EDA507A/pip/00_90/0.4_0.5/--"));
+  // TString mrc_filename = "MRC-07.root",
+  //         mrc_path = "AnalysisTrueQ3D/cfg855847557EDA507A/pip/00_90/0.4_0.5/--";
+
+  // TString mrc_filename = "~/Downloads/AnalysisResults.root",
+  //         mrc_path = "AnalysisTrueQ3D/cfg855847557EDA507A/pip/00_90/0.4_0.5/--";
+
+  TString mrc_filename = "/home/akubera/Physics/pion-analysis/FemtoFitter/MRC-2341.root",
+          mrc_path = "AnalysisTrueQ3D/cfg5AD446DB543C4A2A/pip/00_90/0.8_1.0/++";
+
+  TFile mrcfile(mrc_filename);
+
+  auto *mrc_tdir = static_cast<TDirectory*>(mrcfile.Get(mrc_path));
   fitter->mrc = MrcRatio3D::From(*mrc_tdir, {"ng", "dg", "nr", "dr"});
 
   // TFile mrcfile("~/Physics/data/MrcResult-20190701180906.root");
@@ -65,8 +76,11 @@ main(int argc, char** argv)
   // auto path = "AnalysisQ3D/cfgD3F0AFA546B3D616/pip/10_20/0.4_0.5/++",
   //      filename = "Data-varyphi.root";
 
-  auto filename = "/home/akubera/alice/data/19/07/01/CF_PbPb-6980-LHC15o_pass1_fieldlists_largefile-negfield.root",
-       path = "PWG2FEMTO/kubera_run2pi_lcms_nx_fm96/PiPiAnalysis_00_05_pip";
+  // auto filename = "/home/akubera/alice/data/19/07/01/CF_PbPb-6980-LHC15o_pass1_fieldlists_largefile-negfield.root",
+  //      path = "PWG2FEMTO/kubera_run2pi_lcms_nx_fm96/PiPiAnalysis_00_05_pip";
+  auto filename = "/home/akubera/Physics/pion-analysis/FemtoFitter/Data-SYS-eta.root",
+       path = "/Q3DPosQuad/cfg51A69E96CD6DBD5E/pip/20_30/0.8_1.0/++";
+
   std::cout << " path: " << path << "\n";
   std::cout << " filename: " << filename << "\n";
 
@@ -81,10 +95,10 @@ main(int argc, char** argv)
     return 1;
   }
 
-  auto *data3d_dir = static_cast<TDirectory*>(tdir->Get("KT_PQ3D/0.3_0.4"));
+  // auto *data3d_dir = static_cast<TDirectory*>(tdir->Get("KT_PQ3D/0.3_0.4"));
 
   // sleep(5);
-  runfit<FitterGaussOSL>(*data3d_dir, 0.09);
+  runfit<FitterGaussOSL>(*tdir, 0.12);
   return 0;
 
   auto *datadir = dynamic_cast<TDirectory*>(tdir->Get("KT_Qinv/0.4_0.5"));
