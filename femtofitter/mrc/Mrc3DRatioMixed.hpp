@@ -223,7 +223,7 @@ public:
           den = integrate({xlo, xhi}, {ylo, yhi}, {zlo, zhi}, *gen),
           num = integrate({xlo, xhi}, {ylo, yhi}, {zlo, zhi}, *rec),
 
-          ratio = den == 0.0 ? INFINITY : num / den;
+          ratio = den == 0.0 ? 1e16 : num / den;
 
         mrc->SetBinContent(i, j, k, ratio);
       }}}

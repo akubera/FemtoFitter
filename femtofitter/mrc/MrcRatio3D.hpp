@@ -199,6 +199,17 @@ public:
           return false;
         };
 
+      auto remove_zeros = [] (TH3 &h)
+        {
+          for (int k=1; k<h.GetNbinsZ(); ++k) {
+          for (int j=1; j<h.GetNbinsY(); ++j) {
+          for (int i=1; i<h.GetNbinsX(); ++i) {
+            if (h.GetBinContent(i,j,k) == 0) {
+              h.SetBinContent(i,j,k, 1e-16);
+            }
+          } } }
+        };
+
       // Use Rebin3D
       int rebinx = 0, rebiny = 0, rebinz = 0;
       if (rebinnable(*dg->GetXaxis(), *hist.GetXaxis(), rebinx) &&
@@ -223,6 +234,7 @@ public:
           mrc->Divide(ptr_ng.get());
         }
 
+        remove_zeros(*mrc);
         cache.insert(hist, mrc);
         return mrc;
       }
@@ -235,14 +247,14 @@ public:
         &zax = *hist.GetZaxis();
 
       const Int_t
-        xstart = xax.GetFirst(),
-        xstop = xax.GetLast(),
+        xstart = 1,  // xax.GetFirst(),
+        xstop = xax.GetNbins(),  // xax.GetLast(),
 
-        ystart = yax.GetFirst(),
-        ystop = yax.GetLast(),
+        ystart = 1,  // yax.GetFirst(),
+        ystop = yax.GetNbins(),  // yax.GetLast(),
 
-        zstart = zax.GetFirst(),
-        zstop = zax.GetLast();
+        zstart = 1,  // zax.GetFirst(),
+        zstop = zax.GetNbins();  // zax.GetLast();
 
       for (int k=zstart;k<=zstop;++k) {
         const double
@@ -268,7 +280,7 @@ public:
           num = nrf * dgf,
           den = drf * ngf,
 
-          ratio = den == 0.0 ? INFINITY : num / den;
+          ratio = den == 0.0 ? 1e16 : num == 0.0 ? 1e-16 : num / den;
 
         mrc->SetBinContent(i, j, k, ratio);
       }}}
