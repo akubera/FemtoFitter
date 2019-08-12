@@ -170,9 +170,10 @@ public:
 
         k = Kfsi(q),
 
-        CF = p.evaluate({qo, qs, ql}, k);
+        CF = p.evaluate({qo, qs, ql}, k),
+        res = resid_func(n, d, CF);
 
-      retval += resid_func(n, d, CF);
+      retval += res;
     }
 
     return retval;
@@ -184,14 +185,14 @@ public:
       double retval = 0.0;
 
       if (_tmp_cf == nullptr) {
-        _tmp_cf.reset(static_cast<TH3D*>(data.src->num->Clone()));
+        _tmp_cf = std::make_unique<TH3D>();
+        data.src->num->Copy(*_tmp_cf);
       }
       auto &cfhist = *_tmp_cf;
 
       if (_tmp_fsi == nullptr) {
-        _tmp_fsi.reset(static_cast<TH3D*>(data.src->qinv->Clone()));
+        _tmp_fsi.reset(static_cast<TH3*>(data.src->qinv->Clone()));
       } else {
-        // _tmp_fsi->Copy(*data.src->qinv);
         data.src->qinv->Copy(*_tmp_fsi);
       }
       auto &fsi_hist = *_tmp_fsi;
@@ -202,6 +203,7 @@ public:
       for (int k=1; k<=fsi_hist.GetNbinsZ(); ++k) {
         for (int j=1; j<=fsi_hist.GetNbinsY(); ++j) {
           for (int i=1; i<=fsi_hist.GetNbinsX(); ++i) {
+            // fsi-hist is filled with qinv at this point
             const double q = fsi_hist.GetBinContent(i, j, k);
             fsi_hist.SetBinContent(i, j, k, KFsi(q));
           }
@@ -216,9 +218,10 @@ public:
           n = datum.num,
           d = datum.den,
 
-          CF = cfhist.GetBinContent(datum.hist_bin);
+          CF = cfhist.GetBinContent(datum.hist_bin),
+          res = resid_func(n, d, CF);
 
-        retval += resid_func(n, d, CF);
+        retval += res;
       }
 
       return retval;
