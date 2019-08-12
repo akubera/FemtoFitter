@@ -77,6 +77,18 @@ public:
     {
     }
 
+  MrcRatio1D(std::unique_ptr<TH1> &ng_,
+             std::unique_ptr<TH1> &dg_,
+             std::unique_ptr<TH1> &nr_,
+             std::unique_ptr<TH1> &dr_)
+    : Mrc1D()
+    , ng(std::move(ng_))
+    , dg(std::move(dg_))
+    , nr(std::move(nr_))
+    , dr(std::move(dr_))
+    {
+    }
+
   MrcRatio1D(const MrcRatio1D& orig)
     : Mrc1D(orig)
     , ng(static_cast<TH1*>(orig.ng->Clone()))
@@ -106,9 +118,38 @@ public:
 
   static std::shared_ptr<Mrc1D> From(TDirectory &tdir)
     {
-      MrcRatio1D ratio = Builder::Unweighted()(tdir);
+      std::vector<std::array<TString, 4>> name_vec = {
+        {"ng", "dg", "nr", "dr"},
+        {"NumGenUnweighted", "DenGen", "NumRecUnweighted", "DenRec"},
+      };
 
-      return std::make_shared<MrcRatio1D>(std::move(ratio));
+      for (auto &names : name_vec) {
+        if (auto res = MrcRatio1D::From(tdir, names)) {
+          return res;
+        }
+      }
+
+      return nullptr;
+    }
+
+  static std::shared_ptr<Mrc1D> From(TDirectory &tdir, std::array<TString, 4> names)
+    {
+      return From(tdir, names[0], names[1], names[2], names[3]);
+    }
+
+  static std::shared_ptr<Mrc1D> From(TDirectory &tdir, TString ng_name, TString dg_name, TString nr_name, TString dr_name)
+    {
+      std::unique_ptr<TH1>
+        ng(dynamic_cast<TH1*>(tdir.Get(ng_name))),
+        dg(dynamic_cast<TH1*>(tdir.Get(dg_name))),
+        nr(dynamic_cast<TH1*>(tdir.Get(nr_name))),
+        dr(dynamic_cast<TH1*>(tdir.Get(dr_name)));
+
+      if (!(ng && dg && nr && dr)) {
+        return nullptr;
+      }
+
+      return std::make_shared<MrcRatio1D>(ng, dg, nr, dr);
     }
 
   void Smear(TH1 &hist) const override
