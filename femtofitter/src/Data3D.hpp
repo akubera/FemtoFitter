@@ -103,6 +103,8 @@ struct Data3D {
 
   double gamma;
 
+  static std::unique_ptr<Data3D> From(TDirectory &tdir, double limit=0.0);
+
   /// Build out of standard tdirectory;
   static std::unique_ptr<Data3D> FromDirectory(TDirectory &tdir, double limit=0.0)
     {
@@ -113,6 +115,7 @@ struct Data3D {
     {
       return From(tdir, names[0], names[1], names[2], limit);
     }
+
 
   /// Build from directory and histogram names
   static std::unique_ptr<Data3D> From(TDirectory &tdir,

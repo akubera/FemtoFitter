@@ -441,3 +441,19 @@ Data3D::FromDirectory(TDirectory &tdir, const TH3 &mrc, double limit, double min
 
   return data;
 }
+
+std::unique_ptr<Data3D>
+Data3D::From(TDirectory &tdir, double limit)
+{
+  std::vector<std::array<TString, 3>> try_names = {
+    {"num", "den", "qinv"},
+    {"Num", "Den", "Qinv"},
+  };
+
+  for (auto &names : try_names) {
+    if (auto result = Data3D::FromDirectory(tdir, names, limit)) {
+      return result;
+    }
+  }
+  return nullptr;
+}
