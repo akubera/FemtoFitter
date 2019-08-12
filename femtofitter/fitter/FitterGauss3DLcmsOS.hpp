@@ -44,7 +44,8 @@ struct FitterGauss3DLcmsOS : public Fitter3D<FitterGauss3DLcmsOS> {
 
   static double
   gauss(const std::array<double, 3> &q,
-        const std::array<double, 4> &RSq,
+        const std::array<double, 3> &RSq,
+        const double Ros,
         double lam,
         double K=1.0,
         double norm=1.0)
@@ -53,7 +54,7 @@ struct FitterGauss3DLcmsOS : public Fitter3D<FitterGauss3DLcmsOS> {
       Eo = q[0] * q[0] * RSq[0],
       Es = q[1] * q[1] * RSq[1],
       El = q[2] * q[2] * RSq[2],
-      Eos = q[0] * q[1] * RSq[3],
+      Eos = q[0] * q[1] * Ros * std::fabs(Ros),
       gauss = 1.0 + std::exp(-(Eo + Es + El + Eos) / HBAR_C_SQ),
       result = (1.0 - lam) + lam * K * gauss;
 
@@ -195,7 +196,7 @@ struct FitterGauss3DLcmsOS : public Fitter3D<FitterGauss3DLcmsOS> {
       { return std::sqrt((Ro * Ro * gamma + Rs * Rs + Rl * Rl) / 3.0); }
 
     double gauss(const std::array<double, 3> &q, double K) const
-      { return FitterGauss3DLcmsOS::gauss(q, {Ro*Ro, Rs*Rs, Rl*Rl, Ros}, lam, K, norm); }
+      { return FitterGauss3DLcmsOS::gauss(q, {Ro*Ro, Rs*Rs, Rl*Rl}, Ros, lam, K, norm); }
 
     void
     apply_to(TH3 &hist, TH3& qinv, double gamma)
