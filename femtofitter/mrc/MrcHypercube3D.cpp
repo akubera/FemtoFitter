@@ -34,6 +34,10 @@ MrcHypercube3D::MrcHypercube3D(const THnSparseI& hyp)
     axes[i] = std::make_unique<TAxis>(*hyp.GetAxis(i+3));
   }
 
+  assert(axes[0]->GetTitle() == TString("q_{t,o}"));
+  assert(axes[1]->GetTitle() == TString("q_{t,s}"));
+  assert(axes[2]->GetTitle() == TString("q_{t,l}"));
+
   size_t total_bins = hyp.GetNbins();
 
   THnIter iter(&hyp, true);
@@ -95,6 +99,22 @@ MrcHypercube3D::MrcHypercube3D(const THnSparseI& hyp)
       }
     }
 
+#define REMOVE_NEGLIGIBLE_POINTS true
+  const double NEG_LIMIT = 1e-4;
+
+#if REMOVE_NEGLIGIBLE_POINTS
+    const ULong64_t original_sum = sum;
+    for (const auto &long_and_vals : ideal_and_spread.second) {
+      const auto &vals = long_and_vals.second.second;
+      // remove points from sum, so normalization is still correct
+      for (size_t i=0; i < vals.size(); ++i) {
+        if ((vals[i] * 1.0 / sum) <= NEG_LIMIT) {
+          sum -= vals[i];
+        }
+      }
+    }
+#endif
+
     // fill second tree with fractional values
     Trie<Double_t> fracs;
     for (const auto &long_and_vals : ideal_and_spread.second) {
@@ -102,6 +122,12 @@ MrcHypercube3D::MrcHypercube3D(const THnSparseI& hyp)
       const auto &outsides = long_and_vals.second.first;
       const auto &vals = long_and_vals.second.second;
       for (size_t i=0; i < vals.size(); ++i) {
+#if REMOVE_NEGLIGIBLE_POINTS
+        // skip if point is considered negligible
+        if ((vals[i] * 1.0 / original_sum) <= NEG_LIMIT) {
+          continue;
+        }
+#endif
         dest.first.emplace_back(outsides[i]);
         dest.second.emplace_back(vals[i] * 1.0 / sum);
       }
@@ -110,8 +136,8 @@ MrcHypercube3D::MrcHypercube3D(const THnSparseI& hyp)
     insert_hint = frac_trie.emplace_hint(insert_hint, true_bin, std::move(fracs));
   }
 
-  fUnsmearedHist.reset(hyp.Projection(0, 1, 2));
-  fSmearedHist.reset(hyp.Projection(3, 4, 5));
+  fUnsmearedHist.reset(hyp.Projection(3, 4, 5));
+  fSmearedHist.reset(hyp.Projection(0, 1, 2));
 }
 
 template <typename HistType>
@@ -158,12 +184,33 @@ MrcHypercube3D::Smear(const T &hist, T &buff) const
 void
 MrcHypercube3D::Smear(TH3 &result) const
 {
-  if (auto *hist = dynamic_cast<TH3F*>(&result)) {
-    TH3F* clone = static_cast<TH3F*>(result.Clone());
-    clone->Reset();
+  if (auto *histf = dynamic_cast<TH3F*>(&result)) {
+    // std::unique_ptr<TH3F> clone(static_cast<TH3F*>(result.Clone()));
+    // clone->Reset();
+    static TH3F *sbufferf = nullptr;
 
-    Smear(*hist, *static_cast<TH3F*>(clone));
-    *hist = *clone;
+    if (sbufferf == nullptr) {
+      // sbuffer = new TH3D();
+      sbufferf = static_cast<TH3F*>(result.Clone());
+    }
+    sbufferf->Reset();
+
+    Smear(*histf, *sbufferf);
+    *histf = *sbufferf;
+  }
+  else if (auto *histd = dynamic_cast<TH3D*>(&result)) {
+    static TH3D *sbuffer = nullptr;
+
+    if (sbuffer == nullptr) {
+      // sbuffer = new TH3D();
+      sbuffer = static_cast<TH3D*>(result.Clone());
+    }
+    sbuffer->Reset();
+    // std::unique_ptr<TH3D> clone();
+    // clone->Reset();
+
+    Smear(*histd, *sbuffer);
+    *histd = *sbuffer;
   }
 
 
@@ -275,13 +322,17 @@ MrcHypercube3D::FillUnsmearedDen(TH3 &cf) const
 void
 MrcHypercube3D::FillUnsmearedDen(TH3D &cf) const
 {
-  static_cast<TArrayD&>(cf) = static_cast<const TArrayD&>(*fUnsmearedHist);
+  // static_cast<TArrayD&>(cf) = static_cast<const TArrayD&>(*fUnsmearedHist);
+  fUnsmearedHist->Copy(cf);
 }
 
 std::shared_ptr<const TH3D>
 MrcHypercube3D::GetSmearedDenLike(TH3 &cf) const
 {
-  return nullptr;
+  // static_cast<TArrayD&>(cf) = static_cast<const TArrayD&>(*fUnsmearedHist);
+  // static_cast<TArrayD&>(cf) = static_cast<const TArrayD&>(*fUnsmearedHist);
+  // std::shared_ptr<const TH3D> cf
+  return std::shared_ptr<const TH3D>(static_cast<TH3D*>(fSmearedHist->Clone("SmearedDen")));
 }
 
 void
@@ -311,8 +362,9 @@ MrcHypercube3D::FillSmearedFit(TH3 &cf,
   p.multiply(cf, qinv, fsi);
   Smear(cf);
 
-  auto denom = GetSmearedDenLike(cf);
-  cf.Divide(denom.get());
+  // auto denom = GetSmearedDenLike(cf);
+  // cf.Divide(denom.get());
+  cf.Divide(fSmearedHist.get());
 }
 
 
@@ -326,8 +378,9 @@ MrcHypercube3D::FillSmearedFit(
   p.multiply(cf, fsi);
   Smear(cf);
 
-  auto denom = GetSmearedDenLike(cf);
-  cf.Divide(denom.get());
+  // auto denom = GetSmearedDenLike(cf);
+  // cf.Divide(denom.get());
+  cf.Divide(fSmearedHist.get());
 }
 
 
@@ -338,6 +391,7 @@ MrcHypercube3D::FillSmearedFit(TH3 &cf, const Fit3DParameters &p, const TH3 &fsi
   p.multiply(cf, fsi);
   Smear(cf);
 
-  auto denom = GetSmearedDenLike(cf);
-  cf.Divide(denom.get());
+  // auto denom = GetSmearedDenLike(cf);
+  // cf.Divide(denom.get());
+  cf.Divide(fSmearedHist.get());
 }
