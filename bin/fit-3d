@@ -129,7 +129,7 @@ def main(argv=None):
     output_data = {
             'filename': args.input,
             'timestamp': timestamp.isoformat(timespec='milliseconds'),
-            'duration': duration.total_seconds() / 60,
+            'duration': '%0.02f min' % (duration.total_seconds() / 60),
             'command': sys.argv,
             'df': df.to_dict(orient='records'),
             'config': get_configuration_json(tfile, queries),
