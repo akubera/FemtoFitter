@@ -50,6 +50,20 @@ class PathQuery:
         allowed = cls.__dataclass_fields__.keys()
         return cls(**{k: v for k, v in data.items() if k in allowed})
 
+    def find(self, df, *keys):
+        """
+        Return dataframe matching selected keys from this query
+        """
+        from functools import reduce
+        from operator import and_
+
+        if not keys:
+            keys = ('analysis', 'cfg', 'pair', 'cent', 'kt', 'magfield')
+
+        query = reduce(and_, (df[key] == getattr(self, key) for key in keys))
+
+        return df[query]
+
     @classmethod
     def From(cls, obj):
         from pathlib import Path
