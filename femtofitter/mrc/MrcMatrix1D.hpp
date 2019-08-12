@@ -59,6 +59,38 @@ public:
   static std::shared_ptr<Mrc1D> new_shared_ptr(const TH2& hist)
     { return std::make_shared<MrcMatrix1D>(hist); }
 
+  static std::shared_ptr<Mrc1D> From(const TH2& hist)
+    { return std::make_shared<MrcMatrix1D>(hist); }
+
+  static std::shared_ptr<Mrc1D> From(TDirectory& tdir, TString name)
+    {
+      std::unique_ptr<TObject> obj(tdir.Get(name));
+
+      if (auto *hist = dynamic_cast<TH2*>(obj.get())) {
+        auto res = std::make_shared<MrcMatrix1D>(*hist);
+        res->source_name = tdir.GetPath();
+        return res;
+      }
+
+      return nullptr;
+    }
+
+  static std::shared_ptr<Mrc1D> From(TDirectory& tdir)
+    {
+      std::vector<TString> names = {
+        "QgenQrec",
+        "mrc_matrix",
+      };
+
+      for (auto name : names) {
+        if (auto res = MrcMatrix1D::From(tdir, name)) {
+          return res;
+        }
+      }
+
+      return nullptr;
+    }
+
   virtual std::unique_ptr<TH1> Smeared(const TH1 &h) const
     {
       auto result = std::unique_ptr<TH1>(static_cast<TH1*>(h.Clone()));

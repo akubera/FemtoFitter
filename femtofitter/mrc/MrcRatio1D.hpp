@@ -149,7 +149,9 @@ public:
         return nullptr;
       }
 
-      return std::make_shared<MrcRatio1D>(ng, dg, nr, dr);
+      auto res = std::make_shared<MrcRatio1D>(ng, dg, nr, dr);
+      res->source_name = tdir.GetPath();
+      return res;
     }
 
   void Smear(TH1 &hist) const override
