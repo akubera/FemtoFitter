@@ -17,6 +17,7 @@
 #include <TSystem.h>
 #include <TCanvas.h>
 #include <TApplication.h>
+#include <TStopwatch.h>
 
 
 template <typename Fitter_t>
@@ -43,28 +44,60 @@ void runfit(TDirectory &tdir, double limit)
   //         mrc_path = "AnalysisTrueQ3D/cfg855847557EDA507A/pip/00_90/0.4_0.5/--";
 
   TString mrc_filename = "/home/akubera/Physics/pion-analysis/FemtoFitter/MRC-2341.root",
-          mrc_path = "AnalysisTrueQ3D/cfg5AD446DB543C4A2A/pip/00_90/0.8_1.0/++";
+          mrc_path = "AnalysisTrueQ3D/cfg5AD446DB543C4A2A/pip/00_90/0.4_0.5/++";
 
   TFile mrcfile(mrc_filename);
 
+  TStopwatch timer;
+  timer.Start();
+
   auto *mrc_tdir = static_cast<TDirectory*>(mrcfile.Get(mrc_path));
+  /*
+  std::cout << "=== RATIO MRC ===\n";
   fitter->mrc = MrcRatio3D::From(*mrc_tdir, {"ng", "dg", "nr", "dr"});
+  auto ratio_fitres = fitter->fit_pml_mrc();
+  ratio_fitres.print();
+  timer.Print();
+  timer.Start();
+  */
 
-  // TFile mrcfile("~/Physics/data/MrcResult-20190701180906.root");
-  // auto *mrc_tdir = static_cast<TDirectory*>(mrcfile.Get("femtotask/AnalysisMrc_pip/KT_HYPERCUBE/0.4_0.5"));
-  // auto *hypercube = dynamic_cast<THnSparseI*>(mrc_tdir->Get("MRCHyperCube"));
-  // if (!hypercube) {
-  //   std::cerr << "Error: Could not load hypercube from " << mrc_tdir->GetPath() << "\n";
-  //   exit(1);
-  // }
+  std::cout << "=== HYPER MRC ===\n";
+  std::cout << "Building Hypercube" << std::endl;
 
-  // fitter->mrc = MrcHypercube3D::From(*hypercube);
+  TFile hymrcfile("~/Physics/data/MrcResult-20190805225120.root");
+  auto *hymrc_tdir = static_cast<TDirectory*>(hymrcfile.Get("PWG2FEMTO/AnalysisMrc_pip/KT_HYPERCUBE/0.4_0.5"));
+  if (!hymrc_tdir) {
+    std::cerr << "Could not Get directory\n";
+    exit(1);
+  }
+  auto *hypercube = dynamic_cast<THnSparseI*>(hymrc_tdir->Get("MRCHyperCube"));
+  if (!hypercube) {
+    std::cerr << "Error: Could not load hypercube from " << mrc_tdir->GetPath() << "\n";
+    exit(1);
+  }
 
-  // std::cout << "k2ss: " << static_cast<FsiKFile*>(fitter->fsi.get())->k2ss->GetNbinsX() << "\n";
+  fitter->mrc = MrcHypercube3D::From(*hypercube);
 
-  auto res = fitter->fit_pml_mrc();
-  // auto res = fitter->fit_pml_mrc_quick();
-  res.print();
+  timer.Print();
+
+  std::cout << "Fitting Hypercube" << std::endl;
+  timer.Start();
+  // auto hyper_fitres = fitter->fit_pml_mrc();
+  // timer.Print();
+  // hyper_fitres.print();
+  TMinuit minuit;
+  fitter->setup_pml_mrc_minuit(minuit);
+  fitter->do_fit_minuit(minuit);
+  return;
+
+  timer.Start();
+  std::cout << "Quick-Fit Hypercube" << std::endl;
+
+  auto quick_res = fitter->fit_pml_mrc_quick();
+  quick_res.print();
+
+  std::cout << "Done\n";
+  timer.Print();
 }
 
 
@@ -79,7 +112,7 @@ main(int argc, char** argv)
   // auto filename = "/home/akubera/alice/data/19/07/01/CF_PbPb-6980-LHC15o_pass1_fieldlists_largefile-negfield.root",
   //      path = "PWG2FEMTO/kubera_run2pi_lcms_nx_fm96/PiPiAnalysis_00_05_pip";
   auto filename = "/home/akubera/Physics/pion-analysis/FemtoFitter/Data-SYS-eta.root",
-       path = "/Q3DPosQuad/cfg51A69E96CD6DBD5E/pip/20_30/0.8_1.0/++";
+       path = "/Q3DPosQuad/cfg51A69E96CD6DBD5E/pip/20_30/0.4_0.5/++";
 
   std::cout << " path: " << path << "\n";
   std::cout << " filename: " << filename << "\n";
@@ -109,7 +142,7 @@ main(int argc, char** argv)
   auto*r = (TH1D*)num->Clone();
   r->Divide(den);
 
-  TFile mrc_tfile("~/Physics/data/MrcResult-20190630202308.root");
+  TFile mrc_tfile("~/Physics/data/MrcResult-20190805225120.root");
   auto *qhist = (TH2*)mrc_tfile.Get("femtotask/AnalysisMrc_pip/KT_MRC1D/0.4_0.5/QgenQrecTrueQinv");
   qhist->Draw("COLZ");
 
