@@ -301,7 +301,7 @@ def run_fit(params: RunFitParams) -> Optional[dict]:
     results["fitrange"] = params.fit_range
     results["true_fitrange"] = data.true_limit
 
-    results["mrc"] = params.mrc_path
+    results["mrc"] = fitter.mrc.Describe() if params.mrc_path else None
     results["gamma"] = fitter.data.gamma
     results["ndof"] = fitter.degrees_of_freedom()
     results["chi2"] = chi2
