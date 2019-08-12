@@ -27,6 +27,9 @@
 ///
 struct FitterLevyFull : public Fitter3D<FitterLevyFull> {
 
+  struct FitParams;
+  struct FitResult;
+
   /// constants used to lookup data from pointer
   enum {
     DATA_PARAM_IDX = 0,
@@ -69,7 +72,7 @@ struct FitterLevyFull : public Fitter3D<FitterLevyFull> {
   /// \class FitResult
   /// \brief Values and stderr from minuit results
   ///
-  struct FitResult {
+  struct FitResult : FitResult3D<FitResult, FitterLevyFull> {
     Value lam,
           norm,
           alphao,
@@ -78,6 +81,19 @@ struct FitterLevyFull : public Fitter3D<FitterLevyFull> {
           Ro,
           Rs,
           Rl;
+
+    FitResult()
+      : lam({0, 0})
+      , norm({0, 0})
+      , alphao({0, 0})
+      , alphas({0, 0})
+      , alphal({0, 0})
+      , Ro({0, 0})
+      , Rs({0, 0})
+      , Rl({0, 0})
+      {}
+
+    FitResult(const FitResult &orig) = default;
 
     FitResult(const TMinuit &minuit)
       : lam(minuit, LAM_PARAM_IDX)
@@ -90,6 +106,8 @@ struct FitterLevyFull : public Fitter3D<FitterLevyFull> {
       , Rl(minuit, RLONG_PARAM_IDX)
     {
     }
+
+    virtual ~FitResult() = default;
 
     void print() const
       { std::cout << __str__(); }
@@ -159,6 +177,21 @@ struct FitterLevyFull : public Fitter3D<FitterLevyFull> {
       return dict;
       #undef Add
     }
+
+    void FillMinuit(TMinuit &minuit) const
+      {
+        int errflag = 0;
+        minuit.mnparm(NORM_PARAM_IDX, "Norm", norm.value, 0.02, 0.0, 0.0, errflag);
+        minuit.mnparm(LAM_PARAM_IDX, "Lam", lam.value, 0.05, 0.0, 1.0, errflag);
+        minuit.mnparm(ALPHAOUT_PARAM_IDX, "alphao", alphao.value, 0.15, 1.0, 3.0, errflag);
+        minuit.mnparm(ALPHASIDE_PARAM_IDX, "alphas", alphas.value, 0.15, 1.0, 3.0, errflag);
+        minuit.mnparm(ALPHALONG_PARAM_IDX, "alphal", alphal.value, 0.15, 1.0, 3.0, errflag);
+        minuit.mnparm(ROUT_PARAM_IDX, "Ro", Ro.value, 0.5, 0.0, 0.0, errflag);
+        minuit.mnparm(RSIDE_PARAM_IDX, "Rs", Rs.value, 0.5, 0.0, 0.0, errflag);
+        minuit.mnparm(RLONG_PARAM_IDX, "Rl", Rl.value, 0.5, 0.0, 0.0, errflag);
+      }
+
+    FitParams as_params() const;
   };
 
   /// \brief 3D Levy fit parameters
@@ -282,9 +315,9 @@ struct FitterLevyFull : public Fitter3D<FitterLevyFull> {
     minuit.mnparm(ROUT_PARAM_IDX, "Ro", 2.0, 1.0, 0.0, 0.0, errflag);
     minuit.mnparm(RSIDE_PARAM_IDX, "Rs", 2.0, 1.0, 0.0, 0.0, errflag);
     minuit.mnparm(RLONG_PARAM_IDX, "Rl", 2.0, 1.0, 0.0, 0.0, errflag);
-    minuit.mnparm(ALPHAOUT_PARAM_IDX, "AlphaOut", 1.0, 0.1, 0.0, 0.0, errflag);
-    minuit.mnparm(ALPHASIDE_PARAM_IDX, "AlphaSide", 1.0, 0.1, 0.0, 0.0, errflag);
-    minuit.mnparm(ALPHALONG_PARAM_IDX, "AlphaLong", 1.0, 0.1, 0.0, 0.0, errflag);
+    minuit.mnparm(ALPHAOUT_PARAM_IDX, "AlphaOut", 1.0, 0.1, 1.0, 3.0, errflag);
+    minuit.mnparm(ALPHASIDE_PARAM_IDX, "AlphaSide", 1.0, 0.1, 1.0, 3.0, errflag);
+    minuit.mnparm(ALPHALONG_PARAM_IDX, "AlphaLong", 1.0, 0.1, 1.0, 3.0, errflag);
 
     const double this_dbl = static_cast<double>((intptr_t)this);
     minuit.mnparm(DATA_PARAM_IDX, "DATA_PTR", this_dbl, 0, 0, INTPTR_MAX, errflag);
@@ -302,10 +335,42 @@ struct FitterLevyFull : public Fitter3D<FitterLevyFull> {
   FitResult fit_chi2()
     { return Fitter3D::fit_chi2(); }
 
+  FitResult fit_chi2_mrc()
+    { return Fitter3D::fit_chi2_mrc(); }
+
   FitResult fit_pml()
     { return Fitter3D::fit_pml(); }
 
+  FitResult fit_pml_mrc()
+    { return Fitter3D::fit_pml_mrc(); }
+
   FitResult fit()
-    { return Fitter3D::fit(); }
+    { return Fitter3D::fit_pml_mrc(); }
+
+  double residual_chi2(const FitResult &r) const
+    {
+      return residual_chi2(r.as_params());
+    }
+
+  double residual_chi2(const FitParams &p) const
+    {
+      return Fitter3D::resid_calc(p, CalcChi2::resid_func);
+    }
+
+  double residual_chi2_mrc(const FitResult &r) const
+    {
+      return residual_chi2_mrc(r.as_params());
+    }
+
+  double residual_chi2_mrc(const FitParams &p) const
+    {
+      return Fitter3D::resid_calc_mrc(p, *mrc, CalcChi2::resid_func);
+    }
 
 };
+
+inline auto
+FitterLevyFull::FitResult::as_params() const -> FitParams
+{
+  return FitParams(*this);
+}
