@@ -150,6 +150,12 @@ class FitResults:
         self.config = self.extract_config_df(data)
         self._data = data
 
+    def __getattr__(self, key):
+        if key in self._data:
+            return self._data[key]
+
+        raise AttributeError
+
     def get_merged_df(self):
         return pd.merge(self.df, self.config, on='cfg')
 
