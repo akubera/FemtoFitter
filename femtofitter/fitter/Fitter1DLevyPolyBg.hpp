@@ -46,8 +46,8 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
        double K=1.0)
     {
       const double
-        E = std::pow(qinv * qinv * RinvSq, alpha / 2),
-        gauss = 1.0 + std::exp(-E/HBAR_C_SQ),
+        E = std::pow(qinv * qinv * RinvSq / HBAR_C_SQ, alpha / 2),
+        gauss = 1.0 + std::exp(-E),
         result = (1.0 - lam) + lam * K * gauss;
 
       return (bg[0] + qinv * qinv *
@@ -151,7 +151,7 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
         int errflag = 0;
         minuit.mnparm(LAM_PARAM_IDX, "Lam", lam.value, .01, 0.0, 0.0, errflag);
         minuit.mnparm(RADIUS_PARAM_IDX, "Radius", radius.value, 0.2, 0.0, 0.0, errflag);
-        minuit.mnparm(ALPHA_PARAM_IDX, "Alpha", alpha.value, 0.01, 0.0, 0.0, errflag);
+        minuit.mnparm(ALPHA_PARAM_IDX, "Alpha", alpha.value, 0.01, 1.0, 3.0, errflag);
 
         minuit.mnparm(BG0_PARAM_IDX, "BG0", bg[0], 0.0, 0.0, 0.0, errflag);
         minuit.mnparm(BG1_PARAM_IDX, "BG1", bg[1], 0.0, 0.0, 0.0, errflag);
@@ -283,7 +283,7 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
       int errflag = 0;
       minuit.mnparm(LAM_PARAM_IDX, "Lam", 0.2, 0.1, 0.0, 1.0, errflag);
       minuit.mnparm(RADIUS_PARAM_IDX, "Radius", 2.0, 1.0, 0.0, 0.0, errflag);
-      minuit.mnparm(ALPHA_PARAM_IDX, "Alpha", 1.9, 0.01, 0.0, 0.0, errflag);
+      minuit.mnparm(ALPHA_PARAM_IDX, "Alpha", 1.9, 0.01, 1.0, 3.0, errflag);
       minuit.mnparm(BG0_PARAM_IDX, "BG0", bg_params[0], 0.0, 0.0, 0.0, errflag);
       minuit.mnparm(BG1_PARAM_IDX, "BG1", bg_params[1], 0.0, 0.0, 0.0, errflag);
       minuit.mnparm(BG2_PARAM_IDX, "BG2", bg_params[2], 0.0, 0.0, 0.0, errflag);

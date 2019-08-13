@@ -38,8 +38,8 @@ struct Fitter1DLevy : Fitter1D<Fitter1DLevy> {
   levy(double qinv, double RinvSq, double lam, double alpha, double K=1.0, double norm=1.0)
     {
       const double
-        E = std::pow(qinv * qinv * RinvSq, alpha / 2),
-        gauss = 1.0 + std::exp(-E/HBAR_C_SQ),
+        E = std::pow(qinv * qinv * RinvSq / HBAR_C_SQ, alpha / 2),
+        gauss = 1.0 + std::exp(-E),
         result = (1.0 - lam) + lam * K * gauss;
 
       return norm * result;
