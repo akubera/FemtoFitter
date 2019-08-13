@@ -164,6 +164,14 @@ struct Data3D {
     , gamma(orig.gamma)
   {}
 
+  Data3D(const Data3D &orig, std::vector<Datum> dat)
+    : data(std::move(dat))
+    , src(orig.src)
+    , limit(orig.limit)
+    , true_limit(orig.true_limit)
+    , gamma(orig.gamma)
+  {}
+
   /// Move Constructor
   Data3D(Data3D &&orig)
     : data(std::move(orig.data))
@@ -200,6 +208,31 @@ struct Data3D {
 
   const Datum& operator[](size_t idx) const
     { return data[idx]; }
+
+  std::unique_ptr<Data3D> subset_pos_side() const
+    {
+      std::vector<Datum> subset;
+      for (auto &dat : data) {
+        if (dat.qs > 1e-4) {
+          subset.emplace_back(dat);
+        }
+      }
+
+      return std::make_unique<Data3D>(*this, std::move(subset));
+    }
+
+  std::unique_ptr<Data3D> subset_neg_side() const
+    {
+      std::vector<Datum> subset;
+      for (auto &dat : data) {
+        if (dat.qs < -1e-4) {
+          subset.emplace_back(dat);
+        }
+      }
+
+      return std::make_unique<Data3D>(*this, std::move(subset));
+    }
+
 
   /// get out-side datapoints from quadrants I-III
   std::unique_ptr<Data3D> cowboy_subset() const
