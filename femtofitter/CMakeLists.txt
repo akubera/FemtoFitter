@@ -87,6 +87,7 @@ set(INCS
   mrc/MrcRatio3D.hpp
   mrc/Mrc3DRatioMixed.hpp
   mrc/MrcRatio1D.hpp
+  mrc/Mrc1DRatioMixed.hpp
   mrc/MrcMatrix1D.hpp
   mrc/MrcTransform1D.hpp
   mrc/MrcHypercube3D.hpp

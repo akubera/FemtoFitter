@@ -62,6 +62,7 @@
 #pragma link C++ class FsiCalculator;
 
 #pragma link C++ class MrcRatio1D;
+#pragma link C++ class Mrc1DRatioMixed;
 #pragma link C++ class MrcMatrix1D;
 #pragma link C++ class MrcMatrix1DJesse;
 #pragma link C++ class MrcTransform1D;
