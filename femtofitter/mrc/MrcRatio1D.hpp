@@ -37,10 +37,10 @@ public:
   /// \brief Used to create a MRC out of keys
   ///
   struct Builder {
-    std::string ng_name,
-                dg_name,
-                nr_name,
-                dr_name;
+    TString ng_name,
+            dg_name,
+            nr_name,
+            dr_name;
 
     static Builder Unweighted()
       {
@@ -54,10 +54,11 @@ public:
 
     MrcRatio1D operator()(TDirectory &tdir)
       {
-        auto ng = std::unique_ptr<TH1>((TH1*)tdir.Get(ng_name.c_str()));
-        auto dg = std::unique_ptr<TH1>((TH1*)tdir.Get(dg_name.c_str()));
-        auto nr = std::unique_ptr<TH1>((TH1*)tdir.Get(nr_name.c_str()));
-        auto dr = std::unique_ptr<TH1>((TH1*)tdir.Get(dr_name.c_str()));
+        std::unique_ptr<TH1>
+          ng(static_cast<TH1*>(tdir.Get(ng_name))),
+          dg(static_cast<TH1*>(tdir.Get(dg_name))),
+          nr(static_cast<TH1*>(tdir.Get(nr_name))),
+          dr(static_cast<TH1*>(tdir.Get(dr_name)));
 
         if (!(ng and dg and nr and dr)) {
           throw std::runtime_error("Missing errors");
@@ -156,17 +157,17 @@ public:
 
   void Smear(TH1 &hist) const override
     {
-      TH1D& mrc_factor = GetSmearingFactor(hist);
+      const TH1D& mrc_factor = GetSmearingFactor(hist);
       hist.Multiply(&mrc_factor);
     }
 
   void Unsmear(TH1 &hist) const override
     {
-      TH1D& mrc_factor = GetSmearingFactor(hist);
+      const TH1D& mrc_factor = GetSmearingFactor(hist);
       hist.Divide(&mrc_factor);
     }
 
-  TH1D& GetSmearingFactor(TH1 &hist) const
+  const TH1D& GetSmearingFactor(TH1 &hist) const
     {
       if (auto mrc = cache[hist]) {
         return *mrc;
