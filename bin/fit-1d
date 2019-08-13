@@ -55,11 +55,11 @@ def arg_parser():
                         help="Qinv limit of the fit")
     parser.add_argument("--mrc",
                         nargs='?',
-                        default='MrcRatio1D',
+                        default='',
                         help="Classname of Momentum Resolution Correction")
     parser.add_argument("--mrc-path",
                         nargs='?',
-                        default=False,
+                        default='MRC-08.root:cfg5AD446DB543C4A2A',
                         help="Path to Momentum Resolution Correction, format is <filename:cfg>")
     parser.add_argument("--mrc-args",
                         nargs='*',
@@ -120,6 +120,7 @@ def main(argv=None):
     print("Returned %d results" % len(results))
 
     df = pd.DataFrame(results)
+    df = df.sort_values(['cfg', 'cent', 'kt', 'magfield', 'pair'])
     output_data = {
             'filename': args.input,
             'timestamp': timestamp.isoformat(timespec='milliseconds'),
@@ -207,7 +208,7 @@ class RunFitParams:
             fsi_args=args.fsi_args,
             mrc_classname=args.mrc,
             mrc_path=args.mrc_path,
-            mrc_args=args.mrc_params,
+            mrc_args=args.mrc_args,
             fit_chi2=args.chi2,
         )
 
@@ -230,6 +231,7 @@ def run_fit(params: RunFitParams) -> Optional[dict]:
     # tfile = ROOT.TFile.Open(str(params.filename.absolute()))
     tfile = ROOT.TFile.Open(params.filename)
     tdir = tfile.Get(params.pathquery.as_path())
+    mrc = None
 
     try:
         fittercls = getattr(ROOT, params.fitter_classname)
@@ -242,7 +244,7 @@ def run_fit(params: RunFitParams) -> Optional[dict]:
     except AttributeError:
         raise TypeError(f"Could not find fsi class {params.fsi_classname!r}")
 
-    if params.mrc_path:
+    if params.mrc_classname:
         try:
             mrc_class = getattr(ROOT, params.mrc_classname)
         except AttributeError:
@@ -262,13 +264,16 @@ def run_fit(params: RunFitParams) -> Optional[dict]:
         mrc_dir = mrc_file.Get(mrc_query.as_path())
         assert mrc_dir
 
+        mrc = mrc_class.From(mrc_dir, *params.mrc_args)
+        assert mrc
+
     data = ROOT.Data1D.From(tdir, params.fit_range)
 
     fitter = fittercls(data)
     fitter.fsi = fsi_class.new_shared_ptr(*params.fsi_args)
 
-    if params.mrc_path:
-        fitter.mrc = mrc_class.From(mrc_dir, *params.mrc_args)
+    if mrc:
+        fitter.mrc = mrc
 
     fit_results = fitter.fit_chi2() if params.fit_chi2 else fitter.fit_pml()
     if not fit_results:
@@ -290,7 +295,7 @@ def run_fit(params: RunFitParams) -> Optional[dict]:
 
     results["analysis"] = params.pathquery.analysis
 
-    results["mrc"] = params.mrc_path
+    results["mrc"] = fitter.mrc.Describe() if fitter.mrc else None
     results["gamma"] = fitter.data.gamma
     results["ndof"] = fitter.degrees_of_freedom()
     results["chi2"] = chi2
