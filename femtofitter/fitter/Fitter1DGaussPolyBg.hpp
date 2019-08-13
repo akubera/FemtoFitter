@@ -400,6 +400,16 @@ struct Fitter1DGaussPolyBg : public Fitter1D<Fitter1DGaussPolyBg> {
       fill(p, *cf);
       return cf;
     }
+
+  std::unique_ptr<TH1> get_cf_mrc(const FitParams &p) const
+    {
+      std::unique_ptr<TH1> cf(static_cast<TH1*>(data.src->num->Clone()));
+      cf->Reset();
+      cf->SetTitle(Form("Correlation Function (R=%0.2f  \\lambda=%0.3f); q_{inv}; CF(q_{inv});", p.radius, p.lam));
+      cf->SetStats(false);
+      mrc->FillSmearedFit(*cf, p, *fsi, 1);
+      return cf;
+    }
 };
 
 inline auto
