@@ -134,6 +134,11 @@ struct Fitter1DLevy : Fitter1D<Fitter1DLevy> {
         minuit.mnparm(RADIUS_PARAM_IDX, "Radius", radius.value, 0.2, 0.0, 0.0, errflag);
         minuit.mnparm(ALPHA_PARAM_IDX, "Alpha", alpha.value, 0.01, 0.0, 0.0, errflag);
       }
+
+    void Normalize(TH1 &h) const override
+      {
+        h.Scale(1.0 / norm.value);
+      }
   };
 
 
@@ -213,6 +218,11 @@ struct Fitter1DLevy : Fitter1D<Fitter1DLevy> {
         PyDict_SetItemString(dict, "alpha", PyFloat_FromDouble(alpha));
         PyDict_SetItemString(dict, "norm", PyFloat_FromDouble(norm));
         return dict;
+      }
+
+    void Normalize(TH1 &h) const
+      {
+        h.Scale(1.0 / norm);
       }
   };
 

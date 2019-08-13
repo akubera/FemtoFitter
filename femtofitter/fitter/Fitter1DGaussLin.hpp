@@ -139,6 +139,11 @@ struct Fitter1DGaussLin : public Fitter1D<Fitter1DGaussLin> {
         minuit.mnparm(R_PARAM_IDX, "Radius", radius.value, 0.2, 0.0, 0.0, errflag);
         minuit.mnparm(SLOPE_PARAM_IDX, "Slope", slope.value, 0.2, 0.0, 0.0, errflag);
       }
+
+    void Normalize(TH1 &h) const override
+      {
+        h.Scale(1.0 / norm.value);
+      }
   };
 
   struct FitParams : FitParam1D<FitParams> {
@@ -212,6 +217,13 @@ struct Fitter1DGaussLin : public Fitter1D<Fitter1DGaussLin> {
         return Fitter1DGaussLin::gauss(q, radius * radius, lam, slope, K, norm);
       }
 
+    void Normalize(TH1 &h) const
+      {
+        const double x = h.GetXaxis()->GetBinCenter(h.GetXaxis()->GetLast());
+        double background = norm + x * slope;
+
+        h.Scale(1.0 / background);
+      }
   };
 
   int

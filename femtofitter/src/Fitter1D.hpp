@@ -453,6 +453,8 @@ struct FitResult1D {
         mrc->FillSmearedFit(h, as_params(), fsi, 1);
       }
     }
+
+  virtual void Normalize(TH1 &) const = 0;
 };
 
 

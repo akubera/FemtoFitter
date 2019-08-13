@@ -154,6 +154,13 @@ struct Fitter1DGaussPolyBg : public Fitter1D<Fitter1DGaussPolyBg> {
         minuit.mnparm(BG2_PARAM_IDX, "BG2", bg[2].value, 0.0, 0.0, 0.0, errflag);
         minuit.mnparm(BG3_PARAM_IDX, "BG3", bg[3].value, 0.0, 0.0, 0.0, errflag);
       }
+
+    void Normalize(TH1 &h) const override
+      {
+        const double x = h.GetXaxis()->GetBinCenter(h.GetXaxis()->GetLast());
+        double background = bg[0] + x * x * (bg[1] + x * x * (bg[2] + x * x * bg[3]));
+        h.Scale(1.0 / background);
+      }
   };
 
   struct FitParams : FitParam1D<FitParams> {
@@ -225,6 +232,12 @@ struct Fitter1DGaussPolyBg : public Fitter1D<Fitter1DGaussPolyBg> {
         return Fitter1DGaussPolyBg::gauss(q, radius * radius, lam, bg, K);
       }
 
+    void Normalize(TH1 &h) const
+      {
+        const double x = h.GetXaxis()->GetBinCenter(h.GetXaxis()->GetLast());
+        double background = bg[0] + x * x * (bg[1] + x * x * (bg[2] + x * x * bg[3]));
+        h.Scale(1.0 / background);
+      }
   };
 
   int
