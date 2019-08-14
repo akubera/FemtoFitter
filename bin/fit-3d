@@ -320,6 +320,7 @@ def run_fit(params: RunFitParams) -> Optional[dict]:
     results["ndof"] = fitter.degrees_of_freedom()
     results["chi2"] = chi2
     results["rchi2"] = results["chi2"] / results["ndof"]
+    results["subset"] = params.subset
 
     return results
 
