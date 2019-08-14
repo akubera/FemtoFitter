@@ -110,7 +110,9 @@ public:
         return nullptr;
       }
 
-      return std::make_shared<Mrc3DRatioMixed>(std::move(g), std::move(r));
+      auto res = std::make_shared<Mrc3DRatioMixed>(std::move(g), std::move(r));
+      res->source_name = tdir.GetPath();
+      return res;
     }
 
   static std::shared_ptr<Mrc3D> From(TDirectory &tdir,
@@ -223,7 +225,7 @@ public:
           den = integrate({xlo, xhi}, {ylo, yhi}, {zlo, zhi}, *gen),
           num = integrate({xlo, xhi}, {ylo, yhi}, {zlo, zhi}, *rec),
 
-          ratio = den == 0.0 ? 1e16 : num / den;
+          ratio = den == 0.0 ? 1e16 : num == 0.0 ? 1e-14 : num / den;
 
         mrc->SetBinContent(i, j, k, ratio);
       }}}
