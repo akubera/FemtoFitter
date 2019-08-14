@@ -274,8 +274,10 @@ def run_fit(params: RunFitParams) -> Optional[dict]:
 
     if mrc:
         fitter.mrc = mrc
+        fit_results = fitter.fit_chi2_mrc() if params.fit_chi2 else fitter.fit_pml_mrc()
+    else:
+        fit_results = fitter.fit_chi2() if params.fit_chi2 else fitter.fit_pml()
 
-    fit_results = fitter.fit_chi2() if params.fit_chi2 else fitter.fit_pml()
     if not fit_results:
         return None
 
