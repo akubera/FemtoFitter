@@ -60,7 +60,7 @@ def arg_parser():
                         help="Classname of Momentum Resolution Correction")
     parser.add_argument("--mrc-path",
                         nargs='?',
-                        default=False,
+                        default='MRC-08.root:cfg5AD446DB543C4A2A',
                         help="Path to Momentum Resolution Correction, format is <filename:cfg>")
     parser.add_argument("--fitter",
                         default='FitterGaussOSL',
@@ -72,6 +72,10 @@ def arg_parser():
                         default=(),
                         nargs='*',
                         help="Arguments used to build fsi object")
+    parser.add_argument("--subset",
+                        default=None,
+                        choices=("nside", "pside"),
+                        help="Use only qbins of negative or positive qSide")
     parser.add_argument("--threads",
                         default=None,
                         type=int,
@@ -195,6 +199,7 @@ class RunFitParams:
     mrc_classname: Optional[str] = None
     mrc_path: Optional[str] = None
     fit_chi2: bool = False
+    subset: Optional[str] = None
 
     @classmethod
     def From(cls, args):
@@ -211,6 +216,7 @@ class RunFitParams:
             mrc_classname=args.mrc,
             mrc_path=args.mrc_path,
             fit_chi2=args.chi2,
+            subset=args.subset,
         )
 
     def __call__(self, **kwargs):
@@ -269,6 +275,10 @@ def run_fit(params: RunFitParams) -> Optional[dict]:
         assert mrc_dir
 
     data = ROOT.Data3D.FromDirectory(tdir, params.fit_range)
+    if params.subset == 'pside':
+        data = data.subset_pos_side()
+    if params.subset == 'nside':
+        data = data.subset_neg_side()
 
     fitter = fittercls(data)
     fitter.fsi = fsi_class.new_shared_ptr(*params.fsi_args)
@@ -277,8 +287,12 @@ def run_fit(params: RunFitParams) -> Optional[dict]:
         fitter.mrc = mrc_class.From(mrc_dir)
         if not fitter.mrc:
             return None
+        fit_results = (fitter.fit_chi2_mrc()
+                       if params.fit_chi2 else fitter.fit_pml_mrc())
+    else:
+        fit_results = (fitter.fit_chi2()
+                       if params.fit_chi2 else fitter.fit_pml())
 
-    fit_results = fitter.fit_chi2() if params.fit_chi2 else fitter.fit_pml()
     if not fit_results:
         return None
 
@@ -306,6 +320,7 @@ def run_fit(params: RunFitParams) -> Optional[dict]:
     results["ndof"] = fitter.degrees_of_freedom()
     results["chi2"] = chi2
     results["rchi2"] = results["chi2"] / results["ndof"]
+    results["subset"] = params.subset
 
     return results
 

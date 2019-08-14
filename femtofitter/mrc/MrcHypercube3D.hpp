@@ -142,6 +142,9 @@ public:
                       const std::function<double(double,double,double)> &fsi
                       ) const override;
 
+
+  std::unique_ptr<TH1D> get_frac_hist() const;
+
 protected:
 
   template <typename HistType>
