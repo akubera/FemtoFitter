@@ -152,13 +152,19 @@ def find_fit_data(tfile, args):
     Load data file and find available analyses results
     """
 
-    pathquery = PathQuery('Q3DPosQuad', 'cfg*', '*', '*', '*', '*')
-    pattern = pathquery.as_path()
+    analyses = ['Q3DPosQuad', 'AnalysisQ3D']
 
-    paths = []
-    for path, _ in walk_matching(tfile, pattern):
-        query = PathQuery.From(path)
-        paths.append(query)
+    for analysis_name in analyses:
+        pathquery = PathQuery(analysis_name, 'cfg*', '*', '*', '*', '*')
+        pattern = pathquery.as_path()
+
+        paths = []
+        for path, _ in walk_matching(tfile, pattern):
+            query = PathQuery.From(path)
+            paths.append(query)
+
+    if not paths:
+        raise ValueError("No 3D analyses found in file %s" % tfile.GetPath())
 
     params = RunFitParams.From(args)
     for p in paths:
