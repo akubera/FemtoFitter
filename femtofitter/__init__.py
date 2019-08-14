@@ -84,6 +84,9 @@ class PathQuery:
             from dataclasses import fields
             return cls(*obj[[f.name for f in fields(cls)]])
 
+        if isinstance(obj, pd.DataFrame):
+            return (cls.From(r[1]) for r in obj.iterrows())
+
         from ROOT import TDirectory
         if isinstance(obj, TDirectory):
             path = obj.GetName()
