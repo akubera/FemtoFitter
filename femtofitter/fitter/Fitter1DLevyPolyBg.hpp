@@ -319,6 +319,24 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
       return errflag;
     }
 
+  void setup_chi2_fitter(TMinuit &minuit, double bglo, double bghi)
+    {
+      setup_minuit(minuit, bglo, bghi);
+      set_chi2_func(minuit);
+    }
+
+  void setup_chi2_mrc_fitter(TMinuit &minuit, double bglo, double bghi)
+    {
+      setup_minuit(minuit, bglo, bghi);
+      set_chi2_mrc_func(minuit);
+    }
+
+  void setup_pml_fitter(TMinuit &minuit, double bglo, double bghi)
+    {
+      setup_minuit(minuit, bglo, bghi);
+      set_pml_func(minuit);
+    }
+
   void setup_pml_mrc_fitter(TMinuit &minuit, double bglo, double bghi)
     {
       setup_minuit(minuit, bglo, bghi);
@@ -328,11 +346,51 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
   FitResult fit_chi2()
     { return Fitter1D::fit_chi2(); }
 
+  FitResult fit_chi2(double bglo, double bghi)
+    {
+      if (fsi == nullptr) {
+        throw std::runtime_error("Fitter missing Fsi object");
+      }
+
+      TMinuit minuit;
+      minuit.SetPrintLevel(-1);
+
+      setup_chi2_fitter(minuit, bglo, bghi);
+      return do_fit_minuit(minuit);
+    }
+
   FitResult fit_chi2_mrc()
     { return Fitter1D::fit_chi2_mrc(); }
 
+  FitResult fit_chi2_mrc(double bglo, double bghi)
+    {
+      if (fsi == nullptr) {
+        throw std::runtime_error("Fitter missing Fsi object");
+      }
+
+      TMinuit minuit;
+      minuit.SetPrintLevel(-1);
+
+      setup_chi2_mrc_fitter(minuit, bglo, bghi);
+      return do_fit_minuit(minuit);
+    }
+
   FitResult fit_pml()
     { return Fitter1D::fit_pml(); }
+
+
+  FitResult fit_pml(double bglo, double bghi)
+    {
+      if (fsi == nullptr) {
+        throw std::runtime_error("Fitter missing Fsi object");
+      }
+
+      TMinuit minuit;
+      minuit.SetPrintLevel(-1);
+
+      setup_pml_fitter(minuit, bglo, bghi);
+      return do_fit_minuit(minuit);
+    }
 
   /// Fit with log-likelihood method and momentum-correction smearing
   FitResult fit_pml_mrc()

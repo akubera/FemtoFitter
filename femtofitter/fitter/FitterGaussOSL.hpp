@@ -94,6 +94,37 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
     {
     }
 
+    FitResult(PyObject *pyobj)
+      {
+        std::vector<std::string> missing_keys;
+
+        if (!PyMapping_Check(pyobj)) {
+          TPython::Exec(Form("raise TypeError('Object not a collection!')"));
+          throw std::runtime_error("Object not a python collection");
+        }
+
+        ExtractPythonNumber(pyobj, "norm", norm.value, missing_keys);
+        ExtractPythonNumber(pyobj, "norm_err", norm.error, missing_keys);
+        ExtractPythonNumber(pyobj, "lam", lam.value, missing_keys);
+        ExtractPythonNumber(pyobj, "lam_err", lam.error, missing_keys);
+        ExtractPythonNumber(pyobj, "Ro", Ro.value, missing_keys);
+        ExtractPythonNumber(pyobj, "Ro_err", Ro.error, missing_keys);
+        ExtractPythonNumber(pyobj, "Rs", Rs.value, missing_keys);
+        ExtractPythonNumber(pyobj, "Rs_err", Rs.error, missing_keys);
+        ExtractPythonNumber(pyobj, "Rl", Rl.value, missing_keys);
+        ExtractPythonNumber(pyobj, "Rl_err", Rl.error, missing_keys);
+
+        if (!missing_keys.empty()) {
+          std::string msg = "Python object missing required items:";
+          for (const auto &key : missing_keys) {
+            msg += " ";
+            msg += key;
+          }
+          TPython::Exec(Form("raise ValueError('%s')", msg.c_str()));
+          throw std::runtime_error(msg);
+        }
+      }
+
     void print() const
     {
       printf("Fit-Result:\n"
