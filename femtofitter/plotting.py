@@ -445,3 +445,28 @@ def ratio_tree_canvas(*args, sli='z', width=0, plotsize=(200, 200)):
 
 
     return c
+
+
+def build_TGraphErrors(x, y, ye=None, xe=None):
+    from ROOT import TGraphErrors
+    if xe is None:
+        xe = np.zeros_like(x)
+    else:
+        xe = np.array(xe)
+
+    if ye is None:
+        ye = np.zeros_like(x)
+    else:
+        ye = np.array(ye)
+
+    x = np.array(x)
+    y = np.array(y)
+    graph = TGraphErrors(x.size, x, y, xe, ye)
+    return graph
+
+
+def series_to_TGraphErrors(series, ykey, ekey=None, xkey='kT'):
+    ekey = ekey or ykey + '_err'
+
+    graph = build_TGraphErrors(series[xkey], series[ykey], series[ekey])
+    return graph
