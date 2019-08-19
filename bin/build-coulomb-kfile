@@ -61,6 +61,26 @@ FillTProfile(int seed, int counts, TProfile2D* result)
       particle.ResetFourMomentum(fourvec);
     }};
 
+  auto fill_pair_momentum = [&rng, &MinQ, &MaxQ, &fill_hidden_info] (AliFemtoPair &pair)
+    {{
+      double qmag = rng->Uniform(MinQ, MaxQ);
+      AliFemtoThreeVector q;
+      rng->Sphere(q[0], q[1], q[2], qmag);
+
+      AliFemtoThreeVector p1, p2;
+      p1[0] = rng->Gaus(0, 1);
+      p1[1] = rng->Gaus(0, 1);
+      p1[2] = rng->Gaus(0, 1);
+      p2 = p1 - q;
+      static_cast<AliFemtoModelHiddenInfo*>(pair.Track1()->Track()->GetHiddenInfo())->SetTrueMomentum(p1);
+      static_cast<AliFemtoModelHiddenInfo*>(pair.Track2()->Track()->GetHiddenInfo())->SetTrueMomentum(p2);
+
+      AliFemtoLorentzVector P1(p1, p1.MassHypothesis(0.139));
+      AliFemtoLorentzVector P2(p2, p2.MassHypothesis(0.139));
+      pair.Track1()->ResetFourMomentum(P1);
+      pair.Track2()->ResetFourMomentum(P2);
+    }};
+
   auto fill_pair = [&rng, &MinQ, &MaxQ, &fill_hidden_info] (AliFemtoPair &pair, double Rinv)
     {{
       double qmag = rng->Uniform(MinQ, MaxQ);
@@ -116,7 +136,7 @@ FillTProfile(int seed, int counts, TProfile2D* result)
   weight_gen.SetPairType(AliFemtoModelWeightGenerator::PionPlusPionPlus());
   // weight_gen.SetPairType(1);
   weight_gen.SetQuantumOff();
-  weight_gen.SetStrongOn();
+  weight_gen.SetStrongOff();
   weight_gen.Set3BodyOn();
   weight_gen.SetCoulOn();
   weight_gen.SetSphere();
@@ -126,11 +146,15 @@ FillTProfile(int seed, int counts, TProfile2D* result)
   auto *info1 = (AliFemtoModelHiddenInfo*)pair.Track1()->Track()->GetHiddenInfo(),
        *info2 = (AliFemtoModelHiddenInfo*)pair.Track2()->Track()->GetHiddenInfo();
 
+  pair.Track1()->Track()->SetEmissionPoint(0,0,0,0);
+
   int skipcount = 0;
 
   for (int i=0; i < counts && (i+skipcount) < 3*counts; ++i) {{
 
     pair.ClearWeightCache();
+
+    fill_pair_momentum(pair);
 
     double R = rng->Uniform(2e-4, MaxR);
     // fill_pair(pair, R);
@@ -289,7 +313,7 @@ def main(argv=None):
     if args.analytic_method:
         build_analytic_kfile(orig_dir / output, nbins_qinv, max_qinv, nbins_R, max_R)
     else:
-        build_mc_kfile(output, nbins_qinv, max_qinv, nbins_R, max_R, args.counts, args.threads)
+        build_mc_kfile(orig_dir / output, nbins_qinv, max_qinv, nbins_R, max_R, args.counts, args.threads)
 
 
 def build_mc_kfile(dest, nbins_qinv, max_qinv, nbins_R, max_R, count, threads=None):
@@ -303,10 +327,10 @@ def build_mc_kfile(dest, nbins_qinv, max_qinv, nbins_R, max_R, count, threads=No
         os.chdir(tmpdir)
 
         with open("Gen.C", "w") as tmp:
-            tmp.write(MACRO_SOURCE.format(nxbins=nbins_qinv,
-                                          qlo=5e-4,
+            tmp.write(MACRO_SOURCE.format(nxbins=nbins_qinv+1,
+                                          qlo=1e-4,
                                           qhi=max_qinv,
-                                          nybins=nbins_R,
+                                          nybins=nbins_R+1,
                                           radius_max=max_R,
                                           count=count))
 
