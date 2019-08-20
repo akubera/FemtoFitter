@@ -244,7 +244,7 @@ struct Fitter1DGaussLin : public Fitter1D<Fitter1DGaussLin> {
       int errflag = 0;
       minuit.mnparm(NORM_PARAM_IDX, "Norm", 0.2, 0.02, 0.0, 0.0, errflag);
       minuit.mnparm(LAM_PARAM_IDX, "Lam", 0.5, 0.01, 0.0, 0.0, errflag);
-      minuit.mnparm(R_PARAM_IDX, "Radius", 5, 0.2, 0.0, 0.0, errflag);
+      minuit.mnparm(R_PARAM_IDX, "Radius", 1.0, 0.2, 0.0, 0.0, errflag);
       minuit.mnparm(SLOPE_PARAM_IDX, "Slope", bg_params[1], 0.0, 0.0, 0.0, errflag);
       minuit.FixParameter(SLOPE_PARAM_IDX);
 
