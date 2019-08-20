@@ -15,7 +15,7 @@
 ///
 struct Fitter1DLevy : Fitter1D<Fitter1DLevy> {
 
-  using Super = Fitter1D<FitterGauss1D>;
+  using Super = Fitter1D<Fitter1DLevy>;
 
   struct FitParams;
 

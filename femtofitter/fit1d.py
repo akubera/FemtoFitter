@@ -10,8 +10,8 @@ from .fit import parallel_fit_all, run_fit
 
 
 def run_fit_gauss1d(*args, **kwargs):
-    from ROOT import Data3D, FitterGauss1D
-    return run_fit(FitterGauss1D, *args, **kwargs)
+    from ROOT import Data3D, Fitter1DGauss
+    return run_fit(Fitter1DGauss, *args, **kwargs)
 
 
 def _main(argv=None):

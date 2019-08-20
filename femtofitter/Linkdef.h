@@ -7,9 +7,9 @@
 #pragma link C++ class Data3D;
 #pragma link C++ class Value;
 
-#pragma link C++ class Fitter1D<FitterGauss1D>;
-#pragma link C++ class FitterGauss1D::FitParams;
-#pragma link C++ class FitterGauss1D::FitResult;
+#pragma link C++ class Fitter1D<Fitter1DGauss>;
+#pragma link C++ class Fitter1DGauss::FitParams;
+#pragma link C++ class Fitter1DGauss::FitResult;
 
 #pragma link C++ class Fitter1D<Fitter1DGaussLin>;
 #pragma link C++ class Fitter1DGaussLin::FitParams;

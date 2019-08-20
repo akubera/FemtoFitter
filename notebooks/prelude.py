@@ -59,7 +59,7 @@ TH1.AddDirectory(False)
 from ROOT import AliFemtoConfigObject
 from ROOT import Data3D, Data1D
 from ROOT import FitterGaussOSL, FitterLevy3D
-from ROOT import FitterGauss1D, Fitter1DGaussLin, Fitter1DGaussPolyBg
+from ROOT import Fitter1DGauss, Fitter1DGaussLin, Fitter1DGaussPolyBg
 from ROOT import Fitter1DLevy, Fitter1DLevyPolyBg
 from ROOT import FsiKFile, FsiGamov, FsiStatic
 from ROOT import MrcRatio1D, MrcMatrix1D

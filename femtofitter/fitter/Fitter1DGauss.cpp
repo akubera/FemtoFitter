@@ -1,13 +1,13 @@
 ///
-/// \class FitterGauss1D.cpp
+/// \class Fitter1DGauss.cpp
 ///
 
 
-#include "FitterGauss1D.hpp"
+#include "Fitter1DGauss.hpp"
 
 
 
-double FitterGauss1D::resid_calc_chi2_mrc(const FitResult &fr)
+double Fitter1DGauss::resid_calc_chi2_mrc(const FitResult &fr)
 {
   if (mrc == nullptr) {
     std::cerr << "mrc is null\n";

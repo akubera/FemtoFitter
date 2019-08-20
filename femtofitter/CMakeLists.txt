@@ -70,7 +70,7 @@ include_directories(${Python3_INCLUDE_DIRS})
 set(INCS
   src/Data1D.hpp
   src/Data3D.hpp
-  fitter/FitterGauss1D.hpp
+  fitter/Fitter1DGauss.hpp
   fitter/Fitter1DGaussLin.hpp
   fitter/Fitter1DGaussPolyBg.hpp
   fitter/Fitter1DLevy.hpp
@@ -114,7 +114,7 @@ set(SRCS
   src/Data1D.cpp
   src/Value.cpp
   fsi/FsiKFile.cpp
-  fitter/FitterGauss1D.cpp
+  fitter/Fitter1DGauss.cpp
   mrc/MrcHypercube3D.cpp
   src/CoulombHist.cpp
   src/MinimizerMinuit.cpp

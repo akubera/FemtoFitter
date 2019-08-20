@@ -1,6 +1,6 @@
 
 #include "fitter/FitterGaussOSL.hpp"
-#include "fitter/FitterGauss1D.hpp"
+#include "fitter/Fitter1DGauss.hpp"
 #include "mrc/MrcMatrix1D.hpp"
 #include "mrc/MrcHypercube3D.hpp"
 #include "fsi/FsiKFile.hpp"
@@ -157,7 +157,7 @@ main(int argc, char** argv)
 
   mrc->Smear(*background);
 
-  FitterGauss1D fitter(data);
+  Fitter1DGauss fitter(data);
   fitter.mrc = mrc;
   fitter.fsi = FsiKFile::new_shared_ptr("KFile4.root");
 
