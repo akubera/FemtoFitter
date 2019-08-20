@@ -259,6 +259,16 @@ struct FitterGauss1D : public Fitter1D<FitterGauss1D> {
       return Fitter1D::resid_calc(params, CalcChi2::resid_func);
     }
 
+  double resid_calc_chi2(const FitParams &params)
+    {
+      return Fitter1D::resid_calc(params, CalcChi2::resid_func);
+    }
+
+  double resid_calc_pml(const FitParams &params)
+    {
+      return Fitter1D::resid_calc(params, CalcLoglike::resid_func);
+    }
+
   double calc_chi2_residual(const FitResult &fr)
     {
       return resid_calc_chi2(fr);
