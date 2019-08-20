@@ -191,9 +191,9 @@ struct FitterGauss3DLcmsOS : public Fitter3D<FitterGauss3DLcmsOS> {
           || std::isnan(norm);
     }
 
-    /// Return calculated Rinv: $\sqrt{Ro^2 \gamma + Rs^2 + Rl^2}$
+    /// Return calculated Rinv: $\sqrt{(Ro \gamma)^2 + Rs^2 + Rl^2}$
     double PseudoRinv(double gamma) const
-      { return std::sqrt((Ro * Ro * gamma + Rs * Rs + Rl * Rl) / 3.0); }
+      { return std::sqrt((Ro * Ro * gamma * gamma + Rs * Rs + Rl * Rl) / 3.0); }
 
     double gauss(const std::array<double, 3> &q, double K) const
       { return FitterGauss3DLcmsOS::gauss(q, {Ro*Ro, Rs*Rs, Rl*Rl}, Ros, lam, K, norm); }

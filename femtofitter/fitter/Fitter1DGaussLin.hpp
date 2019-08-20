@@ -232,13 +232,18 @@ struct Fitter1DGaussLin : public Fitter1D<Fitter1DGaussLin> {
       return setup_minuit(minuit, 0.18, 1.0);
     }
 
+  TFitResultPtr fit_background(double bglo, double bghi, TH1 *cf_input=nullptr) const
+    {
+      auto cf = cf_input ? nullptr : data.cf_src();
+      TF1 fg("linbg", "[0] + x * [1]");
+      auto bg = (cf_input ? cf_input : cf.get())->Fit(&fg, "SQ0", "", bglo, bghi);
+      return bg;
+    }
+
   int
   setup_minuit(TMinuit &minuit, double bglo, double bghi) const
     {
-      auto cf = data.cf_src();
-
-      TF1 fg("linbg", "[0] + x * [1]");
-      auto bg = cf->Fit(&fg, "SQ0", "", bglo, bghi);
+      auto bg = fit_background(bglo, bghi);
       const double *bg_params = bg->GetParams();
 
       int errflag = 0;
@@ -258,6 +263,18 @@ struct Fitter1DGaussLin : public Fitter1D<Fitter1DGaussLin> {
       }
 
       return errflag;
+    }
+
+  void setup_pml_fitter(TMinuit &minuit, double bglo, double bghi)
+    {
+      setup_minuit(minuit, bglo, bghi);
+      set_pml_func(minuit);
+    }
+
+  void setup_pml_mrc_fitter(TMinuit &minuit, double bglo, double bghi)
+    {
+      setup_minuit(minuit, bglo, bghi);
+      set_pml_mrc_func(minuit);
     }
 
   void
@@ -308,6 +325,36 @@ struct Fitter1DGaussLin : public Fitter1D<Fitter1DGaussLin> {
 
   FitResult fit_pml_mrc_quick()
     { return Fitter1D::fit_pml_mrc_quick(); }
+
+  FitResult fit_pml(double bglo, double bghi)
+    {
+      if (fsi == nullptr) {
+        throw std::runtime_error("Fitter missing Fsi object");
+      }
+
+      TMinuit minuit;
+      minuit.SetPrintLevel(-1);
+
+      setup_pml_fitter(minuit, bglo, bghi);
+      return do_fit_minuit(minuit);
+    }
+
+  FitResult fit_pml_mrc(double bglo, double bghi)
+    {
+      if (mrc == nullptr) {
+        throw std::runtime_error("Fitter missing Mrc1D object");
+      }
+
+      if (fsi == nullptr) {
+        throw std::runtime_error("Fitter missing Fsi object");
+      }
+
+      TMinuit minuit;
+      minuit.SetPrintLevel(-1);
+
+      setup_pml_mrc_fitter(minuit, bglo, bghi);
+      return do_fit_minuit(minuit);
+    }
 
   // void fit_with_random_inits(TMinuit &minuit, FitResult &res, int);
 
