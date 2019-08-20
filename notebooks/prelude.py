@@ -40,6 +40,7 @@ from stumpy.rhist import normalize_hist, average_hist_contents
 import lmfit
 from femtofitter import FitResults, PathQuery
 from femtofitter.plotting import QuadPlot, normalize_subcanvases
+from femtofitter.plotting import plot_outside, plot_outside_tdir
 from femtofitter.pyfitter import (
     PyData3D,
     FitterGauss as PyFitterGauss

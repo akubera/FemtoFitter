@@ -470,3 +470,48 @@ def series_to_TGraphErrors(series, ykey, ekey=None, xkey='kT'):
 
     graph = build_TGraphErrors(series[xkey], series[ykey], series[ekey])
     return graph
+
+
+def plot_outside(num, den, N=0, opts='COLZ', pad=None, norm=True):
+    if pad is None:
+        from ROOT import TCanvas
+        pad = TCanvas()
+
+    zbin = num.GetZaxis().FindBin(0)
+    zrng = zbin-N,zbin+N
+
+    zaxn = num.GetZaxis()
+    zaxn.SetRange(*zrng)
+    n = num.Project3D("yx")
+    zaxn.SetRange()
+
+    zaxd = den.GetZaxis()
+    zaxd.SetRange(*zrng)
+    d = den.Project3D("yx")
+    zaxd.SetRange()
+
+    n.SetStats(False)
+    n.SetName("ratio")
+
+    n.Divide(n, d)
+    if norm:
+        n.Scale(den.Integral() / num.Integral())
+
+    n.Draw(opts)
+
+    return pad
+
+def plot_outside_tdir(tdir, N=0, pad=None, opts="COLZ", norm=True):
+    keylist = [
+        ("Num", "Den"),
+        ("num", "den"),
+    ]
+
+    for keys in keylist:
+        num, den = map(tdir.Get, keys)
+        if num and den:
+            break
+    else:
+        raise ValueError("Could not find num and den in", tdir)
+
+    return plot_outside(num, den, N=N, pad=pad, opts=opts, norm=norm)
