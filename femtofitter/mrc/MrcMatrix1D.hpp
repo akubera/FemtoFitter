@@ -415,11 +415,22 @@ public:
     {
       FillUnsmearedDen(cf);
       p.multiply(cf, fsi, npoints);
+
       auto smear_matrix = GetNormalizedMatrix(cf);
       MrcMatrix1D::Smear(cf, *smear_matrix);
 
       auto denom = GetSmearedDenLike(cf);
-      cf.Divide(denom.get());
+
+      // don't use Divide - it respects axis limits
+      // cf.Divide(denom.get());
+      for (int i=1; i<=cf.GetNbinsX(); ++i) {
+        const double
+          n = cf.GetBinContent(i),
+          d = denom->GetBinContent(i),
+          r = (d == 0.0) ? 0.0 : n / d;
+
+        cf.SetBinContent(i, r);
+      }
     }
 
   std::string Describe() const override
@@ -439,6 +450,40 @@ public:
 
   static std::shared_ptr<Mrc1D> new_shared_ptr(const TH2& hist)
     { return std::make_shared<MrcMatrix1DJesse>(hist); }
+
+
+  static std::shared_ptr<Mrc1D> From(const TH2& hist)
+    { return std::make_shared<MrcMatrix1DJesse>(hist); }
+
+  static std::shared_ptr<Mrc1D> From(TDirectory& tdir, TString name)
+    {
+      std::unique_ptr<TObject> obj(tdir.Get(name));
+
+      if (auto *hist = dynamic_cast<TH2*>(obj.get())) {
+        auto res = std::make_shared<MrcMatrix1DJesse>(*hist);
+        res->source_name = tdir.GetPath();
+        return res;
+      }
+
+      return nullptr;
+    }
+
+  static std::shared_ptr<Mrc1D> From(TDirectory& tdir)
+    {
+      std::vector<TString> names = {
+        "QgenQrec",
+        "mrc_matrix",
+      };
+
+      for (auto name : names) {
+        if (auto res = MrcMatrix1DJesse::From(tdir, name)) {
+          return res;
+        }
+      }
+
+      return nullptr;
+    }
+
 
   virtual ~MrcMatrix1DJesse()
     { }

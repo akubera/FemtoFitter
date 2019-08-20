@@ -348,7 +348,7 @@ struct FitParam1D : Fit1DParameters {
   void fill(TH1 &h) const override
     {
       const TAxis &xaxis = *h.GetXaxis();
-      for (int i=1; i <= xaxis.GetLast(); ++i) {
+      for (int i=1; i <= xaxis.GetNbins(); ++i) {
         double q = xaxis.GetBinCenter(i);
         double k = 1.0;
         double cf = static_cast<const CRTP*>(this)->evaluate(q, k);
@@ -410,7 +410,7 @@ private:
     {
       const TAxis &xaxis = *h.GetXaxis();
 
-      for (int i=1; i <= xaxis.GetLast(); ++i) {
+      for (int i=1; i <= xaxis.GetNbins(); ++i) {
         const double
           qlo = xaxis.GetBinLowEdge(i),
           qhi = xaxis.GetBinUpEdge(i),

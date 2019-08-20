@@ -158,13 +158,27 @@ public:
   void Smear(TH1 &hist) const override
     {
       const TH1D& mrc_factor = GetSmearingFactor(hist);
-      hist.Multiply(&mrc_factor);
+      // hist.Multiply(&mrc_factor);
+      for (int i=1; i<=hist.GetNbinsX(); ++i) {
+        const double
+          f = mrc_factor.GetBinContent(i),
+          v = hist.GetBinContent(i) * f;
+
+        hist.SetBinContent(i, v);
+      }
     }
 
   void Unsmear(TH1 &hist) const override
     {
       const TH1D& mrc_factor = GetSmearingFactor(hist);
-      hist.Divide(&mrc_factor);
+      // hist.Divide(&mrc_factor);
+      for (int i=1; i<=hist.GetNbinsX(); ++i) {
+        const double
+          f = mrc_factor.GetBinContent(i),
+          v = f == 0.0 ? 0.0 : hist.GetBinContent(i) / f;
+
+        hist.SetBinContent(i, v);
+      }
     }
 
   const TH1D& GetSmearingFactor(TH1 &hist) const
@@ -263,9 +277,8 @@ public:
 
   void FillSmearedFit(TH1 &cf, const Fit1DParameters &p, FsiCalculator &fsi, UInt_t npoints) const override
     {
-       p.fill(cf, fsi, npoints);
-       const auto &mrc = GetSmearingFactor(cf);
-       cf.Multiply(&mrc);
+      p.fill(cf, fsi, npoints);
+      Smear(cf);
     }
 
   std::string Describe() const override
