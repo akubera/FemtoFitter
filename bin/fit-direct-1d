@@ -1,0 +1,83 @@
+#!/usr/bin/env python
+#
+# bin/fit-direct-1d
+#
+"""
+Argless fitting
+"""
+
+import sys
+
+DEFAULT_FILE = '~/alice/data/19/07/06/CF_PbPb-7027-LHC15o_pass1_fieldsplit_halfstats-negfield.root'
+
+def arg_parser():
+    from argparse import ArgumentParser
+    parser = ArgumentParser()
+    parser.add_argument("input",
+                        nargs='?',
+                        default=DEFAULT_FILE,
+                        help="file to fit")
+    parser.add_argument("--fitter",
+                        default='Fitter1DGauss',
+                        help="Name of fitter class")
+    return parser
+
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
+    args = arg_parser().parse_args(argv)
+
+    import ROOT
+    from ROOT import TFile
+    from stumpy.utils import walk_matching
+
+    try:
+        Fitter = getattr(ROOT, args.fitter)
+    except AttributeError:
+        print(f"Could not load fitter class {args.fitter!r}", file=sys.stderr)
+        return 1
+
+    tfile = TFile.Open(args.input)
+    if not tfile:
+        return 1
+
+    mrc_tfile = TFile.Open("~/Physics/data/MrcResult-20190708101923.root")
+    if not mrc_tfile:
+        return 1
+
+    from ROOT import Data1D, MrcMatrix1D, FsiKFile
+
+    fsi = FsiKFile.new_shared_ptr("KFile4.root")
+
+    for path, obj in walk_matching(tfile, "*/*/*"):
+        if not isinstance(obj, ROOT.TDirectory):
+            continue
+        hashcode = 'cfg%016X' %  obj.Get("AliFemtoConfigObject").Hash()
+        print(path, hashcode)
+        ktbins = obj.Get("KT_Qinv")
+        if not ktbins:
+            continue
+
+        for ktpath, ktdir in walk_matching(ktbins, "*_*"):
+            kt = ktdir.GetName()
+            data = Data1D.From(ktdir, 35)
+
+            mrchist = mrc_tfile.Get(f"Mrc1D/AnalysisMrc_pim/KT_MRC1D/{kt}/QgenQrec")
+            mrchist.Rebin2D(2,2)
+            print(mrchist)
+            mrc = MrcMatrix1D.new_shared_ptr(mrchist)
+
+            fitter = Fitter(data)
+            fitter.fsi = fsi
+            fitter.mrc = mrc
+
+            fr = fitter.fit_pml()
+            print(fr)
+
+
+
+        return 0
+
+
+if __name__ == "__main__":
+    exit(main())
