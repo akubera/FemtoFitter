@@ -118,7 +118,7 @@ def plot_projections(fit_results,
     fithist.SetLineColorAlpha(RED, 0.7)
 
     if FitterClass is None:
-        from ROOT import FitterGaussOSL as FitterClass
+        from ROOT import Fitter3DGaussLcms as FitterClass
     params = FitterClass.FitParams(fit_results)
     params.norm = 1.0
 #     params.gamma = data.data.gamma

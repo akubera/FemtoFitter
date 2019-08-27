@@ -1,5 +1,5 @@
 
-#include "fitter/FitterGaussOSL.hpp"
+#include "fitter/Fitter3DGaussLcms.hpp"
 #include "fitter/Fitter1DGauss.hpp"
 #include "mrc/MrcMatrix1D.hpp"
 #include "mrc/MrcHypercube3D.hpp"
@@ -131,7 +131,7 @@ main(int argc, char** argv)
   // auto *data3d_dir = static_cast<TDirectory*>(tdir->Get("KT_PQ3D/0.3_0.4"));
 
   // sleep(5);
-  runfit<FitterGaussOSL>(*tdir, 0.12);
+  runfit<Fitter3DGaussLcms>(*tdir, 0.12);
   return 0;
 
   auto *datadir = dynamic_cast<TDirectory*>(tdir->Get("KT_Qinv/0.4_0.5"));

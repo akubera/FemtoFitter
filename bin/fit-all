@@ -51,7 +51,7 @@ def arg_parser():
                         default=False,
                         help="file to fit")
     parser.add_argument("--fitter",
-                        default='FitterGaussOSL',
+                        default='Fitter3DGaussLcms',
                         help="Name of fitter class")
     parser.add_argument("--fsi",
                         default='FsiKFile',

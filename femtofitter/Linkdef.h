@@ -27,9 +27,9 @@
 #pragma link C++ class Fitter1DLevyPolyBg::FitParams;
 #pragma link C++ class Fitter1DLevyPolyBg::FitResult;
 
-#pragma link C++ class Fitter3D<FitterGaussOSL>;
-#pragma link C++ class FitterGaussOSL::FitParams;
-#pragma link C++ class FitterGaussOSL::FitResult;
+#pragma link C++ class Fitter3D<Fitter3DGaussLcms>;
+#pragma link C++ class Fitter3DGaussLcms::FitParams;
+#pragma link C++ class Fitter3DGaussLcms::FitResult;
 
 #pragma link C++ class Fitter3D<FitterGaussFull>;
 #pragma link C++ class FitterGaussFull::FitParams;

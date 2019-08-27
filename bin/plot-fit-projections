@@ -63,9 +63,9 @@ def main(argv=None):
             break
 
         # from femtofitter.pyfitter import FitterGauss
-        from ROOT import FitterGaussOSL, FsiKFile
+        from ROOT import Fitter3DGaussLcms, FsiKFile
 
-        FitterClass = FitterGaussOSL
+        FitterClass = Fitter3DGaussLcms
 
         import numpy as np
         arr = np.array([0.0] + [fitres[k] for k in ("norm", "lam", "Ro", "Rs", "Rl")])

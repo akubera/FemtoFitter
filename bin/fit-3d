@@ -63,7 +63,7 @@ def arg_parser():
                         default='MRC-08.root:cfg5AD446DB543C4A2A',
                         help="Path to Momentum Resolution Correction, format is <filename:cfg>")
     parser.add_argument("--fitter",
-                        default='FitterGaussOSL',
+                        default='Fitter3DGaussLcms',
                         help="Name of fitter class")
     parser.add_argument("--fsi",
                         default='FsiKFile',

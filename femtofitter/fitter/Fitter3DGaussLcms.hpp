@@ -1,8 +1,11 @@
 ///
-/// \file fitter/FitterGaussOSL.hpp
+/// \file fitter/Fitter3DGaussLcms.hpp
 ///
 
 #pragma once
+
+#ifndef FITTER3DGAUSSLCMS_HPP
+#define FITTER3DGAUSSLCMS_HPP
 
 
 #include "CoulombHist.hpp"
@@ -26,10 +29,10 @@
 #include <iostream>
 
 
-/// \class FitterGaussOSL
+/// \class Fitter3DGaussLcms
 /// \brief Fit out-side-long with gaussian parameters
 ///
-struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
+struct Fitter3DGaussLcms : public Fitter3D<Fitter3DGaussLcms> {
 
   struct FitParams;
   struct FitResult;
@@ -143,7 +146,7 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
     std::string
     __repr__() const
       {
-        return Form("<FitterGaussOSL::FitResult Ro=%g Rs=%g Rl=%g lambda=%g norm=%g>",
+        return Form("<Fitter3DGaussLcms::FitResult Ro=%g Rs=%g Rl=%g lambda=%g norm=%g>",
                     Ro.value, Rs.value, Rl.value, lam.value, norm.value);
       }
 
@@ -263,7 +266,7 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
       { return evaluate({qo, qs, ql}, K); }
 
     double evaluate(const std::array<double, 3> &q, double K) const
-      { return FitterGaussOSL::gauss(q, {Ro*Ro, Rs*Rs, Rl*Rl}, lam, K, norm); }
+      { return Fitter3DGaussLcms::gauss(q, {Ro*Ro, Rs*Rs, Rl*Rl}, lam, K, norm); }
 
     double gauss(const std::array<double, 3> &q, double K) const
       { return evaluate(q, K); }
@@ -366,7 +369,7 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
     std::string
     __repr__() const
       {
-        return Form("<FitterGaussOSL::FitParam Ro=%g Rs=%g Rl=%g lambda=%g norm=%g>",
+        return Form("<Fitter3DGaussLcms::FitParam Ro=%g Rs=%g Rl=%g lambda=%g norm=%g>",
                     Ro, Rs, Rl, lam, norm);
       }
 
@@ -392,31 +395,31 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
   /// Construct fitter from numerator denominator qinv histograms
   /// and a fit-range limit
   ///
-  FitterGaussOSL(TH3 &n, TH3 &d, TH3 &q, double limit=0.0)
+  Fitter3DGaussLcms(TH3 &n, TH3 &d, TH3 &q, double limit=0.0)
     : Fitter3D(n, d, q, limit)
   {
   }
 
-  static std::unique_ptr<FitterGaussOSL>
+  static std::unique_ptr<Fitter3DGaussLcms>
   FromDirectory(TDirectory &dir, double limit=0.0)
     {
       auto data = Data3D::FromDirectory(dir, limit);
-      auto fitter = std::make_unique<FitterGaussOSL>(std::move(data));
+      auto fitter = std::make_unique<Fitter3DGaussLcms>(std::move(data));
       fitter->paramhints = std::make_unique<ParamHints>(dir);
       return fitter;
     }
 
-  FitterGaussOSL(const Data3D &dat)
+  Fitter3DGaussLcms(const Data3D &dat)
     : Fitter3D(dat)
     {
     }
 
-  FitterGaussOSL(Data3D &&dat)
+  Fitter3DGaussLcms(Data3D &&dat)
     : Fitter3D(std::move(dat))
     {
     }
 
-  FitterGaussOSL(std::unique_ptr<Data3D> dat)
+  Fitter3DGaussLcms(std::unique_ptr<Data3D> dat)
     : Fitter3D(std::move(dat))
     {
     }
@@ -475,12 +478,12 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
 
   double residual_chi2(const FitParams &p) const
     {
-      return Fitter3D::resid_calc(p, ResidCalculatorChi2<FitterGaussOSL>::resid_func);
+      return Fitter3D::resid_calc(p, ResidCalculatorChi2<Fitter3DGaussLcms>::resid_func);
     }
 
   double residual_pml(const FitParams &p) const
     {
-      return Fitter3D::resid_calc(p, ResidCalculatorPML<FitterGaussOSL>::resid_func);
+      return Fitter3D::resid_calc(p, ResidCalculatorPML<Fitter3DGaussLcms>::resid_func);
     }
 
   double residual_pml(const FitResult &p) const
@@ -495,13 +498,13 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
 
   double residual_chi2_mrc(const FitParams &p) const
     {
-      return Fitter3D::resid_calc_mrc(p, *mrc, ResidCalculatorChi2<FitterGaussOSL>::resid_func);
+      return Fitter3D::resid_calc_mrc(p, *mrc, ResidCalculatorChi2<Fitter3DGaussLcms>::resid_func);
     }
 
   double residual_pml_mrc(const FitParams &p) const
     {
-      return Fitter3D::resid_calc_mrc(p, *mrc, ResidCalculatorPML<FitterGaussOSL>::resid_func);
-      // return ResidCalculatorPML<FitterGaussOSL>::resid_mrc(*this, p);
+      return Fitter3D::resid_calc_mrc(p, *mrc, ResidCalculatorPML<Fitter3DGaussLcms>::resid_func);
+      // return ResidCalculatorPML<Fitter3DGaussLcms>::resid_mrc(*this, p);
     }
 
   FitResult fit_chi2()
@@ -544,27 +547,24 @@ struct FitterGaussOSL : public Fitter3D<FitterGaussOSL> {
      return do_fit_minuit(mminuit);
    }
 
-  void fit_with_random_inits(TMinuit &minuit, FitResult &res, int);
+  void fit_with_random_inits(TMinuit &minuit, FitResult &res, int rec)
+    {
+      int errflag = 0;
+
+      minuit.mnparm(NORM_PARAM_IDX, "NORM", 0.14, 1e-1, 0.0, 0.0, errflag);
+      minuit.mnparm(LAM_PARAM_IDX, "Lam", paramhints->GenLam(), 1e-1, 0.0, 0.0, errflag);
+      minuit.mnparm(ROUT_PARAM_IDX, "Ro", paramhints->GenRo(),  1e0, 0.0, 0.0, errflag);
+      minuit.mnparm(RSIDE_PARAM_IDX, "Rs", paramhints->GenRs(), 1e0, 0.0, 0.0, errflag);
+      minuit.mnparm(RLONG_PARAM_IDX, "Rl", paramhints->GenRl(), 1e0, 0.0, 0.0, errflag);
+
+      res = do_fit_minuit(minuit, 1.0, rec);
+    }
 };
 
-
-// FitterGaussOSL::FitParams
 inline auto
-FitterGaussOSL::FitResult::as_params() const -> FitParams
+Fitter3DGaussLcms::FitResult::as_params() const -> FitParams
 {
   return FitParams(*this);
 }
 
-inline void
-FitterGaussOSL::fit_with_random_inits(TMinuit &minuit, FitResult &res, int rec)
-{
-  int errflag = 0;
-
-  minuit.mnparm(NORM_PARAM_IDX, "NORM", 0.14, 1e-1, 0.0, 0.0, errflag);
-  minuit.mnparm(LAM_PARAM_IDX, "Lam", paramhints->GenLam(), 1e-1, 0.0, 0.0, errflag);
-  minuit.mnparm(ROUT_PARAM_IDX, "Ro", paramhints->GenRo(),  1e0, 0.0, 0.0, errflag);
-  minuit.mnparm(RSIDE_PARAM_IDX, "Rs", paramhints->GenRs(), 1e0, 0.0, 0.0, errflag);
-  minuit.mnparm(RLONG_PARAM_IDX, "Rl", paramhints->GenRl(), 1e0, 0.0, 0.0, errflag);
-
-  res = do_fit_minuit(minuit, 1.0, rec);
-}
+#endif

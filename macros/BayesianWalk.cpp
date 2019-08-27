@@ -14,7 +14,7 @@
 
 #include "CoulombHist.hpp"
 #include "../femtofitter/src/Data3D.hpp"
-#include "../femtofitter/fitter/FitterGaussOSL.hpp"
+#include "../femtofitter/fitter/Fitter3DGaussLcms.hpp"
 
 using DistType = THnSparseF;
 
@@ -126,7 +126,7 @@ k
 
   auto data = Data3D::FromDirectory(*tdir, 0.11);
 
-  FitterGaussOSL fitter(std::move(data));
+  Fitter3DGaussLcms fitter(std::move(data));
 
   auto result = gen_distribution();
   int errflag = 0;
@@ -139,10 +139,10 @@ k
   fitter.setup_pml_fitter(minuit);
 
   const std::array<int, 4> minuit_idx = {
-    FitterGaussOSL::LAM_PARAM_IDX,
-    FitterGaussOSL::ROUT_PARAM_IDX,
-    FitterGaussOSL::RSIDE_PARAM_IDX,
-    FitterGaussOSL::RLONG_PARAM_IDX,
+    Fitter3DGaussLcms::LAM_PARAM_IDX,
+    Fitter3DGaussLcms::ROUT_PARAM_IDX,
+    Fitter3DGaussLcms::RSIDE_PARAM_IDX,
+    Fitter3DGaussLcms::RLONG_PARAM_IDX,
   };
 
   const std::array<const char*, 4> names = {

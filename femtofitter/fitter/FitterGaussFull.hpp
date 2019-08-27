@@ -222,7 +222,7 @@ struct FitterGaussFull : public Fitter3D<FitterGaussFull> {
     double gauss(std::array<double, 3> q, double K) const
       {
         // std::array<double, 3> Rsq = {Ro*Ro, Rs*Rs, Rl*Rl};
-        // return FitterGaussOSL::gauss(q, Rsq, lam, K, norm);
+        // return Fitter3DGaussLcms::gauss(q, Rsq, lam, K, norm);
         return FitterGaussFull::gauss(q, Ro, Rs, Rl, Ros, Rol, Rsl, lam, K, norm);
       }
 

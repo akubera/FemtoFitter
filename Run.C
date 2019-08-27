@@ -27,7 +27,7 @@ Run()
 
   auto data = Data3D::FromDirectory(*tdir, mrc, 0.13);
 
-  FitterGaussOSL fitter(*data);
+  Fitter3DGaussLcms fitter(*data);
 
   TMinuit minuit;
   fitter.setup_pml_fitter(minuit);

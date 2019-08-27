@@ -10,7 +10,7 @@ from ROOT import gSystem, TFile, TMinuit
 
 gSystem.Load('build/libFemtoFitter.so')
 
-from ROOT import FitterGaussOSL
+from ROOT import Fitter3DGaussLcms
 
 
 def series_from_result(result, **kwd):
@@ -51,7 +51,7 @@ def run_fit(path):
     _, cfg, pair, cent, kt, mfield = path.split('/')
     num, den = map(Histogram.BuildFromRootHist, map(tdir.Get, ("num", "den")))
     lim = .18
-    fitter = FitterGaussOSL.From(tdir, lim)
+    fitter = Fitter3DGaussLcms.From(tdir, lim)
 
     results_pml = fitter.fit_chi2()
     ser = series_from_result(results_pml, cfg=cfg, pair=pair, cent=cent, kt=kt, field=mfield)
@@ -83,7 +83,7 @@ for path, tdir in walk_matching(tfile, path):
     print('  ', tdir)
     num, den = map(Histogram.BuildFromRootHist, map(tdir.Get, ("num", "den")))
     lim = .18
-    fitter = FitterGaussOSL.From(tdir, lim)
+    fitter = Fitter3DGaussLcms.From(tdir, lim)
 
     results_pml = fitter.fit_pml()
     ser = series_from_result(results_pml, cfg=cfg, pair=pair, cent=cent, kt=kt, field=mfield)

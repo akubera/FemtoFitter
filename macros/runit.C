@@ -22,7 +22,7 @@ runit()
   auto mrc = (TH3*)mrc_tdir->Get("mrc");
   auto data = Data3D::FromDirectory(*tdir, mrc, 0.14);
 
-  auto fitter = FitterGaussOSL(*data);
+  auto fitter = Fitter3DGaussLcms(*data);
 
   TMinuit minuit;
   fitter.setup_pml_fitter(minuit);
