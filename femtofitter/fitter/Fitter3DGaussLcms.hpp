@@ -48,6 +48,9 @@ struct Fitter3DGaussLcms : public Fitter3D<Fitter3DGaussLcms> {
     RLONG_PARAM_IDX = 5,
   };
 
+  static std::string GetName()
+    { return "Fitter3DGaussLcms"; }
+
   static unsigned char CountParams()
     { return 5; }
 
