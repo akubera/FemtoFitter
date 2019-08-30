@@ -42,7 +42,7 @@ struct FitterGauss3DLcmsOL : public Fitter3D<FitterGauss3DLcmsOL> {
   };
 
   static std::string GetName()
-    { return "Gauss3DLcmsOL"; }
+    { return "FitterGauss3DLcmsOL"; }
 
   static unsigned char CountParams()
     { return 6; }
@@ -201,7 +201,7 @@ struct FitterGauss3DLcmsOL : public Fitter3D<FitterGauss3DLcmsOL> {
 
     /// Return calculated Rinv: $\sqrt{Ro^2 \gamma + Rs^2 + Rl^2}$
     double PseudoRinv(double gamma) const
-      { return std::sqrt((Ro * Ro * gamma + Rs * Rs + Rl * Rl) / 3.0); }
+      { return std::sqrt((Ro * Ro * gamma * gamma + Rs * Rs + Rl * Rl) / 3.0); }
 
     double gauss(const std::array<double, 3> &q, double K) const
       { return FitterGauss3DLcmsOL::gauss(q, {Ro*Ro, Rs*Rs, Rl*Rl}, Rol, lam, K, norm); }
