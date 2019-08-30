@@ -1,11 +1,11 @@
 ///
-/// \file femtofitter/mrc/MrcMatrix1D.hpp
+/// \file femtofitter/mrc/Mrc1DMatrix.hpp
 ///
 
 #pragma once
 
-#ifndef MRCMATRIX1D_HPP
-#define MRCMATRIX1D_HPP
+#ifndef Mrc1DMatrix_HPP
+#define Mrc1DMatrix_HPP
 
 #include "Mrc.hpp"
 #include "HistCache.hpp"
@@ -16,11 +16,11 @@
 
 
 
-/// \class MrcMatrix1D
+/// \class Mrc1DMatrix
 /// \brief Use smearing matrix
 ///
 ///
-class MrcMatrix1D : public Mrc1D {
+class Mrc1DMatrix : public Mrc1D {
 public:
 
   /// reconstructed vs generated 2d-histogram
@@ -39,7 +39,7 @@ public:
   std::string source_name;
 
 
-  MrcMatrix1D(const TH2& hist)
+  Mrc1DMatrix(const TH2& hist)
     : raw_matrix(static_cast<TH2*>(hist.Clone()))
     , unsmeared_denominator(nullptr)
     , smeared_denominator(nullptr)
@@ -53,21 +53,21 @@ public:
       smeared_denominator.reset(raw_matrix->ProjectionY(Form("smeared_den_%p", (void*)this)));
     }
 
-  virtual ~MrcMatrix1D()
+  virtual ~Mrc1DMatrix()
     { }
 
   static std::shared_ptr<Mrc1D> new_shared_ptr(const TH2& hist)
-    { return std::make_shared<MrcMatrix1D>(hist); }
+    { return std::make_shared<Mrc1DMatrix>(hist); }
 
   static std::shared_ptr<Mrc1D> From(const TH2& hist)
-    { return std::make_shared<MrcMatrix1D>(hist); }
+    { return std::make_shared<Mrc1DMatrix>(hist); }
 
   static std::shared_ptr<Mrc1D> From(TDirectory& tdir, TString name)
     {
       std::unique_ptr<TObject> obj(tdir.Get(name));
 
       if (auto *hist = dynamic_cast<TH2*>(obj.get())) {
-        auto res = std::make_shared<MrcMatrix1D>(*hist);
+        auto res = std::make_shared<Mrc1DMatrix>(*hist);
         res->source_name = tdir.GetPath();
         return res;
       }
@@ -83,7 +83,7 @@ public:
       };
 
       for (auto name : names) {
-        if (auto res = MrcMatrix1D::From(tdir, name)) {
+        if (auto res = Mrc1DMatrix::From(tdir, name)) {
           return res;
         }
       }
@@ -391,13 +391,13 @@ public:
   void SmearRowMethod(TH1 &h) const override
     {
       auto matrix = GetRowNormalizedMatrix(h);
-      MrcMatrix1D::Smear(h, *matrix);
+      Mrc1DMatrix::Smear(h, *matrix);
     }
 
   void SmearColMethod(TH1 &h) const override
     {
       auto matrix = GetNormalizedMatrix(h);
-      MrcMatrix1D::Smear(h, *matrix);
+      Mrc1DMatrix::Smear(h, *matrix);
     }
 
   const TH1D& GetSmearedDen() const override
@@ -417,7 +417,7 @@ public:
       p.multiply(cf, fsi, npoints);
 
       auto smear_matrix = GetNormalizedMatrix(cf);
-      MrcMatrix1D::Smear(cf, *smear_matrix);
+      Mrc1DMatrix::Smear(cf, *smear_matrix);
 
       auto denom = GetSmearedDenLike(cf);
 
@@ -435,32 +435,32 @@ public:
 
   std::string Describe() const override
     {
-      return "MrcMatrix1D[" + source_name + "]";
+      return "Mrc1DMatrix[" + source_name + "]";
     }
 };
 
 
 
-class MrcMatrix1DJesse : public MrcMatrix1D {
+class Mrc1DMatrixJesse : public Mrc1DMatrix {
 public:
 
-  MrcMatrix1DJesse(const TH2& hist)
-    : MrcMatrix1D(hist)
+  Mrc1DMatrixJesse(const TH2& hist)
+    : Mrc1DMatrix(hist)
     { }
 
   static std::shared_ptr<Mrc1D> new_shared_ptr(const TH2& hist)
-    { return std::make_shared<MrcMatrix1DJesse>(hist); }
+    { return std::make_shared<Mrc1DMatrixJesse>(hist); }
 
 
   static std::shared_ptr<Mrc1D> From(const TH2& hist)
-    { return std::make_shared<MrcMatrix1DJesse>(hist); }
+    { return std::make_shared<Mrc1DMatrixJesse>(hist); }
 
   static std::shared_ptr<Mrc1D> From(TDirectory& tdir, TString name)
     {
       std::unique_ptr<TObject> obj(tdir.Get(name));
 
       if (auto *hist = dynamic_cast<TH2*>(obj.get())) {
-        auto res = std::make_shared<MrcMatrix1DJesse>(*hist);
+        auto res = std::make_shared<Mrc1DMatrixJesse>(*hist);
         res->source_name = tdir.GetPath();
         return res;
       }
@@ -476,7 +476,7 @@ public:
       };
 
       for (auto name : names) {
-        if (auto res = MrcMatrix1DJesse::From(tdir, name)) {
+        if (auto res = Mrc1DMatrixJesse::From(tdir, name)) {
           return res;
         }
       }
@@ -485,19 +485,19 @@ public:
     }
 
 
-  virtual ~MrcMatrix1DJesse()
+  virtual ~Mrc1DMatrixJesse()
     { }
 
   void FillSmearedFit(TH1 &cf, const Fit1DParameters &p, FsiCalculator &fsi, UInt_t npoints) const override
     {
       p.fill(cf, fsi, npoints);
       auto smear_matrix = GetRowNormalizedMatrix(cf);
-      MrcMatrix1D::Smear(cf, *smear_matrix);
+      Mrc1DMatrix::Smear(cf, *smear_matrix);
     }
 
   std::string Describe() const override
     {
-      return "MrcMatrix1DJesse[" + source_name + "]";
+      return "Mrc1DMatrixJesse[" + source_name + "]";
     }
 };
 

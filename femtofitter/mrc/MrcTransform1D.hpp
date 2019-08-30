@@ -7,18 +7,18 @@
 #ifndef MRCTRANFORM1D_HPP
 #define MRCTRANFORM1D_HPP
 
-#include "MrcMatrix1D.hpp"
+#include "Mrc1DMatrix.hpp"
 
 
-/// \class MrcMatrix1D
+/// \class MrcTransform1D
 /// \brief Use smearing matrix
 ///
 ///
-class MrcTransform1D : public MrcMatrix1D {
+class MrcTransform1D : public Mrc1DMatrix {
 public:
 
   MrcTransform1D(const TH2 &matrix)
-    : MrcMatrix1D(matrix)
+  : Mrc1DMatrix(matrix)
     { }
 
   std::shared_ptr<Mrc1D> From(const TH2 &matrix)

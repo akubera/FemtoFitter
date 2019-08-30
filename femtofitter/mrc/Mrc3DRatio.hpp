@@ -1,12 +1,12 @@
 ///
-/// \file femtofitter/mrc/MrcRatio3D.hpp
+/// \file femtofitter/mrc/Mrc3DRatio.hpp
 ///
 
 
 #pragma once
 
-#ifndef MRCRATIO3D_HPP
-#define MRCRATIO3D_HPP
+#ifndef MRC3DRATIO_HPP
+#define MRC3DRATIO_HPP
 
 #include "Mrc.hpp"
 #include "HistCache.hpp"
@@ -25,7 +25,7 @@
 /// \brief AliPhysics
 ///
 ///
-class MrcRatio3D : public Mrc3D {
+class Mrc3DRatio : public Mrc3D {
 public:
 
   /// numerator & denominator "generated"
@@ -61,7 +61,7 @@ public:
         };
       }
 
-    MrcRatio3D operator()(TDirectory &tdir)
+    Mrc3DRatio operator()(TDirectory &tdir)
       {
         auto ng = std::unique_ptr<TH3>((TH3*)tdir.Get(ng_name.c_str()));
         auto dg = std::unique_ptr<TH3>((TH3*)tdir.Get(dg_name.c_str()));
@@ -72,7 +72,7 @@ public:
           throw std::runtime_error("Missing errors");
         }
 
-        return MrcRatio3D(std::move(ng),
+        return Mrc3DRatio(std::move(ng),
                           std::move(dg),
                           std::move(nr),
                           std::move(dr));
@@ -80,7 +80,7 @@ public:
 
   };
 
-  MrcRatio3D(const TH3 &ng_, const TH3 &dg_, const TH3 &nr_, const TH3 &dr_)
+  Mrc3DRatio(const TH3 &ng_, const TH3 &dg_, const TH3 &nr_, const TH3 &dr_)
     : Mrc3D()
     , ng(static_cast<TH3*>(ng_.Clone()))
     , dg(static_cast<TH3*>(dg_.Clone()))
@@ -89,7 +89,7 @@ public:
     {
     }
 
-  MrcRatio3D(std::unique_ptr<TH3> ng_,
+  Mrc3DRatio(std::unique_ptr<TH3> ng_,
              std::unique_ptr<TH3> dg_,
              std::unique_ptr<TH3> nr_,
              std::unique_ptr<TH3> dr_)
@@ -101,7 +101,7 @@ public:
     {
     }
 
-  MrcRatio3D(const MrcRatio3D& orig)
+  Mrc3DRatio(const Mrc3DRatio& orig)
     : Mrc3D(orig)
     , ng(static_cast<TH3*>(orig.ng->Clone()))
     , dg(static_cast<TH3*>(orig.dg->Clone()))
@@ -115,7 +115,7 @@ public:
                                                const TH3 &nr,
                                                const TH3 &dr)
     {
-      return std::make_shared<MrcRatio3D>(ng, dg, nr, dr);
+      return std::make_shared<Mrc3DRatio>(ng, dg, nr, dr);
     }
 
   static std::shared_ptr<Mrc3D> From(TDirectory &tdir,
@@ -134,7 +134,7 @@ public:
         return nullptr;
       }
 
-      auto mrc = std::make_shared<MrcRatio3D>(std::move(ng),
+      auto mrc = std::make_shared<Mrc3DRatio>(std::move(ng),
                                               std::move(dg),
                                               std::move(nr),
                                               std::move(dr));
@@ -167,7 +167,7 @@ public:
       return result;
     }
 
-  virtual ~MrcRatio3D()
+  virtual ~Mrc3DRatio()
     {
     }
 
@@ -321,7 +321,7 @@ public:
   /// Return MRC class and source file
   std::string Describe() const override
     {
-      return "MrcRatio3D[" + source_name + "]";
+      return "Mrc3DRatio[" + source_name + "]";
     }
 
 };

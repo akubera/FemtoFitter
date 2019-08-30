@@ -61,13 +61,13 @@
 #pragma link C++ class FsiKFile::KCalc;
 #pragma link C++ class FsiCalculator;
 
-#pragma link C++ class MrcRatio1D;
+#pragma link C++ class Mrc1DRatio;
 #pragma link C++ class Mrc1DRatioMixed;
-#pragma link C++ class MrcMatrix1D;
-#pragma link C++ class MrcMatrix1DJesse;
+#pragma link C++ class Mrc1DMatrix;
+#pragma link C++ class Mrc1DMatrixJesse;
 #pragma link C++ class MrcTransform1D;
 
-#pragma link C++ class MrcRatio3D;
+#pragma link C++ class Mrc3DRatio;
 #pragma link C++ class Mrc3DRatioMixed;
 #pragma link C++ class MrcHypercube3D;
 

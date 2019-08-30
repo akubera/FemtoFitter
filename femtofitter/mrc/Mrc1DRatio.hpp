@@ -1,12 +1,12 @@
 ///
-/// \file femtofitter/mrc/MrcRatio1D.hpp
+/// \file femtofitter/mrc/Mrc1DRatio.hpp
 ///
 
 
 #pragma once
 
-#ifndef MRCRATIO1D_HPP
-#define MRCRATIO1D_HPP
+#ifndef MRC1DRATIO_HPP
+#define MRC1DRATIO_HPP
 
 
 #include "Mrc.hpp"
@@ -16,11 +16,11 @@
 #include <TDirectory.h>
 
 
-/// \class MrcRatio1D
+/// \class Mrc1DRatio
 /// \brief AliPhysics
 ///
 ///
-class MrcRatio1D : public Mrc1D {
+class Mrc1DRatio : public Mrc1D {
 public:
 
   /// numerator & denominator "generated"
@@ -52,7 +52,7 @@ public:
         };
       }
 
-    MrcRatio1D operator()(TDirectory &tdir)
+    Mrc1DRatio operator()(TDirectory &tdir)
       {
         std::unique_ptr<TH1>
           ng(static_cast<TH1*>(tdir.Get(ng_name))),
@@ -64,12 +64,12 @@ public:
           throw std::runtime_error("Missing errors");
         }
 
-        return MrcRatio1D(*ng, *dg, *nr, *dr);
+        return Mrc1DRatio(*ng, *dg, *nr, *dr);
       }
 
   };
 
-  MrcRatio1D(const TH1 &ng_, const TH1 &dg_, const TH1 &nr_, const TH1 &dr_)
+  Mrc1DRatio(const TH1 &ng_, const TH1 &dg_, const TH1 &nr_, const TH1 &dr_)
     : Mrc1D()
     , ng(static_cast<TH1*>(ng_.Clone()))
     , dg(static_cast<TH1*>(dg_.Clone()))
@@ -78,7 +78,7 @@ public:
     {
     }
 
-  MrcRatio1D(std::unique_ptr<TH1> &ng_,
+  Mrc1DRatio(std::unique_ptr<TH1> &ng_,
              std::unique_ptr<TH1> &dg_,
              std::unique_ptr<TH1> &nr_,
              std::unique_ptr<TH1> &dr_)
@@ -90,7 +90,7 @@ public:
     {
     }
 
-  MrcRatio1D(const MrcRatio1D& orig)
+  Mrc1DRatio(const Mrc1DRatio& orig)
     : Mrc1D(orig)
     , ng(static_cast<TH1*>(orig.ng->Clone()))
     , dg(static_cast<TH1*>(orig.dg->Clone()))
@@ -99,7 +99,7 @@ public:
     {
     }
 
-  MrcRatio1D(MrcRatio1D&& orig)
+  Mrc1DRatio(Mrc1DRatio&& orig)
     : Mrc1D(orig)
     , ng(std::move(orig.ng))
     , dg(std::move(orig.dg))
@@ -108,13 +108,13 @@ public:
     {
     }
 
-  virtual ~MrcRatio1D()
+  virtual ~Mrc1DRatio()
     {
     }
 
   static std::shared_ptr<Mrc1D> new_shared_ptr(const TH1 &ng, const TH1 &dg, const TH1 &nr, const TH1 &dr)
     {
-      return std::make_shared<MrcRatio1D>(ng, dg, nr, dr);
+      return std::make_shared<Mrc1DRatio>(ng, dg, nr, dr);
     }
 
   static std::shared_ptr<Mrc1D> From(TDirectory &tdir)
@@ -125,7 +125,7 @@ public:
       };
 
       for (auto &names : name_vec) {
-        if (auto res = MrcRatio1D::From(tdir, names)) {
+        if (auto res = Mrc1DRatio::From(tdir, names)) {
           return res;
         }
       }
@@ -150,7 +150,7 @@ public:
         return nullptr;
       }
 
-      auto res = std::make_shared<MrcRatio1D>(ng, dg, nr, dr);
+      auto res = std::make_shared<Mrc1DRatio>(ng, dg, nr, dr);
       res->source_name = tdir.GetPath();
       return res;
     }
@@ -283,7 +283,7 @@ public:
 
   std::string Describe() const override
     {
-      return "MrcRatio1D[" + source_name + "]";
+      return "Mrc1DRatio[" + source_name + "]";
     }
 };
 

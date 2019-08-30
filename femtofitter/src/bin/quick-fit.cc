@@ -1,15 +1,14 @@
 
 #include "fitter/Fitter3DGaussLcms.hpp"
 #include "fitter/Fitter1DGauss.hpp"
-#include "mrc/MrcMatrix1D.hpp"
+#include "mrc/Mrc1DMatrix.hpp"
 #include "mrc/MrcHypercube3D.hpp"
+#include "mrc/Mrc3DRatio.hpp"
 #include "fsi/FsiKFile.hpp"
 #include "fsi/FsiGamov.hpp"
 #include "src/Data1D.hpp"
 // #include "fitter/FitterLevy3D.hpp"
 // #include "fitter/FitterLevyFull.hpp"
-
-#include "mrc/MrcRatio3D.hpp"
 
 #include "Data3D.hpp"
 
@@ -54,7 +53,7 @@ void runfit(TDirectory &tdir, double limit)
   auto *mrc_tdir = static_cast<TDirectory*>(mrcfile.Get(mrc_path));
   /*
   std::cout << "=== RATIO MRC ===\n";
-  fitter->mrc = MrcRatio3D::From(*mrc_tdir, {"ng", "dg", "nr", "dr"});
+  fitter->mrc = Mrc3DRatio::From(*mrc_tdir, {"ng", "dg", "nr", "dr"});
   auto ratio_fitres = fitter->fit_pml_mrc();
   ratio_fitres.print();
   timer.Print();
@@ -149,7 +148,7 @@ main(int argc, char** argv)
   double limit = 0.19;
   Data1D data(*num, *den, limit);
 
-  auto mrc = MrcMatrix1D::new_shared_ptr(*qhist);
+  auto mrc = Mrc1DMatrix::new_shared_ptr(*qhist);
 
   auto *background = (TH1D*)num->Clone();
   background->Sumw2(false);

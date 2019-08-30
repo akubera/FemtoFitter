@@ -84,11 +84,11 @@ set(INCS
   fsi/FsiKFile.hpp
   fsi/FsiGamov.hpp
   fsi/FsiStatic.hpp
-  mrc/MrcRatio3D.hpp
+  mrc/Mrc3DRatio.hpp
   mrc/Mrc3DRatioMixed.hpp
-  mrc/MrcRatio1D.hpp
+  mrc/Mrc1DRatio.hpp
   mrc/Mrc1DRatioMixed.hpp
-  mrc/MrcMatrix1D.hpp
+  mrc/Mrc1DMatrix.hpp
   mrc/MrcTransform1D.hpp
   mrc/MrcHypercube3D.hpp
   src/CalculatorFsi.hpp
