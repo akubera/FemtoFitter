@@ -399,14 +399,14 @@ struct Fitter1DGaussPolyBg : public Fitter1D<Fitter1DGaussPolyBg> {
 
   // void fit_with_random_inits(TMinuit &minuit, FitResult &res, int);
 
-  void fill(const FitParams &p, TH1 &h, UInt_t npoints=1) const
+  void fill(TH1 &h, const FitParams &p, UInt_t npoints=1) const
     {
       p.fill(h, *fsi, npoints);
     }
 
-  void fill(const FitResult &p, TH1 &h, UInt_t npoints=1) const
+  void fill(TH1 &h, const FitResult &p, UInt_t npoints=1) const
     {
-      fill(p.as_params(), h, npoints);
+      fill(h, p.as_params(), npoints);
     }
 
   void fill_smeared_fit(TH1 &h, const FitResult &fr)
@@ -467,7 +467,7 @@ struct Fitter1DGaussPolyBg : public Fitter1D<Fitter1DGaussPolyBg> {
       cf->Reset();
       cf->SetTitle(Form("Correlation Function (R=%0.2f  \\lambda=%0.3f); q_{inv}; CF(q_{inv});", p.radius, p.lam));
       cf->SetStats(false);
-      fill(p, *cf);
+      fill(*cf, p);
       return cf;
     }
 

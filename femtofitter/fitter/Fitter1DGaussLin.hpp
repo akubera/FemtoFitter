@@ -358,14 +358,14 @@ struct Fitter1DGaussLin : public Fitter1D<Fitter1DGaussLin> {
 
   // void fit_with_random_inits(TMinuit &minuit, FitResult &res, int);
 
-  void fill(const FitParams &p, TH1 &h, UInt_t npoints=1) const
+  void fill(TH1 &h, const FitParams &p, UInt_t npoints=1) const
     {
       p.fill(h, *fsi, npoints);
     }
 
-  void fill(const FitResult &p, TH1 &h, UInt_t npoints=1) const
+  void fill(TH1 &h, const FitResult &p, UInt_t npoints=1) const
     {
-      fill(p.as_params(), h, npoints);
+      fill(h, p.as_params(), npoints);
     }
 
   void fill_smeared_fit(TH1 &h, const FitResult &fr)
@@ -393,7 +393,7 @@ struct Fitter1DGaussLin : public Fitter1D<Fitter1DGaussLin> {
     {
       std::unique_ptr<TH1> cf(static_cast<TH1*>(data.src->num->Clone()));
       cf->Reset();
-      fill(p, *cf);
+      fill(*cf, p);
       return cf;
     }
 };
