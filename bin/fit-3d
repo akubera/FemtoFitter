@@ -56,10 +56,11 @@ def arg_parser():
                         help="Range of the fit")
     parser.add_argument("--mrc",
                         nargs='?',
-                        default='MrcRatio3D',
+                        default='Mrc3DRatioMixed',
                         help="Classname of Momentum Resolution Correction")
     parser.add_argument("--mrc-path",
                         nargs='?',
+                        #default='MRC-09.root:cfg7A1DB77443589333',
                         default='MRC-08.root:cfg5AD446DB543C4A2A',
                         help="Path to Momentum Resolution Correction, format is <filename:cfg>")
     parser.add_argument("--fitter",
@@ -218,7 +219,7 @@ class RunFitParams:
             fitter_classname=args.fitter,
             fit_range=args.fitrange,
             fsi_classname=args.fsi,
-            fsi_args=args.fsi_args,
+            fsi_args=cls.parse_args(args.fsi_args),
             mrc_classname=args.mrc,
             mrc_path=args.mrc_path,
             fit_chi2=args.chi2,
@@ -233,6 +234,21 @@ class RunFitParams:
             setattr(p, k, v)
 
         return p
+
+    @staticmethod
+    def parse_args(args):
+        from ast import literal_eval
+        res = []
+        if isinstance(args, str):
+            args = args.split(',')
+
+        for arg in args:
+            try:
+                a = literal_eval(arg)
+            except ValueError:
+                a = arg
+            res.append(a)
+        return tuple(res)
 
 
 def run_fit(params: RunFitParams) -> Optional[dict]:
