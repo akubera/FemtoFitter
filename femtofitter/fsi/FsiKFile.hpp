@@ -131,20 +131,20 @@ struct FsiKFile : public FsiCalculator {
   std::function<double(double)> ForRadius(double Rinv) override
   // std::unique_ptr<FsiQinv> ForRadius(double Rinv) override
     {
-      // because Interpolate is non-const for some reason
-
       // clip to bounds
       Rinv = std::min({Rinv, k2ss->GetYaxis()->GetXmax() * 0.99});
       Rinv = std::max({Rinv, k2ss->GetYaxis()->GetXmin() * 1.01});
 
       double max_q = k2ss->GetXaxis()->GetXmax() * 0.99;
+      double min_q = k2ss->GetXaxis()->GetXmin() * 1.02;
 
-      return [Rinv, max_q, khist=k2ss] (double qinv) {
+      return [Rinv, min_q, max_q, khist=k2ss] (double qinv) {
         auto &k2 = const_cast<TH2&>(*khist);
-        return qinv >= max_q ? 1.0 : k2.Interpolate(qinv, Rinv);
+        return qinv <= min_q ? 0.0 : qinv >= max_q ? 1.0 : k2.Interpolate(qinv, Rinv);
       };
 
 
+      // because Interpolate is non-const for some reason
       auto &k2 = const_cast<TH2&>(*k2ss);
       auto hist = std::make_shared<TProfile>(*_qinv_src);
       hist->SetName("fsi_interp");
