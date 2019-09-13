@@ -342,6 +342,12 @@ struct Fitter3DGaussLcms : public Fitter3D<Fitter3DGaussLcms> {
 
     void
     apply_to(TH3 &hist, const TH3 &qinv, FsiCalculator &fsi, double gamma)
+      {
+        return fill(hist, qinv, fsi, gamma);
+      }
+
+    void
+    fill(TH3 &hist, const TH3 &qinv, FsiCalculator &fsi, double gamma) const
     {
       const int I = hist.GetNbinsX(),
                 J = hist.GetNbinsY(),
@@ -562,6 +568,43 @@ struct Fitter3DGaussLcms : public Fitter3D<Fitter3DGaussLcms> {
 
       res = do_fit_minuit(minuit, 1.0, rec);
     }
+
+  void fill(TH3 &h, const FitParams &p) const
+    {
+      p.fill(h, *data.src->qinv, *fsi, data.gamma);
+    }
+
+  std::unique_ptr<TH3> get_cf(const FitResult &r) const
+    {
+      return get_cf(r.as_params());
+    }
+
+  std::unique_ptr<TH3> get_cf(const FitParams &p) const
+    {
+      std::unique_ptr<TH3> cf(static_cast<TH3*>(data.src->num->Clone()));
+      cf->Reset();
+      cf->SetTitle(Form("Correlation Function (R=<%0.2f,%0.2f,%0.2f,> \\lambda=%0.3f); q_{inv}; CF(q_{inv});", p.Ro, p.Rs, p.Rl, p.lam));
+      cf->SetStats(false);
+      fill(*cf, p);
+      return cf;
+    }
+
+  std::unique_ptr<TH3> get_cf_mrc(const FitResult &r) const
+    {
+      return get_cf_mrc(r.as_params());
+    }
+
+  std::unique_ptr<TH3> get_cf_mrc(const FitParams &p) const
+    {
+      std::unique_ptr<TH3> cf(static_cast<TH3*>(data.src->num->Clone()));
+      cf->Reset();
+      cf->SetTitle(Form("Correlation Function (R=<%0.2f,%0.2f,%0.2f,> \\lambda=%0.3f); q_{inv}; CF(q_{inv});", p.Ro, p.Rs, p.Rl, p.lam));
+      cf->SetStats(false);
+      mrc->FillSmearedFit(*cf, p, *data.src->qinv, *fsi, 1);
+      return cf;
+    }
+
+
 };
 
 inline auto
