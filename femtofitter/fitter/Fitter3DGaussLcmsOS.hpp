@@ -1,9 +1,11 @@
 ///
-/// \file fitter/FitterGauss3DLcmsOS.hpp
+/// \file fitter/Fitter3DGaussLcmsOS.hpp
 ///
 
 #pragma once
 
+#ifndef FITTER_FITTER3DGAUSSLCMSOS_HPP
+#define FITTER_FITTER3DGAUSSLCMSOS_HPP
 
 #include <TFile.h>
 #include <TH3.h>
@@ -22,10 +24,13 @@
 #include "Data3D.hpp"
 
 
-/// \class FitterGauss3DLcmsOS
+/// \class Fitter3DGaussLcmsOS
 /// \brief Fit out-side-long with gaussian parameters
 ///
-struct FitterGauss3DLcmsOS : public Fitter3D<FitterGauss3DLcmsOS> {
+struct Fitter3DGaussLcmsOS : public Fitter3D<Fitter3DGaussLcmsOS> {
+
+  class FitParams;
+  class FitResult;
 
   /// constants used to lookup data from pointer
   enum {
@@ -113,7 +118,7 @@ struct FitterGauss3DLcmsOS : public Fitter3D<FitterGauss3DLcmsOS> {
     std::string
     __repr__() const
       {
-        return Form("<FitterGauss3DLcmsOS::FitResult Ro=%g Rs=%g Rl=%g Ros=%g lambda=%g norm=%g>",
+        return Form("<Fitter3DGaussLcmsOS::FitResult Ro=%g Rs=%g Rl=%g Ros=%g lambda=%g norm=%g>",
                     Ro.value, Rs.value, Rl.value, Ros.value, lam.value, norm.value);
       }
 
@@ -147,6 +152,8 @@ struct FitterGauss3DLcmsOS : public Fitter3D<FitterGauss3DLcmsOS> {
       return dict;
       #undef Add
     }
+
+    FitParams as_params() const;
   };
 
   /// \brief 3D Gaussian fit parameters
@@ -196,7 +203,7 @@ struct FitterGauss3DLcmsOS : public Fitter3D<FitterGauss3DLcmsOS> {
       { return std::sqrt((Ro * Ro * gamma * gamma + Rs * Rs + Rl * Rl) / 3.0); }
 
     double gauss(const std::array<double, 3> &q, double K) const
-      { return FitterGauss3DLcmsOS::gauss(q, {Ro*Ro, Rs*Rs, Rl*Rl}, Ros, lam, K, norm); }
+      { return Fitter3DGaussLcmsOS::gauss(q, {Ro*Ro, Rs*Rs, Rl*Rl}, Ros, lam, K, norm); }
 
     void
     apply_to(TH3 &hist, TH3& qinv, double gamma)
@@ -229,7 +236,7 @@ struct FitterGauss3DLcmsOS : public Fitter3D<FitterGauss3DLcmsOS> {
     std::string
     __repr__() const
       {
-        return Form("<FitterGauss3DLcmsOS::FitParam Ro=%g Rs=%g Rl=%g Ros=%g lambda=%g norm=%g>",
+        return Form("<Fitter3DGaussLcmsOS::FitParam Ro=%g Rs=%g Rl=%g Ros=%g lambda=%g norm=%g>",
                     Ro, Rs, Rl, Ros, lam, norm);
       }
 
@@ -255,32 +262,32 @@ struct FitterGauss3DLcmsOS : public Fitter3D<FitterGauss3DLcmsOS> {
   /// Construct fitter from numerator denominator qinv histograms
   /// and a fit-range limit
   ///
-  FitterGauss3DLcmsOS(TH3 &n, TH3 &d, TH3 &q, double limit=0.0)
+  Fitter3DGaussLcmsOS(TH3 &n, TH3 &d, TH3 &q, double limit=0.0)
     : Fitter3D(n, d, q, limit)
   {
   }
 
-  static std::unique_ptr<FitterGauss3DLcmsOS>
+  static std::unique_ptr<Fitter3DGaussLcmsOS>
   FromDirectory(TDirectory &dir, double limit=0.0)
     {
       auto data = Data3D::FromDirectory(dir, limit);
       if (!data) {
         return nullptr;
       }
-      return std::make_unique<FitterGauss3DLcmsOS>(std::move(data));
+      return std::make_unique<Fitter3DGaussLcmsOS>(std::move(data));
     }
 
-  FitterGauss3DLcmsOS(const Data3D &dat)
+  Fitter3DGaussLcmsOS(const Data3D &dat)
     : Fitter3D(dat)
   {
   }
 
-  FitterGauss3DLcmsOS(Data3D &&dat)
+  Fitter3DGaussLcmsOS(Data3D &&dat)
     : Fitter3D(std::move(dat))
   {
   }
 
-  FitterGauss3DLcmsOS(std::unique_ptr<Data3D> dat)
+  Fitter3DGaussLcmsOS(std::unique_ptr<Data3D> dat)
     : Fitter3D(std::move(dat))
   {
   }
@@ -347,5 +354,13 @@ struct FitterGauss3DLcmsOS : public Fitter3D<FitterGauss3DLcmsOS> {
 
   FitResult fit()
     { return Fitter3D::fit_pml_mrc(); }
-
 };
+
+
+inline auto
+Fitter3DGaussLcmsOS::FitResult::as_params() const -> FitParams
+{
+  return FitParams(*this);
+}
+
+#endif
