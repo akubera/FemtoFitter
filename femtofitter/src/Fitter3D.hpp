@@ -338,6 +338,10 @@ public:
   void SetFsi(std::shared_ptr<FsiCalculator> ptr)
     { fsi = ptr; }
 
+  void SetMrc(std::shared_ptr<Mrc3D> ptr)
+    { mrc = ptr; }
+
+
   size_t degrees_of_freedom() const
     { return data.size() - Impl::CountParams(); }
 

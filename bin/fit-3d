@@ -302,10 +302,10 @@ def run_fit(params: RunFitParams) -> Optional[dict]:
         data = data.subset_neg_side()
 
     fitter = fittercls(data)
-    fitter.fsi = fsi_class.new_shared_ptr(*params.fsi_args)
+    fitter.SetFsi(fsi_class.From(*params.fsi_args))
 
     if params.mrc_path:
-        fitter.mrc = mrc_class.From(mrc_dir)
+        fitter.SetMrc(mrc_class.From(mrc_dir))
         if not fitter.mrc:
             return None
         fit_results = (fitter.fit_chi2_mrc()
