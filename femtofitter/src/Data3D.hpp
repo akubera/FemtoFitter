@@ -212,11 +212,13 @@ struct Data3D {
   std::unique_ptr<Data3D> subset_pos_side() const
     {
       std::vector<Datum> subset;
+      subset.reserve(size() / 2);
       for (auto &dat : data) {
         if (dat.qs > 1e-4) {
           subset.emplace_back(dat);
         }
       }
+      subset.shrink_to_fit();
 
       return std::make_unique<Data3D>(*this, std::move(subset));
     }
@@ -224,15 +226,16 @@ struct Data3D {
   std::unique_ptr<Data3D> subset_neg_side() const
     {
       std::vector<Datum> subset;
+      subset.reserve(size() / 2);
       for (auto &dat : data) {
         if (dat.qs < -1e-4) {
           subset.emplace_back(dat);
         }
       }
+      subset.shrink_to_fit();
 
       return std::make_unique<Data3D>(*this, std::move(subset));
     }
-
 
   /// get out-side datapoints from quadrants I-III
   std::unique_ptr<Data3D> cowboy_subset() const
