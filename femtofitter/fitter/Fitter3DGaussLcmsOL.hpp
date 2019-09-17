@@ -350,13 +350,51 @@ struct Fitter3DGaussLcmsOL : public Fitter3D<Fitter3DGaussLcmsOL> {
   FitResult fit_chi2()
     { return Fitter3D::fit_chi2(); }
 
+  FitResult fit_chi2_mrc()
+    { return Fitter3D::fit_chi2_mrc(); }
+
   FitResult fit_pml()
     { return Fitter3D::fit_pml(); }
 
-  FitResult fit()
-    { return Fitter3D::fit(); }
+  FitResult fit_pml_mrc()
+    { return Fitter3D::fit_pml_mrc(); }
 
+  double residual_chi2(const FitResult &r) const
+    {
+      return residual_chi2(r.as_params());
+    }
+
+  double residual_chi2(const FitParams &p) const
+    {
+      return Fitter3D::resid_calc(p, CalcChi2::resid_func);
+    }
+
+  double residual_pml(const FitParams &p) const
+    {
+      return Fitter3D::resid_calc(p, CalcLoglike::resid_func);
+    }
+
+  double residual_pml(const FitResult &p) const
+    {
+      return residual_pml(p.as_params());
+    }
+
+  double residual_chi2_mrc(const FitResult &r) const
+    {
+      return residual_chi2_mrc(r.as_params());
+    }
+
+  double residual_chi2_mrc(const FitParams &p) const
+    {
+      return Fitter3D::resid_calc_mrc(p, *mrc, CalcChi2::resid_func);
+    }
+
+  double residual_pml_mrc(const FitParams &p) const
+    {
+      return Fitter3D::resid_calc_mrc(p, *mrc, CalcLoglike::resid_func);
+    }
 };
+
 
 inline auto
 Fitter3DGaussLcmsOL::FitResult::as_params() const -> FitParams
