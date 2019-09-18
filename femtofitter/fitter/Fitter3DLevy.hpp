@@ -1,5 +1,5 @@
 ///
-/// \file femtofitter/fitter/FitterLevy3D.hpp
+/// \file femtofitter/fitter/Fitter3DLevy.hpp
 ///
 
 #pragma once
@@ -22,10 +22,10 @@
 #include <iostream>
 
 
-/// \class FitterLevy3D
+/// \class Fitter3DLevy
 /// \brief Fit out-side-long with gaussian parameters
 ///
-struct FitterLevy3D : public Fitter3D<FitterLevy3D> {
+struct Fitter3DLevy : public Fitter3D<Fitter3DLevy> {
 
   struct FitParams;
   struct FitResult;
@@ -67,7 +67,7 @@ struct FitterLevy3D : public Fitter3D<FitterLevy3D> {
   /// \class FitResult
   /// \brief Values and stderr from minuit results
   ///
-  struct FitResult : FitResult3D<FitResult, FitterLevy3D> {
+  struct FitResult : FitResult3D<FitResult, Fitter3DLevy> {
     Value lam,
           norm,
           alpha,
@@ -125,7 +125,7 @@ struct FitterLevy3D : public Fitter3D<FitterLevy3D> {
     std::string
     __repr__() const
       {
-        return Form("<FitterLevy3D::FitResult Ro=%g Rs=%g Rl=%g lambda=%g norm=%g>",
+        return Form("<Fitter3DLevy::FitResult Ro=%g Rs=%g Rl=%g lambda=%g norm=%g>",
                     Ro.value, Rs.value, Rl.value, lam.value, norm.value);
 
       }
@@ -250,7 +250,7 @@ struct FitterLevy3D : public Fitter3D<FitterLevy3D> {
     double evaluate(const std::array<double, 3> &q, double K) const
       {
         std::array<double, 3> Rsq = {Ro*Ro, Rs*Rs, Rl*Rl};
-        return FitterLevy3D::levy(q, Rsq, lam, alpha, K, norm);
+        return Fitter3DLevy::levy(q, Rsq, lam, alpha, K, norm);
       }
 
     double evaluate(double qo, double qs, double ql, double K) const
@@ -259,7 +259,7 @@ struct FitterLevy3D : public Fitter3D<FitterLevy3D> {
     std::string
     __repr__() const
       {
-        return Form("<FitterLevy3D::FitParam Ro=%g Rs=%g Rl=%g lambda=%g alpha=%g norm=%g>",
+        return Form("<Fitter3DLevy::FitParam Ro=%g Rs=%g Rl=%g lambda=%g alpha=%g norm=%g>",
                     Ro, Rs, Rl, lam, alpha, norm);
       }
 
@@ -285,17 +285,17 @@ struct FitterLevy3D : public Fitter3D<FitterLevy3D> {
   /// Construct fitter from numerator denominator qinv histograms
   /// and a fit-range limit
   ///
-  FitterLevy3D(TH3 &n, TH3 &d, TH3 &q, double limit=0.0)
+  Fitter3DLevy(TH3 &n, TH3 &d, TH3 &q, double limit=0.0)
     : Fitter3D(n, d, q, limit)
   {
   }
 
-  FitterLevy3D(const Data3D &dat)
+  Fitter3DLevy(const Data3D &dat)
     : Fitter3D(dat)
   {
   }
 
-  FitterLevy3D(Data3D &&dat)
+  Fitter3DLevy(Data3D &&dat)
     : Fitter3D(std::move(dat))
   {
   }
@@ -365,7 +365,7 @@ struct FitterLevy3D : public Fitter3D<FitterLevy3D> {
 
 
 inline auto
-FitterLevy3D::FitResult::as_params() const -> FitParams
+Fitter3DLevy::FitResult::as_params() const -> FitParams
 {
   return FitParams(*this);
 }
