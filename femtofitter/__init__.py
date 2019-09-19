@@ -276,7 +276,7 @@ class FitResults:
             flat['cfg'] = v.partition("/")[2]
             result.append(flat)
 
-        return pd.DataFrame(result)
+        return pd.DataFrame(result).set_index('cfg')
 
 
 def unique_histnames():
