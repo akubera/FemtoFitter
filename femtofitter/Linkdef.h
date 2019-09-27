@@ -31,9 +31,9 @@
 #pragma link C++ class Fitter3DGaussLcms::FitParams;
 #pragma link C++ class Fitter3DGaussLcms::FitResult;
 
-#pragma link C++ class Fitter3D<FitterGaussFull>;
-#pragma link C++ class FitterGaussFull::FitParams;
-#pragma link C++ class FitterGaussFull::FitResult;
+#pragma link C++ class Fitter3D<Fitter3DGaussFull>;
+#pragma link C++ class Fitter3DGaussFull::FitParams;
+#pragma link C++ class Fitter3DGaussFull::FitResult;
 
 #pragma link C++ class Fitter3D<Fitter3DGaussLcmsOS>;
 #pragma link C++ class Fitter3DGaussLcmsOS::FitParams;

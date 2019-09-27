@@ -78,7 +78,7 @@ set(INCS
   fitter/Fitter3DGaussLcms.hpp
   fitter/Fitter3DGaussLcmsOS.hpp
   fitter/Fitter3DGaussLcmsOL.hpp
-  fitter/FitterGaussFull.hpp
+  fitter/Fitter3DGaussFull.hpp
   fitter/Fitter3DLevy.hpp
   fitter/FitterLevyFull.hpp
   fsi/FsiKFile.hpp

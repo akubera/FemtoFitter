@@ -1,9 +1,11 @@
 ///
-/// \file FitterGaussFull.hpp
+/// \file Fitter3DGaussFull.hpp
 ///
 
 #pragma once
 
+#ifndef FITTER3DGAUSSFULL_HPP
+#define FITTER3DGAUSSFULL_HPP
 
 #include <TFile.h>
 #include <TH3.h>
@@ -20,11 +22,17 @@
 #include "CoulombHist.hpp"
 #include "Fitter3D.hpp"
 
+#include "fit-methods.hh"
 
-/// \class FitterGaussFull
+
+/// \class Fitter3DGaussFull
 /// \brief Fit full $ q_i q_j R_ij^2 $ gaussian parameters
 ///
-struct FitterGaussFull : public Fitter3D<FitterGaussFull> {
+struct Fitter3DGaussFull : public Fitter3D<Fitter3DGaussFull> {
+
+  using Super = Fitter3D<Fitter3DGaussFull>;
+  struct FitParams;
+  struct FitResult;
 
   /// constants used to lookup data from pointer
   enum {
@@ -41,7 +49,7 @@ struct FitterGaussFull : public Fitter3D<FitterGaussFull> {
   };
 
   static std::string GetName()
-    { return "FitterGaussFull"; }
+    { return "Fitter3DGaussFull"; }
 
   static unsigned char CountParams()
     { return 8; }
@@ -136,7 +144,7 @@ struct FitterGaussFull : public Fitter3D<FitterGaussFull> {
     std::string
     __repr__() const
       {
-        return Form("<FitterGaussFull::FitResult Ro=%g Rs=%g Rl=%g Ros=%g Rol=%g Rsl=%g lambda=%g norm=%g>",
+        return Form("<Fitter3DGaussFull::FitResult Ro=%g Rs=%g Rl=%g Ros=%g Rol=%g Rsl=%g lambda=%g norm=%g>",
                     Ro.value, Rs.value, Rl.value, Ros.value, Rol.value, Rsl.value, lam.value, norm.value);
       }
 
@@ -160,6 +168,8 @@ struct FitterGaussFull : public Fitter3D<FitterGaussFull> {
       return dict;
       #undef Add
     }
+
+    FitParams as_params() const;
   };
 
   /// \brief 3D Gaussian fit parameters
@@ -223,7 +233,7 @@ struct FitterGaussFull : public Fitter3D<FitterGaussFull> {
       {
         // std::array<double, 3> Rsq = {Ro*Ro, Rs*Rs, Rl*Rl};
         // return Fitter3DGaussLcms::gauss(q, Rsq, lam, K, norm);
-        return FitterGaussFull::gauss(q, Ro, Rs, Rl, Ros, Rol, Rsl, lam, K, norm);
+        return Fitter3DGaussFull::gauss(q, Ro, Rs, Rl, Ros, Rol, Rsl, lam, K, norm);
       }
 
     /// Multiply histogram with values from this correlation function
@@ -261,7 +271,7 @@ struct FitterGaussFull : public Fitter3D<FitterGaussFull> {
     std::string
     __repr__() const
       {
-        return Form("<FitterGaussFull::FitParam Ro=%g Rs=%g Rl=%g Ros=%g Rol=%g Rsl=%g lambda=%g norm=%g>",
+        return Form("<Fitter3DGaussFull::FitParam Ro=%g Rs=%g Rl=%g Ros=%g Rol=%g Rsl=%g lambda=%g norm=%g>",
                     Ro, Rs, Rl, Ros, Rol, Rsl, lam, norm);
       }
 
@@ -290,17 +300,17 @@ struct FitterGaussFull : public Fitter3D<FitterGaussFull> {
   ///
   /// limit specifies fit-range
   ///
-  FitterGaussFull(TH3 &n, TH3 &d, TH3 &q, double limit=0.0)
+  Fitter3DGaussFull(TH3 &n, TH3 &d, TH3 &q, double limit=0.0)
     : Fitter3D(n, d, q, limit)
     {
     }
 
-  FitterGaussFull(const Data3D &dat)
+  Fitter3DGaussFull(const Data3D &dat)
     : Fitter3D(dat)
     {
     }
 
-  FitterGaussFull(Data3D &&dat)
+  Fitter3DGaussFull(Data3D &&dat)
     : Fitter3D(std::move(dat))
     {
     }
@@ -334,13 +344,16 @@ struct FitterGaussFull : public Fitter3D<FitterGaussFull> {
     return errflag;
   }
 
-  auto fit_pml() -> FitResult
-    { return Fitter3D::fit_pml(); }
+  DECLARE_FIT_METHODS(Fitter3D);
 
-  auto fit_chi2() -> FitResult
-    { return Fitter3D::fit_chi2(); }
-
-  auto fit() -> FitResult
-    { return Fitter3D::fit(); }
+  DECLARE_RESID_METHODS(Fitter3D);
 
 };
+
+auto
+Fitter3DGaussFull::FitResult::as_params() const -> FitParams
+{
+  return FitParams(*this);
+}
+
+#endif
