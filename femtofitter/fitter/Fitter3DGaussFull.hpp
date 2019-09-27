@@ -58,7 +58,7 @@ struct Fitter3DGaussFull : public Fitter3D<Fitter3DGaussFull> {
   gauss(std::array<double, 3> q,
         // std::array<double, 6> RSq,
         double Ro, double Rs, double Rl,
-        double Ros2, double Rol2, double Rsl2,
+        double Ros, double Rol, double Rsl,
         double lam,
         double K=1.0,
         double norm=1.0)
@@ -71,9 +71,9 @@ struct Fitter3DGaussFull : public Fitter3D<Fitter3DGaussFull> {
       E = qo * qo * Ro * Ro
         + qs * qs * Rs * Rs
         + ql * ql * Rl * Rl
-        + 2 * qo * qs * Ros2
-        + 2 * qo * ql * Rol2
-        + 2 * qs * ql * Rsl2,
+        + 2 * qo * qs * std::fabs(Ros) * Ros
+        + 2 * qo * ql * std::fabs(Ros) * Rol
+        + 2 * qs * ql * std::fabs(Ros) * Rsl,
 
       gauss = 1.0 + std::exp(-E / HBAR_C_SQ),
       result = (1.0 - lam) + lam * K * gauss;
@@ -212,9 +212,9 @@ struct Fitter3DGaussFull : public Fitter3D<Fitter3DGaussFull> {
       return invalid(Ro)
           || invalid(Rs)
           || invalid(Rl)
-          || invalid(Ros)
-          || invalid(Rol)
-          || invalid(Rsl)
+          || std::isnan(Ros)
+          || std::isnan(Rol)
+          || std::isnan(Rsl)
           || invalid(lam)
           || invalid(norm);
     }
@@ -328,9 +328,9 @@ struct Fitter3DGaussFull : public Fitter3D<Fitter3DGaussFull> {
     minuit.mnparm(ROUT_PARAM_IDX, "Ro", 2.0, 1.0, 0.0, 0.0, errflag);
     minuit.mnparm(RSIDE_PARAM_IDX, "Rs", 2.0, 1.0, 0.0, 0.0, errflag);
     minuit.mnparm(RLONG_PARAM_IDX, "Rl", 2.0, 1.0, 0.0, 0.0, errflag);
-    minuit.mnparm(ROS_PARAM_IDX, "Ros²", 0.0, 0.05, 0.0, 0.0, errflag);
-    minuit.mnparm(ROL_PARAM_IDX, "Rol²", 0.0, 0.05, 0.0, 0.0, errflag);
-    minuit.mnparm(RSL_PARAM_IDX, "Rsl²", 0.0, 0.05, 0.0, 0.0, errflag);
+    minuit.mnparm(ROS_PARAM_IDX, "Ros", 0.0, 0.05, 0.0, 0.0, errflag);
+    minuit.mnparm(ROL_PARAM_IDX, "Rol", 0.0, 0.05, 0.0, 0.0, errflag);
+    minuit.mnparm(RSL_PARAM_IDX, "Rsl", 0.0, 0.05, 0.0, 0.0, errflag);
 
     const double this_dbl = static_cast<double>((intptr_t)this);
     minuit.mnparm(DATA_PARAM_IDX, "DATA_PTR", this_dbl, 0, 0, INTPTR_MAX, errflag);
@@ -345,7 +345,6 @@ struct Fitter3DGaussFull : public Fitter3D<Fitter3DGaussFull> {
   }
 
   DECLARE_FIT_METHODS(Fitter3D);
-
   DECLARE_RESID_METHODS(Fitter3D);
 
 };
