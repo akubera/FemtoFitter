@@ -1,5 +1,5 @@
 ///
-/// \file FitterLevyFull.hpp
+/// \file Fitter3DLevyFull.hpp
 ///
 
 #pragma once
@@ -25,8 +25,9 @@
 /// \class FitterLevy
 /// \brief Fit out-side-long with gaussian parameters
 ///
-struct FitterLevyFull : public Fitter3D<FitterLevyFull> {
+struct Fitter3DLevyFull : public Fitter3D<Fitter3DLevyFull> {
 
+  using Super = Fitter3D<Fitter3DLevyFull>;
   struct FitParams;
   struct FitResult;
 
@@ -72,7 +73,7 @@ struct FitterLevyFull : public Fitter3D<FitterLevyFull> {
   /// \class FitResult
   /// \brief Values and stderr from minuit results
   ///
-  struct FitResult : FitResult3D<FitResult, FitterLevyFull> {
+  struct FitResult : FitResult3D<FitResult, Fitter3DLevyFull> {
     Value lam,
           norm,
           alphao,
@@ -141,7 +142,7 @@ struct FitterLevyFull : public Fitter3D<FitterLevyFull> {
     std::string
     __repr__() const
       {
-        return Form("<FitterLevyFull::FitResult Ro=%g Rs=%g Rl=%g alpha=(%g,%g,%g) lambda=%g norm=%g>",
+        return Form("<Fitter3DLevyFull::FitResult Ro=%g Rs=%g Rl=%g alpha=(%g,%g,%g) lambda=%g norm=%g>",
                     Ro.value, Rs.value, Rl.value, alphao.value, alphas.value, alphal.value, lam.value, norm.value);
       }
 
@@ -253,13 +254,13 @@ struct FitterLevyFull : public Fitter3D<FitterLevyFull> {
     double gauss(const std::array<double, 3> &q, double K) const
       {
         std::array<double, 3> Rsq = {Ro*Ro, Rs*Rs, Rl*Rl};
-        return FitterLevyFull::gauss(q, Rsq, lam, alphao, alphas, alphal, K, norm);
+        return Fitter3DLevyFull::gauss(q, Rsq, lam, alphao, alphas, alphal, K, norm);
       }
 
     std::string
     __repr__() const
       {
-        return Form("<FitterLevyFull::FitParam Ro=%g Rs=%g Rl=%g lambda=%g norm=%g>",
+        return Form("<Fitter3DLevyFull::FitParam Ro=%g Rs=%g Rl=%g lambda=%g norm=%g>",
                     Ro, Rs, Rl, lam, norm);
       }
 
@@ -287,17 +288,17 @@ struct FitterLevyFull : public Fitter3D<FitterLevyFull> {
   /// Construct fitter from numerator denominator qinv histograms
   /// and a fit-range limit
   ///
-  FitterLevyFull(TH3 &n, TH3 &d, TH3 &q, double limit=0.0)
+  Fitter3DLevyFull(TH3 &n, TH3 &d, TH3 &q, double limit=0.0)
     : Fitter3D(n, d, q, limit)
   {
   }
 
-  FitterLevyFull(const Data3D &dat)
+  Fitter3DLevyFull(const Data3D &dat)
     : Fitter3D(dat)
     {
     }
 
-  FitterLevyFull(Data3D &&dat)
+  Fitter3DLevyFull(Data3D &&dat)
     : Fitter3D(std::move(dat))
     {
     }
@@ -370,7 +371,7 @@ struct FitterLevyFull : public Fitter3D<FitterLevyFull> {
 };
 
 inline auto
-FitterLevyFull::FitResult::as_params() const -> FitParams
+Fitter3DLevyFull::FitResult::as_params() const -> FitParams
 {
   return FitParams(*this);
 }

@@ -47,9 +47,9 @@
 #pragma link C++ class Fitter3DLevy::FitParams;
 #pragma link C++ class Fitter3DLevy::FitResult;
 
-#pragma link C++ class Fitter3D<FitterLevyFull>;
-#pragma link C++ class FitterLevyFull::FitParams;
-#pragma link C++ class FitterLevyFull::FitResult;
+#pragma link C++ class Fitter3D<Fitter3DLevyFull>;
+#pragma link C++ class Fitter3DLevyFull::FitParams;
+#pragma link C++ class Fitter3DLevyFull::FitResult;
 
 #pragma link C++ function apply_momentum_resolution_correction;
 

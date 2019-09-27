@@ -80,7 +80,7 @@ set(INCS
   fitter/Fitter3DGaussLcmsOL.hpp
   fitter/Fitter3DGaussFull.hpp
   fitter/Fitter3DLevy.hpp
-  fitter/FitterLevyFull.hpp
+  fitter/Fitter3DLevyFull.hpp
   fsi/FsiKFile.hpp
   fsi/FsiGamov.hpp
   fsi/FsiStatic.hpp
