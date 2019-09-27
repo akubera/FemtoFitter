@@ -34,5 +34,16 @@
     { return Fitter::resid_calc_mrc(p, *mrc, CalcLoglike::resid_func); }
 
 
+#define DECLARE_FILL_METHODS(HistType) \
+  void fill(HistType &h, const FitResult &r, UInt_t npoints=1) const \
+    { fill(h, r.as_params(), npoints); } \
+  void fill(HistType &h, const FitParams &p, UInt_t npoints=1) const \
+    { p.fill(h, *fsi, npoints); } \
+  void fill_smeared_fit(HistType &h, const FitResult &r) \
+    { fill_smeared_fit(h, r.as_params()); } \
+  void fill_smeared_fit(HistType &h, const FitParams &p) \
+    { Super::fill_smeared_fit(h, p); }
+
+
 
 #endif

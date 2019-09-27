@@ -66,7 +66,7 @@ struct Fitter3DGaussLcmsOL : public Fitter3D<Fitter3DGaussLcmsOL> {
       Es = qs * qs * RSq[1],
       El = ql * ql * RSq[2],
       Eol = qo * ql * std::fabs(Rol) * Rol,
-      gauss = 1.0 + std::exp(-(Eo + Es + El + Eol) / HBAR_C_SQ),
+      gauss = 1.0 + std::exp(-(Eo + Es + El + 2 * Eol) / HBAR_C_SQ),
       result = (1.0 - lam) + lam * K * gauss;
 
     return norm * result;
@@ -312,7 +312,7 @@ struct Fitter3DGaussLcmsOL : public Fitter3D<Fitter3DGaussLcmsOL> {
     minuit.mnparm(ROUT_PARAM_IDX, "Ro", 2.0, 1.0, 0.0, 0.0, errflag);
     minuit.mnparm(RSIDE_PARAM_IDX, "Rs", 2.0, 1.0, 0.0, 0.0, errflag);
     minuit.mnparm(RLONG_PARAM_IDX, "Rl", 2.0, 1.0, 0.0, 0.0, errflag);
-    minuit.mnparm(ROL_PARAM_IDX, "Rol", 0.0, 0.08, 0.0, 0.0, errflag);
+    minuit.mnparm(ROL_PARAM_IDX, "Rol", 10.0, 0.8, 0.0, 0.0, errflag);
 
     const double this_dbl = static_cast<double>((intptr_t)this);
     minuit.mnparm(DATA_PARAM_IDX, "DATA_PTR", this_dbl, 0, 0, INTPTR_MAX, errflag);

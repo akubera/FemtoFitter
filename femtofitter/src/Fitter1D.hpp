@@ -25,6 +25,8 @@
 
 #include "CoulombHist.hpp"
 
+#include "fitter/fit-methods.hh"
+
 /// \class Fitter1D
 /// \brief Generic 1D
 ///

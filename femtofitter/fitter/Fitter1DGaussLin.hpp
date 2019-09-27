@@ -358,25 +358,7 @@ struct Fitter1DGaussLin : public Fitter1D<Fitter1DGaussLin> {
 
   // void fit_with_random_inits(TMinuit &minuit, FitResult &res, int);
 
-  void fill(TH1 &h, const FitParams &p, UInt_t npoints=1) const
-    {
-      p.fill(h, *fsi, npoints);
-    }
-
-  void fill(TH1 &h, const FitResult &p, UInt_t npoints=1) const
-    {
-      fill(h, p.as_params(), npoints);
-    }
-
-  void fill_smeared_fit(TH1 &h, const FitResult &fr)
-    {
-      fill_smeared_fit(h, fr.as_params());
-    }
-
-  void fill_smeared_fit(TH1 &h, const FitParams &p)
-    {
-      Fitter1D::fill_smeared_fit(h, p);
-    }
+  DECLARE_FILL_METHODS(TH1)
 
   double resid_calc_chi2_mrc(const FitParams &params) const
     {

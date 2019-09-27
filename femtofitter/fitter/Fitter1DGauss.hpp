@@ -9,15 +9,14 @@
 
 #include "Fitter1D.hpp"
 
-
 /// \class Fitter1DGauss
 /// \brief Gaussian 1D fit
 ///
 struct Fitter1DGauss : public Fitter1D<Fitter1DGauss> {
 
   using Super = Fitter1D<Fitter1DGauss>;
-
   struct FitParams;
+  struct FitResult;
 
   static std::string GetName()
     { return "Gauss1D"; }
@@ -281,43 +280,12 @@ struct Fitter1DGauss : public Fitter1D<Fitter1DGauss> {
 
   double resid_calc_chi2_mrc(const FitResult &fr);
 
-  FitResult fit_chi2()
-    { return Fitter1D::fit_chi2(); }
-
-  FitResult fit_chi2_mrc()
-    { return Fitter1D::fit_chi2_mrc(); }
-
-  FitResult fit_pml()
-    { return Fitter1D::fit_pml(); }
-
-  /// Fit with log-likelihood method and momentum-correction smearing
-  FitResult fit_pml_mrc()
-    { return Fitter1D::fit_pml_mrc(); }
-
-  FitResult fit_pml_mrc_quick()
-    { return Fitter1D::fit_pml_mrc_quick(); }
+  DECLARE_FIT_METHODS(Fitter1D)
 
   // void fit_with_random_inits(TMinuit &minuit, FitResult &res, int);
 
-  void fill(TH1 &h, const FitParams &p, UInt_t npoints=1) const
-    {
-      p.fill(h, *fsi, npoints);
-    }
+  DECLARE_FILL_METHODS(TH1)
 
-  void fill(TH1 &h, const FitResult &p, UInt_t npoints=1) const
-    {
-      fill(h, p.as_params(), npoints);
-    }
-
-  void fill_smeared_fit(TH1 &h, const FitResult &fr)
-    {
-      fill_smeared_fit(h, fr.as_params());
-    }
-
-  void fill_smeared_fit(TH1 &h, const FitParams &p)
-    {
-      Fitter1D::fill_smeared_fit(h, p);
-    }
 };
 
 inline auto
