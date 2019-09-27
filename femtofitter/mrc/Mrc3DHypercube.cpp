@@ -1,8 +1,8 @@
 ///
-/// \file MrcHyperCube3D.cpp
+/// \file Mrc3DHypercube.cpp
 ///
 
-#include "MrcHypercube3D.hpp"
+#include "Mrc3DHypercube.hpp"
 #include "Fitter3D.hpp"
 
 #include <iostream>
@@ -11,11 +11,11 @@
 #include <immintrin.h>
 
 /// \cond classimp
-ClassImp(MrcHypercube3D)
+ClassImp(Mrc3DHypercube)
 /// \endcond
 
-MrcHypercube3D::MrcHypercube3D()
-  : TNamed("mrc", "MrcHypercube3D")
+Mrc3DHypercube::Mrc3DHypercube()
+  : TNamed("mrc", "Mrc3DHypercube")
   , Mrc3D()
   , axes()
   , count_trie()
@@ -23,8 +23,8 @@ MrcHypercube3D::MrcHypercube3D()
 {
 }
 
-MrcHypercube3D::MrcHypercube3D(const THnSparseI& hyp)
-  : TNamed("mrc", "MrcHyperCube3D")
+Mrc3DHypercube::Mrc3DHypercube(const THnSparseI& hyp)
+  : TNamed("mrc", "Mrc3DHypercube")
   , Mrc3D()
   , axes()
   , count_trie()
@@ -153,7 +153,7 @@ void smearhist(HistType &source)
 
 template <typename T>
 void
-MrcHypercube3D::Smear(const T &hist, T &buff) const
+Mrc3DHypercube::Smear(const T &hist, T &buff) const
 {
   for (auto &key_and_vals : frac_trie) {
     auto &ijk = key_and_vals.first;
@@ -182,7 +182,7 @@ MrcHypercube3D::Smear(const T &hist, T &buff) const
 
 
 void
-MrcHypercube3D::Smear(TH3 &result) const
+Mrc3DHypercube::Smear(TH3 &result) const
 {
   if (auto *histf = dynamic_cast<TH3F*>(&result)) {
     // std::unique_ptr<TH3F> clone(static_cast<TH3F*>(result.Clone()));
@@ -310,24 +310,24 @@ MrcHypercube3D::Smear(TH3 &result) const
 
 
 void
-MrcHypercube3D::Unsmear(TH3&) const
+Mrc3DHypercube::Unsmear(TH3&) const
 {}
 
 void
-MrcHypercube3D::FillUnsmearedDen(TH3 &cf) const
+Mrc3DHypercube::FillUnsmearedDen(TH3 &cf) const
 {
   fUnsmearedHist->Copy(cf);
 }
 
 void
-MrcHypercube3D::FillUnsmearedDen(TH3D &cf) const
+Mrc3DHypercube::FillUnsmearedDen(TH3D &cf) const
 {
   // static_cast<TArrayD&>(cf) = static_cast<const TArrayD&>(*fUnsmearedHist);
   fUnsmearedHist->Copy(cf);
 }
 
 std::shared_ptr<const TH3D>
-MrcHypercube3D::GetSmearedDenLike(TH3 &cf) const
+Mrc3DHypercube::GetSmearedDenLike(TH3 &cf) const
 {
   // static_cast<TArrayD&>(cf) = static_cast<const TArrayD&>(*fUnsmearedHist);
   // static_cast<TArrayD&>(cf) = static_cast<const TArrayD&>(*fUnsmearedHist);
@@ -336,7 +336,7 @@ MrcHypercube3D::GetSmearedDenLike(TH3 &cf) const
 }
 
 void
-MrcHypercube3D::FillSmearedFit(TH3 &cf,
+Mrc3DHypercube::FillSmearedFit(TH3 &cf,
                                const Fit3DParameters &p,
                                const TH3 &qinv,
                                FsiCalculator &fsi,
@@ -353,7 +353,7 @@ MrcHypercube3D::FillSmearedFit(TH3 &cf,
 
 
 void
-MrcHypercube3D::FillSmearedFit(TH3 &cf,
+Mrc3DHypercube::FillSmearedFit(TH3 &cf,
                                const Fit3DParameters &p,
                                const TH3 &qinv,
                                FsiCalculator &fsi) const
@@ -369,7 +369,7 @@ MrcHypercube3D::FillSmearedFit(TH3 &cf,
 
 
 void
-MrcHypercube3D::FillSmearedFit(
+Mrc3DHypercube::FillSmearedFit(
   TH3 &cf,
   const Fit3DParameters &p,
   const Fit3DParameters::FsiFuncType &fsi) const
@@ -385,7 +385,7 @@ MrcHypercube3D::FillSmearedFit(
 
 
 void
-MrcHypercube3D::FillSmearedFit(TH3 &cf, const Fit3DParameters &p, const TH3 &fsi) const
+Mrc3DHypercube::FillSmearedFit(TH3 &cf, const Fit3DParameters &p, const TH3 &fsi) const
 {
   FillUnsmearedDen(cf);
   p.multiply(cf, fsi);
@@ -397,7 +397,7 @@ MrcHypercube3D::FillSmearedFit(TH3 &cf, const Fit3DParameters &p, const TH3 &fsi
 }
 
 std::unique_ptr<TH1D>
-MrcHypercube3D::get_frac_hist() const
+Mrc3DHypercube::get_frac_hist() const
 {
   std::vector<double> bins = {0.0,1.00000000e-05, 1.07163723e-05, 1.14840636e-05, 1.23067501e-05,
        1.31883716e-05, 1.41331500e-05, 1.51456097e-05, 1.62305993e-05,

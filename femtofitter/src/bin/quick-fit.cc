@@ -2,7 +2,7 @@
 #include "fitter/Fitter3DGaussLcms.hpp"
 #include "fitter/Fitter1DGauss.hpp"
 #include "mrc/Mrc1DMatrix.hpp"
-#include "mrc/MrcHypercube3D.hpp"
+#include "mrc/Mrc3DHypercube.hpp"
 #include "mrc/Mrc3DRatio.hpp"
 #include "fsi/FsiKFile.hpp"
 #include "fsi/FsiGamov.hpp"
@@ -75,7 +75,7 @@ void runfit(TDirectory &tdir, double limit)
     exit(1);
   }
 
-  fitter->mrc = MrcHypercube3D::From(*hypercube);
+  fitter->mrc = Mrc3DHypercube::From(*hypercube);
 
   timer.Print();
 

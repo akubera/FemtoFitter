@@ -1,12 +1,12 @@
 ///
-/// \file MrcHypercube3D.hpp
+/// \file Mrc3DHypercube.hpp
 ///
 
 #pragma once
 
 
-#ifndef MRCHYPERCUBE3D_HPP
-#define MRCHYPERCUBE3D_HPP
+#ifndef MRC3DHYPERCUBE_HPP
+#define MRC3DHYPERCUBE_HPP
 
 #include "Mrc.hpp"
 
@@ -23,7 +23,7 @@
 /// \class MomentumResolutionCorrector
 /// \brief Uses hypercube-matrix-method to apply the momentum resolution correction
 ///
-class MrcHypercube3D : public TNamed, public Mrc3D {
+class Mrc3DHypercube : public TNamed, public Mrc3D {
 public:
 
   using u8 = std::uint8_t;
@@ -56,12 +56,12 @@ protected:
 public:
 
   /// Empty Constructor
-  MrcHypercube3D();
+  Mrc3DHypercube();
 
   /// Construct with name and title
-  MrcHypercube3D(TString &name, TString &title);
+  Mrc3DHypercube(TString &name, TString &title);
 
-  MrcHypercube3D(const MrcHypercube3D &orig)
+  Mrc3DHypercube(const Mrc3DHypercube &orig)
     : TNamed(orig)
     , Mrc3D(orig)
     , axes()
@@ -73,7 +73,7 @@ public:
       axes[2].reset(static_cast<TAxis*>(orig.axes[2]->Clone()));
     }
 
-  MrcHypercube3D(MrcHypercube3D &&orig)
+  Mrc3DHypercube(Mrc3DHypercube &&orig)
     : TNamed(orig)
     , Mrc3D(orig)
     , axes(std::move(orig.axes))
@@ -85,30 +85,30 @@ public:
     }
 
   /// Build from Sparse-Histogram
-  MrcHypercube3D(const THnSparseI&);
+  Mrc3DHypercube(const THnSparseI&);
 
   /// make shared pointer from histogram
   static std::shared_ptr<Mrc3D> From(const THnSparseI &hist)
     {
-      return std::make_shared<MrcHypercube3D>(hist);
+      return std::make_shared<Mrc3DHypercube>(hist);
     }
 
-  static std::shared_ptr<Mrc3D> From(const MrcHypercube3D &mrc)
+  static std::shared_ptr<Mrc3D> From(const Mrc3DHypercube &mrc)
     {
-      return std::make_shared<MrcHypercube3D>(mrc);
+      return std::make_shared<Mrc3DHypercube>(mrc);
     }
 
-  /// Read from directory (Looks for either MrcHypercube3D or THnSparseI)
+  /// Read from directory (Looks for either Mrc3DHypercube or THnSparseI)
   static std::shared_ptr<Mrc3D> From(TDirectory &tdir, const TString name="mrc")
     {
       auto tobject = std::unique_ptr<TObject>(tdir.Get(name));
 
-      if (auto *cube = dynamic_cast<MrcHypercube3D*>(tobject.get())) {
+      if (auto *cube = dynamic_cast<Mrc3DHypercube*>(tobject.get())) {
         tobject.release();
-        return std::shared_ptr<MrcHypercube3D>(cube);
+        return std::shared_ptr<Mrc3DHypercube>(cube);
       }
       else if (auto *sparsehist = dynamic_cast<THnSparseI*>(tobject.get())) {
-        return std::make_shared<MrcHypercube3D>(*sparsehist);
+        return std::make_shared<Mrc3DHypercube>(*sparsehist);
       }
 
       return nullptr;
@@ -133,7 +133,7 @@ public:
   void FillSmearedFit(TH3 &cf, const Fit3DParameters &, const TH3& qinv, FsiCalculator&) const override;
 
   std::string Describe() const override
-    { return "MrcHypercube3D"; }
+    { return "Mrc3DHypercube"; }
 
   /// Fill smeared fit with generic FSI-function
   void FillSmearedFit(TH3 &cf,
@@ -150,7 +150,7 @@ protected:
   template <typename HistType>
   void Smear(const HistType &hist, HistType &buffer) const;
 
-  ClassDef(MrcHypercube3D, 1);
+  ClassDef(Mrc3DHypercube, 1);
 };
 
 #endif

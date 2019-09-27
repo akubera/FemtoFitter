@@ -90,7 +90,7 @@ set(INCS
   mrc/Mrc1DRatioMixed.hpp
   mrc/Mrc1DMatrix.hpp
   mrc/MrcTransform1D.hpp
-  mrc/MrcHypercube3D.hpp
+  mrc/Mrc3DHypercube.hpp
   src/CalculatorFsi.hpp
   src/ParamHints.hpp
 )
@@ -115,7 +115,7 @@ set(SRCS
   src/Value.cpp
   fsi/FsiKFile.cpp
   fitter/Fitter1DGauss.cpp
-  mrc/MrcHypercube3D.cpp
+  mrc/Mrc3DHypercube.cpp
   src/CoulombHist.cpp
   src/MinimizerMinuit.cpp
   src/ParamHints.cpp
