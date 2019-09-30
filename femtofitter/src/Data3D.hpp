@@ -209,6 +209,28 @@ struct Data3D {
   const Datum& operator[](size_t idx) const
     { return data[idx]; }
 
+  std::unique_ptr<Data3D> rebinned(int Nyz) const
+    {
+      return rebinned(1, Nyz);
+    }
+
+  std::unique_ptr<Data3D> rebinned(int Nx, int Nyz) const
+    {
+      return rebinned(Nx, Nyz, Nyz);
+    }
+
+  std::unique_ptr<Data3D> rebinned(int Nx, int Ny, int Nz) const
+    {
+      TString suffix = Form("%d%d%d_%p", Nx, Ny, Nz, (void*)this);
+
+      std::unique_ptr<TH3>
+        n(static_cast<TH3*>(const_cast<TH3&>(*src->num).Rebin3D(Nx, Ny, Nz, "RebinNum" + suffix))),
+        d(static_cast<TH3*>(const_cast<TH3&>(*src->den).Rebin3D(Nx, Ny, Nz, "RebinDen" + suffix))),
+        q(static_cast<TH3*>(const_cast<TH3&>(*src->qinv).Rebin3D(Nx, Ny, Nz, "RebinQinv" + suffix)));
+
+      return std::make_unique<Data3D>(std::move(n), std::move(d), std::move(q), limit);
+    }
+
   std::unique_ptr<Data3D> subset_pos_side() const
     {
       std::vector<Datum> subset;
