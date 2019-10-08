@@ -169,7 +169,7 @@ struct Fitter3DGaussLcmsOS : public Fitter3D<Fitter3DGaussLcmsOS> {
       , Ro(par[ROUT_PARAM_IDX])
       , Rs(par[RSIDE_PARAM_IDX])
       , Rl(par[RLONG_PARAM_IDX])
-      , Ros(par[RLONG_PARAM_IDX])
+      , Ros(par[ROS_PARAM_IDX])
     {
     }
 
@@ -179,7 +179,7 @@ struct Fitter3DGaussLcmsOS : public Fitter3D<Fitter3DGaussLcmsOS> {
       , Ro(res.Ro)
       , Rs(res.Rs)
       , Rl(res.Rl)
-      , Ros(res.Ro)
+      , Ros(res.Ros)
     {
     }
 
