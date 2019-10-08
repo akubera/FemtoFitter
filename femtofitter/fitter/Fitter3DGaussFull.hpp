@@ -72,8 +72,8 @@ struct Fitter3DGaussFull : public Fitter3D<Fitter3DGaussFull> {
         + qs * qs * Rs * Rs
         + ql * ql * Rl * Rl
         + 2 * qo * qs * std::fabs(Ros) * Ros
-        + 2 * qo * ql * std::fabs(Ros) * Rol
-        + 2 * qs * ql * std::fabs(Ros) * Rsl,
+        + 2 * qo * ql * std::fabs(Rol) * Rol
+        + 2 * qs * ql * std::fabs(Rsl) * Rsl,
 
       gauss = 1.0 + std::exp(-E / HBAR_C_SQ),
       result = (1.0 - lam) + lam * K * gauss;
