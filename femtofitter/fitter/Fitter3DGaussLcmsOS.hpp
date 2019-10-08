@@ -56,10 +56,13 @@ struct Fitter3DGaussLcmsOS : public Fitter3D<Fitter3DGaussLcmsOS> {
         double norm=1.0)
   {
     const double
-      Eo = q[0] * q[0] * RSq[0],
-      Es = q[1] * q[1] * RSq[1],
-      El = q[2] * q[2] * RSq[2],
-      Eos = q[0] * q[1] * Ros * std::fabs(Ros),
+      qo = q[0],
+      qs = q[1],
+      ql = q[2],
+      Eo = qo * qo * RSq[0],
+      Es = qs * qs * RSq[1],
+      El = ql * ql * RSq[2],
+      Eos = 2 * qo * qs * Ros * std::fabs(Ros),
       gauss = 1.0 + std::exp(-(Eo + Es + El + Eos) / HBAR_C_SQ),
       result = (1.0 - lam) + lam * K * gauss;
 
