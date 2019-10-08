@@ -63,4 +63,4 @@ from ROOT import Fitter1DGauss, Fitter1DGaussLin, Fitter1DGaussPolyBg
 from ROOT import Fitter1DLevy, Fitter1DLevyPolyBg
 from ROOT import FsiKFile, FsiGamov, FsiStatic
 from ROOT import Mrc1DRatio, Mrc1DMatrix
-from ROOT import Mrc3DRatio, MrcHypercube3D
+from ROOT import Mrc3DRatio, Mrc3DHypercube
