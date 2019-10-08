@@ -65,8 +65,8 @@ struct Fitter3DGaussLcmsOL : public Fitter3D<Fitter3DGaussLcmsOL> {
       Eo = qo * qo * RSq[0],
       Es = qs * qs * RSq[1],
       El = ql * ql * RSq[2],
-      Eol = qo * ql * std::fabs(Rol) * Rol,
-      gauss = 1.0 + std::exp(-(Eo + Es + El + 2 * Eol) / HBAR_C_SQ),
+      Eol = 2 * qo * ql * std::fabs(Rol) * Rol,
+      gauss = 1.0 + std::exp(-(Eo + Es + El + Eol) / HBAR_C_SQ),
       result = (1.0 - lam) + lam * K * gauss;
 
     return norm * result;
@@ -175,7 +175,7 @@ struct Fitter3DGaussLcmsOL : public Fitter3D<Fitter3DGaussLcmsOL> {
       , Ro(par[ROUT_PARAM_IDX])
       , Rs(par[RSIDE_PARAM_IDX])
       , Rl(par[RLONG_PARAM_IDX])
-      , Rol(par[RLONG_PARAM_IDX])
+      , Rol(par[ROL_PARAM_IDX])
     {
     }
 
@@ -185,7 +185,7 @@ struct Fitter3DGaussLcmsOL : public Fitter3D<Fitter3DGaussLcmsOL> {
       , Ro(res.Ro)
       , Rs(res.Rs)
       , Rl(res.Rl)
-      , Rol(res.Ro)
+      , Rol(res.Rol)
     {
     }
 
