@@ -258,40 +258,9 @@ struct Fitter1DLevy : Fitter1D<Fitter1DLevy> {
       return errflag;
     }
 
-  FitResult fit_chi2()
-    { return Fitter1D::fit_chi2(); }
+  DECLARE_FIT_METHODS(Fitter1D);
+  DECLARE_RESID_METHODS(Fitter1D);
 
-  FitResult fit_chi2_mrc()
-    { return Fitter1D::fit_chi2_mrc(); }
-
-  FitResult fit_pml()
-    { return Fitter1D::fit_pml(); }
-
-  FitResult fit_pml_mrc()
-    { return Fitter1D::fit_pml_mrc(); }
-
-  FitResult fit_pml_mrc_quick()
-    { return Fitter1D::fit_pml_mrc_quick(); }
-
-  void fill(TH1 &h, const FitParams &p, UInt_t npoints=1) const
-    {
-      p.fill(h, *fsi, npoints);
-    }
-
-  void fill(TH1 &h, const FitResult &p, UInt_t npoints=1) const
-    {
-      fill(h, p.as_params(), npoints);
-    }
-
-  void fill_smeared_fit(TH1 &h, const FitResult &fr)
-    {
-      fill_smeared_fit(h, fr.as_params());
-    }
-
-  void fill_smeared_fit(TH1 &h, const FitParams &p)
-    {
-      Fitter1D::fill_smeared_fit(h, p);
-    }
 };
 
 

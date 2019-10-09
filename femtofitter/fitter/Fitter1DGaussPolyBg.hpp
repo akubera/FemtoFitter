@@ -342,9 +342,6 @@ struct Fitter1DGaussPolyBg : public Fitter1D<Fitter1DGaussPolyBg> {
       set_pml_mrc_func(minuit);
     }
 
-  FitResult fit_chi2()
-    { return Fitter1D::fit_chi2(); }
-
   FitResult fit_chi2(double bglo, double bghi)
     {
       if (fsi == nullptr) {
@@ -357,9 +354,6 @@ struct Fitter1DGaussPolyBg : public Fitter1D<Fitter1DGaussPolyBg> {
       setup_chi2_fitter(minuit, bglo, bghi);
       return do_fit_minuit(minuit);
     }
-
-  FitResult fit_chi2_mrc()
-    { return Fitter1D::fit_chi2_mrc(); }
 
   FitResult fit_chi2_mrc(double bglo, double bghi)
     {
@@ -374,9 +368,6 @@ struct Fitter1DGaussPolyBg : public Fitter1D<Fitter1DGaussPolyBg> {
       return do_fit_minuit(minuit);
     }
 
-  FitResult fit_pml()
-    { return Fitter1D::fit_pml(); }
-
   FitResult fit_pml(double bglo, double bghi)
     {
       if (fsi == nullptr) {
@@ -389,10 +380,6 @@ struct Fitter1DGaussPolyBg : public Fitter1D<Fitter1DGaussPolyBg> {
       setup_pml_fitter(minuit, bglo, bghi);
       return do_fit_minuit(minuit);
     }
-
-  /// Fit with log-likelihood method and momentum-correction smearing
-  FitResult fit_pml_mrc()
-    { return Fitter1D::fit_pml_mrc(); }
 
   FitResult fit_pml_mrc_quick()
     { return Fitter1D::fit_pml_mrc_quick(); }
@@ -436,31 +423,6 @@ struct Fitter1DGaussPolyBg : public Fitter1D<Fitter1DGaussPolyBg> {
       return do_fit_minuit(minuit);
     }
 
-  double resid_calc_chi2(const FitParams &params) const
-    {
-      return Fitter1D::resid_calc(params, CalcChi2::resid_func);
-    }
-
-  double resid_calc_chi2(const FitResult &fr) const
-    {
-      return resid_calc_chi2(fr.as_params());
-    }
-
-  double resid_calc_chi2_mrc(const FitParams &params) const
-    {
-      if (mrc == nullptr) {
-        std::cerr << "mrc is null\n";
-        return NAN;
-      }
-
-      return Fitter1D::resid_calc_mrc(params, *mrc, CalcChi2::resid_func);
-    }
-
-  double resid_calc_chi2_mrc(const FitResult &fr) const
-    {
-      return resid_calc_chi2_mrc(fr.as_params());
-    }
-
   std::unique_ptr<TH1> get_cf(const FitParams &p) const
     {
       std::unique_ptr<TH1> cf(static_cast<TH1*>(data.src->num->Clone()));
@@ -480,6 +442,10 @@ struct Fitter1DGaussPolyBg : public Fitter1D<Fitter1DGaussPolyBg> {
       mrc->FillSmearedFit(*cf, p, *fsi, 1);
       return cf;
     }
+
+  DECLARE_FIT_METHODS(Fitter1D);
+  DECLARE_RESID_METHODS(Fitter1D);
+
 };
 
 inline auto

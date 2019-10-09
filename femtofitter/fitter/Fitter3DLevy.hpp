@@ -327,40 +327,9 @@ struct Fitter3DLevy : public Fitter3D<Fitter3DLevy> {
     return errflag;
   }
 
-  FitResult fit_chi2()
-    { return Fitter3D::fit_chi2(); }
+  DECLARE_FIT_METHODS(Fitter3D);
+  DECLARE_RESID_METHODS(Fitter3D);
 
-  FitResult fit_chi2_mrc()
-    { return Fitter3D::fit_chi2_mrc(); }
-
-  FitResult fit_pml()
-    { return Fitter3D::fit_pml(); }
-
-  FitResult fit_pml_mrc()
-    { return Fitter3D::fit_pml_mrc(); }
-
-  FitResult fit()
-    { return Fitter3D::fit_pml_mrc(); }
-
-  double residual_chi2(const FitResult &r) const
-    {
-      return residual_chi2(r.as_params());
-    }
-
-  double residual_chi2(const FitParams &p) const
-    {
-      return Fitter3D::resid_calc(p, CalcChi2::resid_func);
-    }
-
-  double residual_chi2_mrc(const FitResult &r) const
-    {
-      return residual_chi2_mrc(r.as_params());
-    }
-
-  double residual_chi2_mrc(const FitParams &p) const
-    {
-      return Fitter3D::resid_calc_mrc(p, *mrc, CalcChi2::resid_func);
-    }
 };
 
 

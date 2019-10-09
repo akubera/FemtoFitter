@@ -13,6 +13,7 @@
 #include "Data3D.hpp"
 #include "math/fit.hh"
 #include "mrc/Mrc.hpp"
+#include "fitter/fit-methods.hh"
 
 #include "ParamHints.hpp"
 
@@ -24,6 +25,7 @@
 #include <iostream>
 #include <typeinfo>
 #include <functional>
+
 
 
 /// \class Fitter3D

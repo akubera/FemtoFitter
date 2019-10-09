@@ -343,9 +343,6 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
       set_pml_mrc_func(minuit);
     }
 
-  FitResult fit_chi2()
-    { return Fitter1D::fit_chi2(); }
-
   FitResult fit_chi2(double bglo, double bghi)
     {
       if (fsi == nullptr) {
@@ -358,9 +355,6 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
       setup_chi2_fitter(minuit, bglo, bghi);
       return do_fit_minuit(minuit);
     }
-
-  FitResult fit_chi2_mrc()
-    { return Fitter1D::fit_chi2_mrc(); }
 
   FitResult fit_chi2_mrc(double bglo, double bghi)
     {
@@ -375,10 +369,6 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
       return do_fit_minuit(minuit);
     }
 
-  FitResult fit_pml()
-    { return Fitter1D::fit_pml(); }
-
-
   FitResult fit_pml(double bglo, double bghi)
     {
       if (fsi == nullptr) {
@@ -391,10 +381,6 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
       setup_pml_fitter(minuit, bglo, bghi);
       return do_fit_minuit(minuit);
     }
-
-  /// Fit with log-likelihood method and momentum-correction smearing
-  FitResult fit_pml_mrc()
-    { return Fitter1D::fit_pml_mrc(); }
 
   FitResult fit_pml_mrc(double bglo, double bghi)
     {
@@ -418,6 +404,9 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
 
   // void fit_with_random_inits(TMinuit &minuit, FitResult &res, int);
 
+  DECLARE_FIT_METHODS(Fitter1D);
+  DECLARE_RESID_METHODS(Fitter1D);
+
   void fill(TH1 &h, const FitParams &p, UInt_t npoints=1) const
     {
       p.fill(h, *fsi, npoints);
@@ -436,17 +425,6 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
   void fill_smeared_fit(TH1 &h, const FitParams &p)
     {
       Fitter1D::fill_smeared_fit(h, p);
-    }
-
-  double resid_calc_chi2_mrc(const FitResult &fr) const
-    {
-      if (mrc == nullptr) {
-        std::cerr << "mrc is null\n";
-        return NAN;
-      }
-
-      auto params = fr.as_params();
-      return Fitter1D::resid_calc_mrc(params, *mrc, CalcChi2::resid_func);
     }
 
   std::unique_ptr<TH1> get_cf(const FitParams &p) const

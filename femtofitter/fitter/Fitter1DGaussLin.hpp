@@ -310,22 +310,6 @@ struct Fitter1DGaussLin : public Fitter1D<Fitter1DGaussLin> {
 
   virtual ~Fitter1DGaussLin() = default;
 
-  FitResult fit_chi2()
-    { return Fitter1D::fit_chi2(); }
-
-  FitResult fit_chi2_mrc()
-    { return Fitter1D::fit_chi2_mrc(); }
-
-  FitResult fit_pml()
-    { return Fitter1D::fit_pml(); }
-
-  /// Fit with log-likelihood method and momentum-correction smearing
-  FitResult fit_pml_mrc()
-    { return Fitter1D::fit_pml_mrc(); }
-
-  FitResult fit_pml_mrc_quick()
-    { return Fitter1D::fit_pml_mrc_quick(); }
-
   FitResult fit_pml(double bglo, double bghi)
     {
       if (fsi == nullptr) {
@@ -378,6 +362,10 @@ struct Fitter1DGaussLin : public Fitter1D<Fitter1DGaussLin> {
       fill(*cf, p);
       return cf;
     }
+
+  DECLARE_FIT_METHODS(Fitter1D);
+  DECLARE_RESID_METHODS(Fitter1D);
+
 };
 
 inline auto
