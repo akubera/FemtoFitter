@@ -260,6 +260,7 @@ struct Fitter1DLevy : Fitter1D<Fitter1DLevy> {
 
   DECLARE_FIT_METHODS(Fitter1D);
   DECLARE_RESID_METHODS(Fitter1D);
+  DECLARE_FILL_METHODS(TH1);
 
 };
 

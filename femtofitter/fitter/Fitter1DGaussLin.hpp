@@ -342,19 +342,6 @@ struct Fitter1DGaussLin : public Fitter1D<Fitter1DGaussLin> {
 
   // void fit_with_random_inits(TMinuit &minuit, FitResult &res, int);
 
-  DECLARE_FILL_METHODS(TH1)
-
-  double resid_calc_chi2_mrc(const FitParams &params) const
-    {
-      return Fitter1D::resid_calc_chi2_mrc(params);
-    }
-
-  double resid_calc_chi2_mrc(const FitResult &fr) const
-    {
-      auto params = fr.as_params();
-      return Fitter1D::resid_calc_chi2_mrc(params);
-    }
-
   std::unique_ptr<TH1> get_cf(const FitParams &p) const
     {
       std::unique_ptr<TH1> cf(static_cast<TH1*>(data.src->num->Clone()));
@@ -365,6 +352,7 @@ struct Fitter1DGaussLin : public Fitter1D<Fitter1DGaussLin> {
 
   DECLARE_FIT_METHODS(Fitter1D);
   DECLARE_RESID_METHODS(Fitter1D);
+  DECLARE_FILL_METHODS(TH1)
 
 };
 

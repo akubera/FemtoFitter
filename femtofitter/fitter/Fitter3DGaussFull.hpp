@@ -236,6 +236,10 @@ struct Fitter3DGaussFull : public Fitter3D<Fitter3DGaussFull> {
         return Fitter3DGaussFull::gauss(q, Ro, Rs, Rl, Ros, Rol, Rsl, lam, K, norm);
       }
 
+    void
+    fill(TH3 &hist, TH3 &qinv, double gama)
+      { apply_to(hist, qinv, gama); }
+
     /// Multiply histogram with values from this correlation function
     void
     apply_to(TH3 &hist, TH3 &qinv, double gama)
@@ -346,6 +350,7 @@ struct Fitter3DGaussFull : public Fitter3D<Fitter3DGaussFull> {
 
   DECLARE_FIT_METHODS(Fitter3D);
   DECLARE_RESID_METHODS(Fitter3D);
+  // DECLARE_FILL_METHODS(TH3);
 
 };
 
