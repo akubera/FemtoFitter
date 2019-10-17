@@ -108,7 +108,7 @@ def main(argv=None):
     output_path = args.output
 
     tfile = TFile(args.input)
-    data = find_fit_data(tfile, args)
+    data = list(find_fit_data(tfile, args))
 
     loop = asyncio.get_event_loop()
     executor = ProcessPoolExecutor()
@@ -127,7 +127,7 @@ def main(argv=None):
             'duration': duration.total_seconds() / 60,
             'command': sys.argv,
             'df': df.to_dict(orient='records'),
-            'config': get_configuration_json(tfile, data),
+            'config': get_configuration_json(tfile, [d.pathquery for d in data]),
             }
 
     if output_path:
@@ -281,9 +281,16 @@ def run_fit(params: RunFitParams) -> Optional[dict]:
     if not fit_results:
         return None
 
-    chi2 = (fitter.resid_calc_chi2_mrc(fit_results)
-            if fitter.mrc
-            else fitter.resid_calc_chi2(fit_results))
+
+    try:
+        chi2 = (fitter.residual_chi2_mrc(fit_results)
+                if fitter.mrc
+                else fitter.residual_chi2(fit_results))
+    except AttributeError:
+        chi2 = (fitter.resid_calc_chi2_mrc(fit_results)
+                if fitter.mrc
+                else fitter.resid_calc_chi2(fit_results))
+
 
     results = dict(fit_results.as_map())
 
@@ -294,6 +301,10 @@ def run_fit(params: RunFitParams) -> Optional[dict]:
     results["kt"] = params.pathquery.kt
     results["kT"] = float('%g' % params.pathquery.mean_kt())
     results["cfg"] = params.pathquery.cfg
+    results["limit"] = float('%g' % fitter.data.limit)
+    results["limit_true"] = float('%g' % fitter.data.limit)
+
+    results["fitter"] = fitter.GetName()
 
     results["analysis"] = params.pathquery.analysis
 
