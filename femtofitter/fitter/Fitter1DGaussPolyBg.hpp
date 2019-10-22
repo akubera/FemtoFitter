@@ -85,6 +85,38 @@ struct Fitter1DGaussPolyBg : public Fitter1D<Fitter1DGaussPolyBg> {
             Value(minuit, BG3_PARAM_IDX)})
       { }
 
+    FitResult(PyObject *pyobj)
+      {
+        if (!PyMapping_Check(pyobj)) {
+          TPython::Exec(Form("raise TypeError('Object not a collection!')"));
+          throw std::runtime_error("Object not a python collection");
+        }
+
+        std::vector<std::string> missing_keys;
+
+        // ExtractPythonNumber(pyobj, "norm", norm.value, missing_keys);
+        // ExtractPythonNumber(pyobj, "norm_err", norm.error, missing_keys);
+        ExtractPythonNumber(pyobj, "lam", lam.value, missing_keys);
+        ExtractPythonNumber(pyobj, "lam_err", lam.error, missing_keys);
+        ExtractPythonNumber(pyobj, "radius", radius.value, missing_keys);
+        ExtractPythonNumber(pyobj, "radius_err", radius.error, missing_keys);
+        // PyDict_SetItemString(dict, "bg0", PyFloat_FromDouble(bg[0].value));
+        // PyDict_SetItemString(dict, "bg1", PyFloat_FromDouble(bg[1].value));
+        // PyDict_SetItemString(dict, "bg2", PyFloat_FromDouble(bg[2].value));
+        // PyDict_SetItemString(dict, "bg3", PyFloat_FromDouble(bg[3].value));
+
+        if (!missing_keys.empty()) {
+          std::string msg = "Python object missing required items:";
+          for (const auto &key : missing_keys) {
+            msg += " ";
+            msg += key;
+          }
+          TPython::Exec(Form("raise ValueError('%s')", msg.c_str()));
+          throw std::runtime_error(msg);
+        }
+      }
+
+
     virtual ~FitResult()
       { }
 
@@ -386,26 +418,6 @@ struct Fitter1DGaussPolyBg : public Fitter1D<Fitter1DGaussPolyBg> {
 
   // void fit_with_random_inits(TMinuit &minuit, FitResult &res, int);
 
-  void fill(TH1 &h, const FitParams &p, UInt_t npoints=1) const
-    {
-      p.fill(h, *fsi, npoints);
-    }
-
-  void fill(TH1 &h, const FitResult &p, UInt_t npoints=1) const
-    {
-      fill(h, p.as_params(), npoints);
-    }
-
-  void fill_smeared_fit(TH1 &h, const FitResult &fr)
-    {
-      fill_smeared_fit(h, fr.as_params());
-    }
-
-  void fill_smeared_fit(TH1 &h, const FitParams &p)
-    {
-      Fitter1D::fill_smeared_fit(h, p);
-    }
-
   auto fit_pml_mrc(double bglo, double bghi)
     {
       if (mrc == nullptr) {
@@ -443,8 +455,9 @@ struct Fitter1DGaussPolyBg : public Fitter1D<Fitter1DGaussPolyBg> {
       return cf;
     }
 
-  DECLARE_FIT_METHODS(Fitter1D);
-  DECLARE_RESID_METHODS(Fitter1D);
+  DECLARE_FIT_METHODS(Fitter1D)
+  DECLARE_RESID_METHODS(Fitter1D)
+  DECLARE_FILL_METHODS(TH1)
 
 };
 

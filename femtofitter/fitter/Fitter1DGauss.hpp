@@ -8,6 +8,8 @@
 #define FITTER_FITTER1DGAUSS_HPP
 
 #include "Fitter1D.hpp"
+#include "PythonInterface.hh"
+
 
 /// \class Fitter1DGauss
 /// \brief Gaussian 1D fit
@@ -65,6 +67,33 @@ struct Fitter1DGauss : public Fitter1D<Fitter1DGauss> {
       , lam(minuit, LAM_PARAM_IDX)
       , radius(minuit, R_PARAM_IDX)
       { }
+
+    FitResult(PyObject *pyobj)
+      {
+        if (!PyMapping_Check(pyobj)) {
+          TPython::Exec(Form("raise TypeError('Object not a collection!')"));
+          throw std::runtime_error("Object not a python collection");
+        }
+
+        std::vector<std::string> missing_keys;
+
+        ExtractPythonNumber(pyobj, "norm", norm.value, missing_keys);
+        ExtractPythonNumber(pyobj, "norm_err", norm.error, missing_keys);
+        ExtractPythonNumber(pyobj, "lam", lam.value, missing_keys);
+        ExtractPythonNumber(pyobj, "lam_err", lam.error, missing_keys);
+        ExtractPythonNumber(pyobj, "radius", radius.value, missing_keys);
+        ExtractPythonNumber(pyobj, "radius_err", radius.error, missing_keys);
+
+        if (!missing_keys.empty()) {
+          std::string msg = "Python object missing required items:";
+          for (const auto &key : missing_keys) {
+            msg += " ";
+            msg += key;
+          }
+          TPython::Exec(Form("raise ValueError('%s')", msg.c_str()));
+          throw std::runtime_error(msg);
+        }
+      }
 
     virtual ~FitResult()
       { }
