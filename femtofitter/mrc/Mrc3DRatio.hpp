@@ -290,6 +290,14 @@ public:
       return mrc;
     }
 
+  std::unique_ptr<TH3D> GetUnsmearedDen() const override
+    {
+      auto result = std::make_unique<TH3D>();
+      dg->Copy(*result);
+      result->SetName("UnsmearedDenominator");
+      return result;
+    }
+
   void FillSmearedFit(TH3 &cf, const Fit3DParameters &p, const TH3 &fsi) const override
     {
       p.fill(cf, fsi);
