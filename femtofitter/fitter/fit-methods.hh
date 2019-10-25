@@ -8,6 +8,19 @@
 #ifndef FITMETHODS_HH
 #define FITMETHODS_HH
 
+#define IMPL_FIT_METHOD(__setup_name) \
+  if (fsi == nullptr) { throw std::runtime_error("Fitter missing FsiObject"); }\
+  TMinuit minuit; minuit.SetPrintLevel(-1); \
+  __setup_name(minuit);\
+  return do_fit_minuit(minuit);
+
+#define IMPL_BG_FIT_METHOD(__setup_name) \
+  if (fsi == nullptr) { throw std::runtime_error("Fitter missing FsiObject"); }\
+  TMinuit minuit; minuit.SetPrintLevel(-1); \
+  __setup_name(minuit, bglo, bghi);\
+  return do_fit_minuit(minuit);
+
+
 #define DECLARE_FIT_METHODS(Fitter) \
   FitResult fit_chi2() { return Fitter::fit_chi2(); } \
   FitResult fit_chi2_mrc() { return Fitter::fit_chi2_mrc(); } \
@@ -15,6 +28,29 @@
   FitResult fit_pml_mrc() { return Fitter::fit_pml_mrc(); }
 
   // FitResult fit_pml_mrc_quick() { return Fitter::fit_pml_mrc_quick(); }
+
+
+
+#define DECLARE_BG_MINUIT_SETUP_METHODS() \
+  void setup_chi2_fitter(TMinuit &minuit, double bglo, double bghi)     \
+    { setup_minuit(minuit, bglo, bghi); set_chi2_func(minuit); }        \
+  void setup_chi2_mrc_fitter(TMinuit &minuit, double bglo, double bghi) \
+    { setup_minuit(minuit, bglo, bghi); set_chi2_mrc_func(minuit); }    \
+  void setup_pml_fitter(TMinuit &minuit, double bglo, double bghi)      \
+    { setup_minuit(minuit, bglo, bghi); set_pml_func(minuit); }         \
+  void setup_pml_mrc_fitter(TMinuit &minuit, double bglo, double bghi)  \
+    { setup_minuit(minuit, bglo, bghi); set_pml_mrc_func(minuit); }
+
+
+#define DECLARE_BG_FIT_METHODS() \
+  FitResult fit_chi2(double bglo, double bghi)     \
+    { IMPL_BG_FIT_METHOD(setup_chi2_fitter) }      \
+  FitResult fit_chi2_mrc(double bglo, double bghi) \
+    { IMPL_BG_FIT_METHOD(setup_chi2_mrc_fitter) }  \
+  FitResult fit_pml(double bglo, double bghi)      \
+    { IMPL_BG_FIT_METHOD(setup_pml_fitter) }       \
+  FitResult fit_pml_mrc(double bglo, double bghi)  \
+    { IMPL_BG_FIT_METHOD(setup_pml_mrc_fitter) }
 
 
 #define DECLARE_RESID_METHODS(Fitter) \

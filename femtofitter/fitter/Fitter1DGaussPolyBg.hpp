@@ -21,12 +21,13 @@ struct Fitter1DGaussPolyBg : public Fitter1D<Fitter1DGaussPolyBg> {
   using Super = Fitter1D<Fitter1DGaussPolyBg>;
 
   struct FitParams;
+  struct FitResults;
 
   static std::string GetName()
     { return "Gauss1DPolybg"; }
 
   static unsigned char CountParams()
-    { return 4; }
+    { return 6; }
 
   static double
   gauss(double qinv,
@@ -115,7 +116,6 @@ struct Fitter1DGaussPolyBg : public Fitter1D<Fitter1DGaussPolyBg> {
           throw std::runtime_error(msg);
         }
       }
-
 
     virtual ~FitResult()
       { }
@@ -254,8 +254,10 @@ struct Fitter1DGaussPolyBg : public Fitter1D<Fitter1DGaussPolyBg> {
         auto *dict = PyDict_New();
         PyDict_SetItemString(dict, "radius", PyFloat_FromDouble(radius));
         PyDict_SetItemString(dict, "lam", PyFloat_FromDouble(lam));
-        // PyDict_SetItemString(dict, "norm", PyFloat_FromDouble(norm));
-        // PyDict_SetItemString(dict, "slope", PyFloat_FromDouble(slope));
+        PyDict_SetItemString(dict, "bg0", PyFloat_FromDouble(bg[0]));
+        PyDict_SetItemString(dict, "bg1", PyFloat_FromDouble(bg[1]));
+        PyDict_SetItemString(dict, "bg2", PyFloat_FromDouble(bg[2]));
+        PyDict_SetItemString(dict, "bg3", PyFloat_FromDouble(bg[3]));
         return dict;
       }
 
@@ -350,90 +352,8 @@ struct Fitter1DGaussPolyBg : public Fitter1D<Fitter1DGaussPolyBg> {
       return bg;
     }
 
-  void setup_chi2_fitter(TMinuit &minuit, double bglo, double bghi)
-    {
-      setup_minuit(minuit, bglo, bghi);
-      set_chi2_func(minuit);
-    }
-
-  void setup_chi2_mrc_fitter(TMinuit &minuit, double bglo, double bghi)
-    {
-      setup_minuit(minuit, bglo, bghi);
-      set_chi2_mrc_func(minuit);
-    }
-
-  void setup_pml_fitter(TMinuit &minuit, double bglo, double bghi)
-    {
-      setup_minuit(minuit, bglo, bghi);
-      set_pml_func(minuit);
-    }
-
-  void setup_pml_mrc_fitter(TMinuit &minuit, double bglo, double bghi)
-    {
-      setup_minuit(minuit, bglo, bghi);
-      set_pml_mrc_func(minuit);
-    }
-
-  FitResult fit_chi2(double bglo, double bghi)
-    {
-      if (fsi == nullptr) {
-        throw std::runtime_error("Fitter missing Fsi object");
-      }
-
-      TMinuit minuit;
-      minuit.SetPrintLevel(-1);
-
-      setup_chi2_fitter(minuit, bglo, bghi);
-      return do_fit_minuit(minuit);
-    }
-
-  FitResult fit_chi2_mrc(double bglo, double bghi)
-    {
-      if (fsi == nullptr) {
-        throw std::runtime_error("Fitter missing Fsi object");
-      }
-
-      TMinuit minuit;
-      minuit.SetPrintLevel(-1);
-
-      setup_chi2_mrc_fitter(minuit, bglo, bghi);
-      return do_fit_minuit(minuit);
-    }
-
-  FitResult fit_pml(double bglo, double bghi)
-    {
-      if (fsi == nullptr) {
-        throw std::runtime_error("Fitter missing Fsi object");
-      }
-
-      TMinuit minuit;
-      minuit.SetPrintLevel(-1);
-
-      setup_pml_fitter(minuit, bglo, bghi);
-      return do_fit_minuit(minuit);
-    }
-
   FitResult fit_pml_mrc_quick()
     { return Fitter1D::fit_pml_mrc_quick(); }
-
-  // void fit_with_random_inits(TMinuit &minuit, FitResult &res, int);
-
-  auto fit_pml_mrc(double bglo, double bghi)
-    {
-      if (mrc == nullptr) {
-        throw std::runtime_error("Fitter missing Mrc1D object");
-      }
-
-      if (fsi == nullptr) {
-        throw std::runtime_error("Fitter missing Fsi object");
-      }
-
-      TMinuit minuit;
-      minuit.SetPrintLevel(-1);
-
-      setup_pml_mrc_fitter(minuit, bglo, bghi);
-      return do_fit_minuit(minuit);
-    }
 
   std::unique_ptr<TH1> get_cf(const FitParams &p) const
     {
@@ -458,6 +378,9 @@ struct Fitter1DGaussPolyBg : public Fitter1D<Fitter1DGaussPolyBg> {
   DECLARE_FIT_METHODS(Fitter1D)
   DECLARE_RESID_METHODS(Fitter1D)
   DECLARE_FILL_METHODS(TH1)
+
+  DECLARE_BG_MINUIT_SETUP_METHODS()
+  DECLARE_BG_FIT_METHODS()
 
 };
 
