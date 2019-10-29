@@ -59,7 +59,8 @@ def arg_parser():
                         help="Classname of Momentum Resolution Correction")
     parser.add_argument("--mrc-path",
                         nargs='?',
-                        default='MRC-08.root:cfg5AD446DB543C4A2A',
+                        #default='MRC-08.root:cfg5AD446DB543C4A2A',
+                        default='MRC-10.root:cfgBB1651B4B408624A',
                         help="Path to Momentum Resolution Correction, format is <filename:cfg>")
     parser.add_argument("--mrc-args",
                         nargs='*',

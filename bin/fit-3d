@@ -61,7 +61,8 @@ def arg_parser():
     parser.add_argument("--mrc-path",
                         nargs='?',
                         #default='MRC-09.root:cfg7A1DB77443589333',
-                        default='MRC-08.root:cfg5AD446DB543C4A2A',
+                        # default='MRC-08.root:cfg5AD446DB543C4A2A',
+                        default='MRC-10.root:cfgBB1651B4B408624A',
                         help="Path to Momentum Resolution Correction, format is <filename:cfg>")
     parser.add_argument("--fitter",
                         default='Fitter3DGaussLcms',
@@ -340,7 +341,7 @@ def run_fit(params: RunFitParams) -> Optional[dict]:
     results["gamma"] = fitter.data.gamma
     results["ndof"] = fitter.degrees_of_freedom()
     results["chi2"] = chi2
-    results["rchi2"] = results["chi2"] / results["ndof"]
+    results["rchi2"] = results["chi2"] / results["ndof"] if results["ndof"] > 0 else 0.0
     results["subset"] = params.subset
 
     return results
