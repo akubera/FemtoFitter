@@ -8,6 +8,25 @@ from dataclasses import dataclass
 import pandas as pd
 
 
+def load_femtofitter_lib(exit_on_err=1):
+    """
+    Attempt to load libFemtoFitter.so
+    """
+    from sys import stderr
+    from pathlib import Path
+    from ROOT import gInterpreter
+
+    fitlibrary = Path(__file__).parent.parent / 'build' / 'libFemtoFitter.so'
+    fitlibrary = str(fitlibrary.absolute())
+    retcode = gInterpreter.Load(fitlibrary)
+    if retcode < 0:
+        print("Could not load libFemtoFitter.so", fitlibrary, file=stderr)
+        if exit_on_err:
+            raise SystemExit(exit_on_err)
+
+    return retcode
+
+
 @dataclass
 class PathQuery:
     analysis: str
