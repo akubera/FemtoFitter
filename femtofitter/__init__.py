@@ -8,6 +8,11 @@ from dataclasses import dataclass
 import pandas as pd
 
 
+def __getattr__(key):
+    import ROOT
+    return getattr(ROOT, key)
+
+
 def load_femtofitter_lib(exit_on_err=1):
     """
     Attempt to load libFemtoFitter.so
