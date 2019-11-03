@@ -219,7 +219,8 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
 
     void apply_to(TH1 &hist)
       {
-        auto coulomb_factor = CoulombHist::GetHistWithRadius(radius);
+        // auto coulomb_factor = CoulombHist::GetHistWithRadius(radius);
+        struct { double Interpolate(double) { return 1.0;} } coulomb_factor;
         const TAxis &xaxis = *hist.GetXaxis();
 
         for (int i=1; i < hist.GetNbinsX(); ++i) {

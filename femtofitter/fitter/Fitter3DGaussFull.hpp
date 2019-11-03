@@ -19,7 +19,6 @@
 #include <valarray>
 #include <iostream>
 
-#include "CoulombHist.hpp"
 #include "Fitter3D.hpp"
 
 #include "fit-methods.hh"
@@ -249,7 +248,9 @@ struct Fitter3DGaussFull : public Fitter3D<Fitter3DGaussFull> {
                   K = hist.GetNbinsZ();
 
         const double phony_r = PseudoRinv(gama);
-        auto coulomb_factor = CoulombHist::GetHistWithRadius(phony_r);
+        // auto coulomb_factor = CoulombHist::GetHistWithRadius(phony_r);
+         struct { double Interpolate(double) { return 1.0;} } coulomb_factor;
+
 
         const TAxis &qout = *hist.GetXaxis(),
                     &qside = *hist.GetYaxis(),

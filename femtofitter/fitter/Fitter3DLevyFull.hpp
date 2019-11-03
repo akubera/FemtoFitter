@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include "CoulombHist.hpp"
 #include "Fitter3D.hpp"
 #include "FitterTraits.hpp"
 

@@ -8,7 +8,6 @@
 #define FITTER3DGAUSSLCMS_HPP
 
 
-#include "CoulombHist.hpp"
 #include "CalculatorResid.hpp"
 #include "Value.hpp"
 #include "math/constants.hh"
@@ -320,9 +319,6 @@ struct Fitter3DGaussLcms : public Fitter3D<Fitter3DGaussLcms> {
                 J = hist.GetNbinsY(),
                 K = hist.GetNbinsZ();
 
-      // const double phony_r = PseudoRinv(gamma);
-      // auto coulomb_factor = CoulombHist::GetHistWithRadius(phony_r);
-
       const TAxis &qout = *hist.GetXaxis(),
                   &qside = *hist.GetYaxis(),
                   &qlong = *hist.GetZaxis();
@@ -355,7 +351,6 @@ struct Fitter3DGaussLcms : public Fitter3D<Fitter3DGaussLcms> {
 
       const double Rinv = PseudoRinv(gamma);
       auto Kfsi = fsi.ForRadius(Rinv);
-      // auto coulomb_factor = CoulombHist::GetHistWithRadius(phony_r);
 
       const TAxis &qout = *hist.GetXaxis(),
                   &qside = *hist.GetYaxis(),

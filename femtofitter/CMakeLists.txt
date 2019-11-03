@@ -116,7 +116,6 @@ set(SRCS
   fsi/FsiKFile.cpp
   fitter/Fitter1DGauss.cpp
   mrc/Mrc3DHypercube.cpp
-  src/CoulombHist.cpp
   src/MinimizerMinuit.cpp
   src/ParamHints.cpp
 )

@@ -9,7 +9,6 @@
 
 #include "CalculatorResid.hpp"
 #include "CalculatorFsi.hpp"
-#include "CoulombHist.hpp"
 #include "Data3D.hpp"
 #include "math/fit.hh"
 #include "mrc/Mrc.hpp"

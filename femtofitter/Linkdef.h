@@ -73,6 +73,4 @@
 
 #pragma link C++ class ParamHints;
 
-#pragma link C++ class CoulombHist;
-
 #endif
