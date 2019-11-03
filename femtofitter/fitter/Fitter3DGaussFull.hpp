@@ -235,44 +235,6 @@ struct Fitter3DGaussFull : public Fitter3D<Fitter3DGaussFull> {
         return Fitter3DGaussFull::gauss(q, Ro, Rs, Rl, Ros, Rol, Rsl, lam, K, norm);
       }
 
-    void
-    fill(TH3 &hist, TH3 &qinv, double gama)
-      { apply_to(hist, qinv, gama); }
-
-    /// Multiply histogram with values from this correlation function
-    void
-    apply_to(TH3 &hist, TH3 &qinv, double gama)
-      {
-        const int I = hist.GetNbinsX(),
-                  J = hist.GetNbinsY(),
-                  K = hist.GetNbinsZ();
-
-        const double phony_r = PseudoRinv(gama);
-        // auto coulomb_factor = CoulombHist::GetHistWithRadius(phony_r);
-         struct { double Interpolate(double) { return 1.0;} } coulomb_factor;
-
-
-        const TAxis &qout = *hist.GetXaxis(),
-                    &qside = *hist.GetYaxis(),
-                    &qlong = *hist.GetZaxis();
-
-        for (int k=1; k<=K; ++k)
-        for (int j=1; j<=J; ++j)
-        for (int i=1; i<=I; ++i) {
-          const double
-            qo = qout.GetBinCenter(i),
-            qs = qside.GetBinCenter(j),
-            ql = qlong.GetBinCenter(k),
-            q = qinv.GetBinContent(i, j, k),
-            Kq = coulomb_factor.Interpolate(q),
-
-            CF = gauss({qo, qs, ql}, Kq),
-            factor = hist.GetBinContent(i,j,k);
-
-          hist.SetBinContent(i,j,k, CF * factor );
-        }
-      }
-
     std::string
     __repr__() const
       {

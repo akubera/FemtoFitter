@@ -186,23 +186,6 @@ struct Fitter1DLevy : Fitter1D<Fitter1DLevy> {
          return Fitter1DLevy::levy(qinv, radius * radius, lam, alpha, K, norm);
       }
 
-    void apply_to(TH1 &hist)
-      {
-        // auto coulomb_factor = FsiCalculator::GetHistWithRadius(radius);
-        struct { double Interpolate(double) { return 1.0;} } coulomb_factor;
-        const TAxis &xaxis = *hist.GetXaxis();
-
-        for (int i=1; i < hist.GetNbinsX(); ++i) {
-          const double
-             factor = hist.GetBinContent(i),
-             q = xaxis.GetBinCenter(i),
-             K = coulomb_factor.Interpolate(q),
-             value = evaluate(q, K);
-
-          hist.SetBinContent(i, factor * value);
-        }
-      }
-
     std::string
     __repr__() const
       {

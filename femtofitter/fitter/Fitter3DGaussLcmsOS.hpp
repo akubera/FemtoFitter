@@ -207,36 +207,6 @@ struct Fitter3DGaussLcmsOS : public Fitter3D<Fitter3DGaussLcmsOS> {
     double gauss(const std::array<double, 3> &q, double K) const
       { return Fitter3DGaussLcmsOS::gauss(q, {Ro*Ro, Rs*Rs, Rl*Rl}, Ros, lam, K, norm); }
 
-    void
-    apply_to(TH3 &hist, TH3& qinv, double gamma)
-    {
-      const int Nx = hist.GetNbinsX(),
-                Ny = hist.GetNbinsY(),
-                Nz = hist.GetNbinsZ();
-
-      const double phony_r = PseudoRinv(gamma);
-      // auto coulomb_factor = CoulombHist::GetHistWithRadius(phony_r);
-      struct { double Interpolate(double) { return 1.0;} } coulomb_factor;
-
-
-      const TAxis &qout = *hist.GetXaxis(),
-                  &qside = *hist.GetYaxis(),
-                  &qlong = *hist.GetZaxis();
-
-      for (int k=1; k<=Nz; ++k)
-      for (int j=1; j<=Ny; ++j)
-      for (int i=1; i<=Nx; ++i) {
-        const double
-          qo = qout.GetBinCenter(i),
-          qs = qside.GetBinCenter(j),
-          ql = qlong.GetBinCenter(k),
-          q = qinv.GetBinContent(i, j, k),
-          // q = qinv.Interpolate(qo, qs, ql),
-          K = coulomb_factor.Interpolate(q);
-
-        hist.SetBinContent(i,j,k, hist.GetBinContent(i,j,k) * gauss({qo, qs, ql}, K));
-      }
-    }
     std::string
     __repr__() const
       {

@@ -217,23 +217,6 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
          return Fitter1DLevyPolyBg::levy(qinv, radius * radius, lam, alpha, bg, K);
       }
 
-    void apply_to(TH1 &hist)
-      {
-        // auto coulomb_factor = CoulombHist::GetHistWithRadius(radius);
-        struct { double Interpolate(double) { return 1.0;} } coulomb_factor;
-        const TAxis &xaxis = *hist.GetXaxis();
-
-        for (int i=1; i < hist.GetNbinsX(); ++i) {
-          const double
-             factor = hist.GetBinContent(i),
-             q = xaxis.GetBinCenter(i),
-             K = coulomb_factor.Interpolate(q),
-             value = evaluate(q, K);
-
-          hist.SetBinContent(i, factor * value);
-        }
-      }
-
     std::string
     __repr__() const
       {
