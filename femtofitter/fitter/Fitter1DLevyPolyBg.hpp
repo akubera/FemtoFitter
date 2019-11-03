@@ -303,114 +303,6 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
       return errflag;
     }
 
-  void setup_chi2_fitter(TMinuit &minuit, double bglo, double bghi)
-    {
-      setup_minuit(minuit, bglo, bghi);
-      set_chi2_func(minuit);
-    }
-
-  void setup_chi2_mrc_fitter(TMinuit &minuit, double bglo, double bghi)
-    {
-      setup_minuit(minuit, bglo, bghi);
-      set_chi2_mrc_func(minuit);
-    }
-
-  void setup_pml_fitter(TMinuit &minuit, double bglo, double bghi)
-    {
-      setup_minuit(minuit, bglo, bghi);
-      set_pml_func(minuit);
-    }
-
-  void setup_pml_mrc_fitter(TMinuit &minuit, double bglo, double bghi)
-    {
-      setup_minuit(minuit, bglo, bghi);
-      set_pml_mrc_func(minuit);
-    }
-
-  FitResult fit_chi2(double bglo, double bghi)
-    {
-      if (fsi == nullptr) {
-        throw std::runtime_error("Fitter missing Fsi object");
-      }
-
-      TMinuit minuit;
-      minuit.SetPrintLevel(-1);
-
-      setup_chi2_fitter(minuit, bglo, bghi);
-      return do_fit_minuit(minuit);
-    }
-
-  FitResult fit_chi2_mrc(double bglo, double bghi)
-    {
-      if (fsi == nullptr) {
-        throw std::runtime_error("Fitter missing Fsi object");
-      }
-
-      TMinuit minuit;
-      minuit.SetPrintLevel(-1);
-
-      setup_chi2_mrc_fitter(minuit, bglo, bghi);
-      return do_fit_minuit(minuit);
-    }
-
-  FitResult fit_pml(double bglo, double bghi)
-    {
-      if (fsi == nullptr) {
-        throw std::runtime_error("Fitter missing Fsi object");
-      }
-
-      TMinuit minuit;
-      minuit.SetPrintLevel(-1);
-
-      setup_pml_fitter(minuit, bglo, bghi);
-      return do_fit_minuit(minuit);
-    }
-
-  FitResult fit_pml_mrc(double bglo, double bghi)
-    {
-      if (mrc == nullptr) {
-        throw std::runtime_error("Fitter missing Mrc1D object");
-      }
-
-      if (fsi == nullptr) {
-        throw std::runtime_error("Fitter missing Fsi object");
-      }
-
-      TMinuit minuit;
-      minuit.SetPrintLevel(-1);
-
-      setup_pml_mrc_fitter(minuit, bglo, bghi);
-      return do_fit_minuit(minuit);
-    }
-
-  FitResult fit_pml_mrc_quick()
-    { return Fitter1D::fit_pml_mrc_quick(); }
-
-  // void fit_with_random_inits(TMinuit &minuit, FitResult &res, int);
-
-  DECLARE_FIT_METHODS(Fitter1D);
-  DECLARE_RESID_METHODS(Fitter1D);
-
-  void fill(TH1 &h, const FitParams &p, UInt_t npoints=1) const
-    {
-      p.fill(h, *fsi, npoints);
-    }
-
-  void fill(TH1 &h, const FitResult &p, UInt_t npoints=1) const
-    {
-      fill(h, p.as_params(), npoints);
-    }
-
-  void fill_smeared_fit(TH1 &h, const FitResult &fr)
-    {
-      fill_smeared_fit(h, fr.as_params());
-    }
-
-  void fill_smeared_fit(TH1 &h, const FitParams &p)
-    {
-      Fitter1D::fill_smeared_fit(h, p);
-    }
-
   std::unique_ptr<TH1> get_cf(const FitParams &p) const
     {
       std::unique_ptr<TH1> cf(static_cast<TH1*>(data.src->num->Clone()));
@@ -420,6 +312,14 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
       fill(*cf, p);
       return cf;
     }
+
+  DECLARE_BG_MINUIT_SETUP_METHODS()
+  DECLARE_BG_FIT_METHODS()
+
+  DECLARE_FIT_METHODS(Fitter1D)
+  DECLARE_RESID_METHODS(Fitter1D)
+
+  DECLARE_FILL_METHODS(TH1)
 };
 
 
