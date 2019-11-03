@@ -28,6 +28,7 @@
 ///
 struct Fitter3DGaussLcmsOS : public Fitter3D<Fitter3DGaussLcmsOS> {
 
+  using Super = Fitter3D<Fitter3DGaussLcmsOS>;
   class FitParams;
   class FitResult;
 
@@ -71,7 +72,7 @@ struct Fitter3DGaussLcmsOS : public Fitter3D<Fitter3DGaussLcmsOS> {
   /// \class FitResult
   /// \brief Values and stderr from minuit results
   ///
-  struct FitResult {
+  struct FitResult : FitResult3D<FitResult, Fitter3DGaussLcmsOS> {
     Value lam,
           norm,
           Ro,
@@ -97,8 +98,19 @@ struct Fitter3DGaussLcmsOS : public Fitter3D<Fitter3DGaussLcmsOS> {
       , Rs(minuit, RSIDE_PARAM_IDX)
       , Rl(minuit, RLONG_PARAM_IDX)
       , Ros(minuit, ROS_PARAM_IDX)
-    {
-    }
+      {
+      }
+
+    void FillMinuit(TMinuit &minuit) const override
+      {
+        int errflag = 0;
+        minuit.mnparm(NORM_PARAM_IDX, "Norm", norm.value, 0.02, 0.0, 0.0, errflag);
+        minuit.mnparm(LAM_PARAM_IDX, "Lam", lam.value, 0.05, 0.0, 1.0, errflag);
+        minuit.mnparm(ROUT_PARAM_IDX, "Ro", Ro.value, 0.5, 0.0, 0.0, errflag);
+        minuit.mnparm(RSIDE_PARAM_IDX, "Rs", Rs.value, 0.5, 0.0, 0.0, errflag);
+        minuit.mnparm(RLONG_PARAM_IDX, "Rl", Rl.value, 0.5, 0.0, 0.0, errflag);
+        minuit.mnparm(ROS_PARAM_IDX, "Ros", Ros.value, 0.5, 0.0, 0.0, errflag);
+      }
 
     void print() const
     {
@@ -154,8 +166,6 @@ struct Fitter3DGaussLcmsOS : public Fitter3D<Fitter3DGaussLcmsOS> {
       return dict;
       #undef Add
     }
-
-    FitParams as_params() const;
   };
 
   /// \brief 3D Gaussian fit parameters
@@ -164,6 +174,18 @@ struct Fitter3DGaussLcmsOS : public Fitter3D<Fitter3DGaussLcmsOS> {
   struct FitParams : FitParam3D<FitParams> {
     double norm, lam;
     double Ro, Rs, Rl, Ros;
+
+    double evaluate(const std::array<double, 3> &q, double K) const
+      { return Fitter3DGaussLcmsOS::gauss(q, {Ro*Ro, Rs*Rs, Rl*Rl}, Ros, lam, K, norm); }
+
+    void Normalize(TH3 &cf) const
+      {
+        cf.Scale(1.0 / norm);
+      }
+
+    /// Return calculated Rinv: $\sqrt{(Ro \gamma)^2 + Rs^2 + Rl^2}$
+    double PseudoRinv(double gamma) const
+      { return std::sqrt((Ro * Ro * gamma * gamma + Rs * Rs + Rl * Rl) / 3.0); }
 
     FitParams(double *par)
       : norm(par[NORM_PARAM_IDX])
@@ -199,13 +221,6 @@ struct Fitter3DGaussLcmsOS : public Fitter3D<Fitter3DGaussLcmsOS> {
           || std::isnan(lam)
           || std::isnan(norm);
     }
-
-    /// Return calculated Rinv: $\sqrt{(Ro \gamma)^2 + Rs^2 + Rl^2}$
-    double PseudoRinv(double gamma) const
-      { return std::sqrt((Ro * Ro * gamma * gamma + Rs * Rs + Rl * Rl) / 3.0); }
-
-    double evaluate(const std::array<double, 3> &q, double K) const
-      { return Fitter3DGaussLcmsOS::gauss(q, {Ro*Ro, Rs*Rs, Rl*Rl}, Ros, lam, K, norm); }
 
     std::string
     __repr__() const
@@ -318,12 +333,5 @@ struct Fitter3DGaussLcmsOS : public Fitter3D<Fitter3DGaussLcmsOS> {
   DECLARE_RESID_METHODS(Fitter3D);
 
 };
-
-
-inline auto
-Fitter3DGaussLcmsOS::FitResult::as_params() const -> FitParams
-{
-  return FitParams(*this);
-}
 
 #endif

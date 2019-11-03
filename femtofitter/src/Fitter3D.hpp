@@ -605,6 +605,9 @@ struct FitResult3D {
 
   virtual void FillMinuit(TMinuit &) const = 0;
 
+  virtual ~FitResult3D()
+    { }
+
   Paramters as_params() const
     {
       return Paramters(static_cast<const CRTP&>(*this));
@@ -627,6 +630,16 @@ struct FitResult3D {
       // ResidCalculatorChi2
       fitter.resid_calc(params, FitterType::CalcChi2::resid_func);
       return 0.0;
+    }
+
+  double evaluate(const std::array<double, 3> &q, double K) const
+    {
+      return as_params().evaluate(q, K);
+    }
+
+  void normalize(TH3 &cf) const
+    {
+      return as_params().Noramlize(cf);
     }
 };
 

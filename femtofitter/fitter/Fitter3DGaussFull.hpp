@@ -83,7 +83,7 @@ struct Fitter3DGaussFull : public Fitter3D<Fitter3DGaussFull> {
   /// \class FitResult
   /// \brief Values and stderr from minuit results
   ///
-  struct FitResult {
+  struct FitResult : FitResult3D<FitResult, Fitter3DGaussFull> {
     Value lam,
           norm,
           Ro,
@@ -104,6 +104,16 @@ struct Fitter3DGaussFull : public Fitter3D<Fitter3DGaussFull> {
       , Rsl(minuit, RSL_PARAM_IDX)
     {
     }
+
+    void FillMinuit(TMinuit &minuit) const override
+      {
+        int errflag = 0;
+        minuit.mnparm(NORM_PARAM_IDX, "Norm", norm.value, 0.02, 0.0, 0.0, errflag);
+        minuit.mnparm(LAM_PARAM_IDX, "Lam", lam.value, 0.05, 0.0, 1.0, errflag);
+        minuit.mnparm(ROUT_PARAM_IDX, "Ro", Ro.value, 0.5, 0.0, 0.0, errflag);
+        minuit.mnparm(RSIDE_PARAM_IDX, "Rs", Rs.value, 0.5, 0.0, 0.0, errflag);
+        minuit.mnparm(RLONG_PARAM_IDX, "Rl", Rl.value, 0.5, 0.0, 0.0, errflag);
+      }
 
     void print() const
     {
@@ -168,7 +178,6 @@ struct Fitter3DGaussFull : public Fitter3D<Fitter3DGaussFull> {
       #undef Add
     }
 
-    FitParams as_params() const;
   };
 
   /// \brief 3D Gaussian fit parameters
@@ -179,6 +188,16 @@ struct Fitter3DGaussFull : public Fitter3D<Fitter3DGaussFull> {
     double Ro, Rs, Rl;
     double Ros, Rol, Rsl;
     double gamma {1.0};
+
+    double evaluate(std::array<double, 3> q, double K) const
+      {
+        return Fitter3DGaussFull::gauss(q, Ro, Rs, Rl, Ros, Rol, Rsl, lam, K, norm);
+      }
+
+    void Normalize(TH3 &cf) const
+      {
+        cf.Scale(1.0 / norm);
+      }
 
     FitParams(double *par)
       : norm(par[NORM_PARAM_IDX])
@@ -224,11 +243,6 @@ struct Fitter3DGaussFull : public Fitter3D<Fitter3DGaussFull> {
 
     double Rinv() const
       { return PseudoRinv(gamma); }
-
-    double evaluate(std::array<double, 3> q, double K) const
-      {
-        return Fitter3DGaussFull::gauss(q, Ro, Rs, Rl, Ros, Rol, Rsl, lam, K, norm);
-      }
 
     std::string
     __repr__() const
@@ -311,11 +325,5 @@ struct Fitter3DGaussFull : public Fitter3D<Fitter3DGaussFull> {
   // DECLARE_FILL_METHODS(TH3);
 
 };
-
-auto
-Fitter3DGaussFull::FitResult::as_params() const -> FitParams
-{
-  return FitParams(*this);
-}
 
 #endif

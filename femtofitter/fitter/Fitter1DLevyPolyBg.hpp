@@ -169,7 +169,19 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
            radius,
            alpha;
 
-   std::array<double, 4> bg;
+    std::array<double, 4> bg;
+
+    double evaluate(const double qinv, const double K) const
+      {
+         return Fitter1DLevyPolyBg::levy(qinv, radius * radius, lam, alpha, bg, K);
+      }
+
+    void Normalize(TH1 &h) const
+      {
+        const double x = h.GetXaxis()->GetBinCenter(h.GetXaxis()->GetLast());
+        double background = bg[0] + x * x * (bg[1] + x * x * (bg[2] + x * x * bg[3]));
+        h.Scale(1.0 / background);
+      }
 
     FitParams(const double *vals)
       : lam(vals[LAM_PARAM_IDX])
@@ -205,11 +217,6 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
         #undef INVALID
       }
 
-    double evaluate(const double qinv, const double K) const
-      {
-         return Fitter1DLevyPolyBg::levy(qinv, radius * radius, lam, alpha, bg, K);
-      }
-
     std::string
     __repr__() const
       {
@@ -227,14 +234,6 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
         // PyDict_SetItemString(dict, "norm", PyFloat_FromDouble(norm));
         return dict;
       }
-
-    void Normalize(TH1 &h) const
-      {
-        const double x = h.GetXaxis()->GetBinCenter(h.GetXaxis()->GetLast());
-        double background = bg[0] + x * x * (bg[1] + x * x * (bg[2] + x * x * bg[3]));
-        h.Scale(1.0 / background);
-      }
-
   };
 
   Fitter1DLevyPolyBg(const TH1 &num, const TH1 &den, double limit)

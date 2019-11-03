@@ -436,6 +436,8 @@ struct FitResult1D {
   using Paramters = typename FitterType::FitParams;
 
   virtual void FillMinuit(TMinuit &) const = 0;
+  virtual ~FitResult1D()
+    { }
 
   Paramters as_params() const
     {
