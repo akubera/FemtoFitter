@@ -437,7 +437,6 @@ struct FitResult1D {
 
   virtual void FillMinuit(TMinuit &) const = 0;
 
-  // virtual auto as_params() const -> typename FitterType::FitParams = 0;
   Paramters as_params() const
     {
       return Paramters(static_cast<const CRTP&>(*this));
@@ -454,7 +453,15 @@ struct FitResult1D {
       }
     }
 
-  virtual void Normalize(TH1 &) const = 0;
+  virtual void Evaluate(const double q, const double K) const
+    {
+      as_params().evaluate(q, K);
+    }
+
+  virtual void Normalize(TH1 &h) const
+    {
+      as_params().Normalize(h);
+    }
 };
 
 

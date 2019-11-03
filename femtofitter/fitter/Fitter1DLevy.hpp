@@ -132,11 +132,6 @@ struct Fitter1DLevy : Fitter1D<Fitter1DLevy> {
         minuit.mnparm(RADIUS_PARAM_IDX, "Radius", radius.value, 0.2, 0.0, 0.0, errflag);
         minuit.mnparm(ALPHA_PARAM_IDX, "Alpha", alpha.value, 0.01, 0.0, 0.0, errflag);
       }
-
-    void Normalize(TH1 &h) const override
-      {
-        h.Scale(1.0 / norm.value);
-      }
   };
 
 
@@ -147,6 +142,16 @@ struct Fitter1DLevy : Fitter1D<Fitter1DLevy> {
            lam,
            radius,
            alpha;
+
+    double evaluate(const double qinv, const double K) const
+      {
+         return Fitter1DLevy::levy(qinv, radius * radius, lam, alpha, K, norm);
+      }
+
+    void Normalize(TH1 &h) const
+      {
+        h.Scale(1.0 / norm);
+      }
 
     FitParams(const double *vals)
       : norm(vals[NORM_PARAM_IDX])
@@ -179,11 +184,6 @@ struct Fitter1DLevy : Fitter1D<Fitter1DLevy> {
         #undef INVALID
       }
 
-    double evaluate(const double qinv, const double K) const
-      {
-         return Fitter1DLevy::levy(qinv, radius * radius, lam, alpha, K, norm);
-      }
-
     std::string
     __repr__() const
       {
@@ -202,10 +202,6 @@ struct Fitter1DLevy : Fitter1D<Fitter1DLevy> {
         return dict;
       }
 
-    void Normalize(TH1 &h) const
-      {
-        h.Scale(1.0 / norm);
-      }
   };
 
   Fitter1DLevy(const TH1 &num, const TH1 &den, double limit)

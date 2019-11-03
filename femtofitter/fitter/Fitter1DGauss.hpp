@@ -98,11 +98,6 @@ struct Fitter1DGauss : public Fitter1D<Fitter1DGauss> {
     virtual ~FitResult()
       { }
 
-    double evaluate(const double q, const double K) const
-      {
-        return Fitter1DGauss::gauss(q, radius * radius, lam, K, norm);
-      }
-
     std::map<std::string, double>
     as_map() const
       {
@@ -155,16 +150,22 @@ struct Fitter1DGauss : public Fitter1D<Fitter1DGauss> {
         minuit.mnparm(NORM_PARAM_IDX, "Norm", norm.value, 0.005, 0.0, 0.0, errflag);
       }
 
-    void Normalize(TH1 &h) const override
-      {
-        h.Scale(1.0 / norm.value);
-      }
   };
 
   struct FitParams : FitParam1D<FitParams> {
     double norm,
            lam,
            radius;
+
+    double evaluate(const double q, const double K) const
+      {
+        return Fitter1DGauss::gauss(q, radius * radius, lam, K, norm);
+      }
+
+    void Normalize(TH1 &h) const
+      {
+        h.Scale(1.0 / norm);
+      }
 
     FitParams(const double *par)
       : norm(par[NORM_PARAM_IDX])
@@ -220,12 +221,6 @@ struct Fitter1DGauss : public Fitter1D<Fitter1DGauss> {
         PyDict_SetItemString(dict, "norm", PyFloat_FromDouble(norm));
         return dict;
       }
-
-    double evaluate(const double q, const double K) const
-      {
-        return Fitter1DGauss::gauss(q, radius * radius, lam, K, norm);
-      }
-
   };
 
   int

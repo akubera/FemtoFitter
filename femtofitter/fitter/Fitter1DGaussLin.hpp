@@ -126,11 +126,6 @@ struct Fitter1DGaussLin : public Fitter1D<Fitter1DGaussLin> {
         return dict;
       }
 
-    double evaluate(const double q, const double K) const
-      { return Fitter1DGaussLin::gauss(q, radius * radius, lam, slope, K, norm); }
-
-    FitParams as_params() const;
-
     void FillMinuit(TMinuit &minuit) const override
       {
         int errflag = 0;
@@ -140,11 +135,6 @@ struct Fitter1DGaussLin : public Fitter1D<Fitter1DGaussLin> {
         minuit.mnparm(R_PARAM_IDX, "Radius", radius.value, 0.2, 0.0, 0.0, errflag);
         minuit.mnparm(SLOPE_PARAM_IDX, "Slope", slope.value, 0.2, 0.0, 0.0, errflag);
       }
-
-    void Normalize(TH1 &h) const override
-      {
-        h.Scale(1.0 / norm.value);
-      }
   };
 
   struct FitParams : FitParam1D<FitParams> {
@@ -152,6 +142,19 @@ struct Fitter1DGaussLin : public Fitter1D<Fitter1DGaussLin> {
            lam,
            radius,
            slope;
+
+    double evaluate(const double q, const double K) const
+      {
+        return Fitter1DGaussLin::gauss(q, radius * radius, lam, slope, K, norm);
+      }
+
+    void Normalize(TH1 &h) const
+      {
+        const double x = h.GetXaxis()->GetBinCenter(h.GetXaxis()->GetLast());
+        double background = norm + x * slope;
+
+        h.Scale(1.0 / background);
+      }
 
     FitParams(const double *par)
       : norm(par[NORM_PARAM_IDX])
@@ -211,19 +214,6 @@ struct Fitter1DGaussLin : public Fitter1D<Fitter1DGaussLin> {
         PyDict_SetItemString(dict, "norm", PyFloat_FromDouble(norm));
         PyDict_SetItemString(dict, "slope", PyFloat_FromDouble(slope));
         return dict;
-      }
-
-    double evaluate(const double q, const double K) const
-      {
-        return Fitter1DGaussLin::gauss(q, radius * radius, lam, slope, K, norm);
-      }
-
-    void Normalize(TH1 &h) const
-      {
-        const double x = h.GetXaxis()->GetBinCenter(h.GetXaxis()->GetLast());
-        double background = norm + x * slope;
-
-        h.Scale(1.0 / background);
       }
   };
 
@@ -356,11 +346,5 @@ struct Fitter1DGaussLin : public Fitter1D<Fitter1DGaussLin> {
   DECLARE_FILL_METHODS(TH1)
 
 };
-
-inline auto
-Fitter1DGaussLin::FitResult::as_params() const -> FitParams
-{
-  return FitParams(*this);
-}
 
 #endif
