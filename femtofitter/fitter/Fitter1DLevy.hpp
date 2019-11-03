@@ -18,6 +18,7 @@ struct Fitter1DLevy : Fitter1D<Fitter1DLevy> {
   using Super = Fitter1D<Fitter1DLevy>;
 
   struct FitParams;
+  struct FitResult;
 
   static std::string GetName()
     { return "Levy1D"; }
@@ -92,9 +93,6 @@ struct Fitter1DLevy : Fitter1D<Fitter1DLevy> {
         return Form("<Fitter1DLevy::FitParam radius=%g lambda=%g alpha=%g norm=%g>",
                     radius.value, lam.value, alpha.value, norm.value);
       }
-
-    FitParams
-    as_params() const;
 
     std::map<std::string, double>
     as_map() const
@@ -247,12 +245,5 @@ struct Fitter1DLevy : Fitter1D<Fitter1DLevy> {
   DECLARE_FILL_METHODS(TH1);
 
 };
-
-
-auto
-Fitter1DLevy::FitResult::as_params() const -> FitParams
-{
-  return FitParams(*this);
-}
 
 #endif

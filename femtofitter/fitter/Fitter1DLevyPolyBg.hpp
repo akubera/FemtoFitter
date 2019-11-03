@@ -15,7 +15,10 @@
 ///
 struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
 
+  using Super = Fitter1D<Fitter1DLevyPolyBg>;
+
   struct FitParams;
+  struct FitResult;
 
   static std::string GetName()
     { return "LevyPolyBg1D"; }
@@ -114,9 +117,6 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
                     radius.value, lam.value, alpha.value,
                     bg[0], bg[1], bg[2], bg[3]);
       }
-
-    FitParams
-    as_params() const;
 
     std::map<std::string, double>
     as_map() const
@@ -322,11 +322,5 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
   DECLARE_FILL_METHODS(TH1)
 };
 
-
-auto
-Fitter1DLevyPolyBg::FitResult::as_params() const -> FitParams
-{
-  return FitParams(*this);
-}
 
 #endif

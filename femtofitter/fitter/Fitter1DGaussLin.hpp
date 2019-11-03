@@ -21,6 +21,7 @@ struct Fitter1DGaussLin : public Fitter1D<Fitter1DGaussLin> {
   using Super = Fitter1D<Fitter1DGaussLin>;
 
   struct FitParams;
+  struct FitResult;
 
   static std::string GetName()
     { return "LinGauss1D"; }

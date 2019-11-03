@@ -21,7 +21,7 @@ struct Fitter1DGaussPolyBg : public Fitter1D<Fitter1DGaussPolyBg> {
   using Super = Fitter1D<Fitter1DGaussPolyBg>;
 
   struct FitParams;
-  struct FitResults;
+  struct FitResult;
 
   static std::string GetName()
     { return "Gauss1DPolybg"; }
@@ -173,8 +173,6 @@ struct Fitter1DGaussPolyBg : public Fitter1D<Fitter1DGaussPolyBg> {
         background[3] = bg[3].value;
         return Fitter1DGaussPolyBg::gauss(q, radius * radius, lam, background, K);
       }
-
-    FitParams as_params() const;
 
     void FillMinuit(TMinuit &minuit) const override
       {
@@ -383,11 +381,5 @@ struct Fitter1DGaussPolyBg : public Fitter1D<Fitter1DGaussPolyBg> {
   DECLARE_BG_FIT_METHODS()
 
 };
-
-inline auto
-Fitter1DGaussPolyBg::FitResult::as_params() const -> FitParams
-{
-  return FitParams(*this);
-}
 
 #endif
