@@ -4,5 +4,6 @@
   if (std::getenv("ALICE_BATCH")) {
     gROOT->SetBatch(true);
   }
-  gSystem->Load("libFemtoFitter.so");
+
+  gInterpreter->Load("build/libFemtoFitter.so");
 }
