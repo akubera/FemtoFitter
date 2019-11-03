@@ -15,15 +15,15 @@
 #include "Value.hpp"
 #include "math/constants.hh"
 
-#include <typeinfo>
+#include "fit-methods.hh"
+#include "PythonInterface.hh"
+
 #include <TMinuit.h>
 #include <TFile.h>
 
-#include <Python.h>
-
 #include <iostream>
+#include <typeinfo>
 
-#include "fitter/fit-methods.hh"
 
 /// \class Fitter1D
 /// \brief Generic 1D

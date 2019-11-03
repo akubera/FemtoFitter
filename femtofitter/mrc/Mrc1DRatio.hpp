@@ -11,7 +11,6 @@
 
 #include "Mrc.hpp"
 #include "HistCache.hpp"
-#include "Fitter1D.hpp"
 
 #include <TDirectory.h>
 

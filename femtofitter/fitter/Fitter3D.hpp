@@ -9,18 +9,18 @@
 
 #include "CalculatorResid.hpp"
 #include "CalculatorFsi.hpp"
+
 #include "Data3D.hpp"
-#include "math/fit.hh"
+#include "math/constants.hh"
 #include "mrc/Mrc.hpp"
-#include "fitter/fit-methods.hh"
+
+#include "fit-methods.hh"
 
 #include "ParamHints.hpp"
 #include "PythonInterface.hh"
 
 #include <TMinuit.h>
 #include <TFile.h>
-#include <TPython.h>
-#include <Python.h>
 
 #include <iostream>
 #include <typeinfo>

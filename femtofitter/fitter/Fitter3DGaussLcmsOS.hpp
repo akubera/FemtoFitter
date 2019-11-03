@@ -20,7 +20,6 @@
 #include <iostream>
 
 #include "Fitter3D.hpp"
-#include "Data3D.hpp"
 
 
 /// \class Fitter3DGaussLcmsOS

@@ -9,7 +9,6 @@
 
 #include "Mrc.hpp"
 #include "HistCache.hpp"
-#include "Fitter1D.hpp"
 
 #include <TH2.h>
 #include <memory>

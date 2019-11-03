@@ -3,7 +3,7 @@
 ///
 
 #include "Mrc3DHypercube.hpp"
-#include "Fitter3D.hpp"
+#include "fitter/Fitter3D.hpp"
 
 #include <iostream>
 

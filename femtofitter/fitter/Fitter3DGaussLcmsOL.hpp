@@ -20,9 +20,6 @@
 #include <iostream>
 
 #include "Fitter3D.hpp"
-#include "Data3D.hpp"
-
-#include "fitter/fit-methods.hh"
 
 
 /// \class Fitter3DGaussLcmsOL
