@@ -71,8 +71,8 @@ class PathQuery:
 
     @classmethod
     def from_dict(cls, data):
-        allowed = cls.__dataclass_fields__.keys()
-        return cls(**{k: v for k, v in data.items() if k in allowed})
+        from dataclasses import fields
+        return cls(**{k: v for k, v in data.items() if k in fields(cls)})
 
     def find(self, df, *keys):
         """
