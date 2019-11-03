@@ -270,9 +270,6 @@ struct Fitter3DGaussLcms : public Fitter3D<Fitter3DGaussLcms> {
     double evaluate(const std::array<double, 3> &q, double K) const
       { return Fitter3DGaussLcms::gauss(q, {Ro*Ro, Rs*Rs, Rl*Rl}, lam, K, norm); }
 
-    double gauss(const std::array<double, 3> &q, double K) const
-      { return evaluate(q, K); }
-
     std::string
     __repr__() const
       {
@@ -333,7 +330,7 @@ struct Fitter3DGaussLcms : public Fitter3D<Fitter3DGaussLcms> {
 
   static double
   gauss(const std::array<double, 3>& q, const FitParams &p, double K)
-    { return p.gauss(q, K); }
+    { return p.evaluate(q, K); }
 
   int
   setup_minuit(TMinuit &minuit) const override

@@ -226,12 +226,7 @@ struct Fitter3DGaussFull : public Fitter3D<Fitter3DGaussFull> {
       { return PseudoRinv(gamma); }
 
     double evaluate(std::array<double, 3> q, double K) const
-      { return gauss(q, K); }
-
-    double gauss(std::array<double, 3> q, double K) const
       {
-        // std::array<double, 3> Rsq = {Ro*Ro, Rs*Rs, Rl*Rl};
-        // return Fitter3DGaussLcms::gauss(q, Rsq, lam, K, norm);
         return Fitter3DGaussFull::gauss(q, Ro, Rs, Rl, Ros, Rol, Rsl, lam, K, norm);
       }
 
@@ -284,7 +279,7 @@ struct Fitter3DGaussFull : public Fitter3D<Fitter3DGaussFull> {
 
   static double
   gauss(const std::array<double, 3> &q, const FitParams &p, double K)
-    { return p.gauss(q, K); }
+    { return p.evaluate(q, K); }
 
   int
   setup_minuit(TMinuit &minuit) const override

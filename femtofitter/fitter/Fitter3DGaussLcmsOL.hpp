@@ -209,7 +209,7 @@ struct Fitter3DGaussLcmsOL : public Fitter3D<Fitter3DGaussLcmsOL> {
     double PseudoRinv(double gamma) const
       { return std::sqrt((Ro * Ro * gamma * gamma + Rs * Rs + Rl * Rl) / 3.0); }
 
-    double gauss(const std::array<double, 3> &q, double K) const
+    double evaluate(const std::array<double, 3> &q, double K) const
       { return Fitter3DGaussLcmsOL::gauss(q, {Ro*Ro, Rs*Rs, Rl*Rl}, Rol, lam, K, norm); }
 
     std::string
@@ -273,7 +273,7 @@ struct Fitter3DGaussLcmsOL : public Fitter3D<Fitter3DGaussLcmsOL> {
 
   static double
   gauss(const std::array<double, 3>& q, const FitParams &p, double K)
-    { return p.gauss(q, K); }
+    { return p.evaluate(q, K); }
 
   int
   setup_minuit(TMinuit &minuit) const override

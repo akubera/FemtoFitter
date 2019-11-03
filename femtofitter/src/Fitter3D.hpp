@@ -390,12 +390,6 @@ struct FitParam3D : Fit3DParameters {
   virtual ~FitParam3D()
     { }
 
-  // void evalute(double q, double, double k) const
-  double evaluate(std::array<double, 3> q, double k) const
-    {
-      return static_cast<const CRTP*>(this)->gauss(q, k);
-    }
-
   double Rinv() const { return 1.0; }
 
   void fill(TH3 &h, const TH3 &fsi) const override
