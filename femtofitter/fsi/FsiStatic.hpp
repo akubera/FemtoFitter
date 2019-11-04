@@ -46,15 +46,16 @@ struct FsiStatic : public FsiCalculator {
 
   void Fill(std::vector<double> &dest, double _R)
     {
-      for (auto &n : dest) {
-        n = value;
-      }
+      std::fill(dest.begin(), dest.end(), value);
     }
 
   std::string ClassName() const override
     { return std::string("FsiStatic[") + Form("%g", value) + "]"; }
 
   static std::shared_ptr<FsiCalculator> new_shared_ptr(double value)
+    { return std::make_shared<FsiStatic>(value); }
+
+  static std::shared_ptr<FsiCalculator> From(double value)
     { return std::make_shared<FsiStatic>(value); }
 };
 
