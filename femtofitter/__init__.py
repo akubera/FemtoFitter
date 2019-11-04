@@ -72,7 +72,11 @@ class PathQuery:
     @classmethod
     def from_dict(cls, data):
         from dataclasses import fields
-        return cls(**{k: v for k, v in data.items() if k in fields(cls)})
+        keys = {f.name for f in fields(cls)}
+
+        return cls(**{k: v
+                      for k, v in data.items()
+                      if k in keys})
 
     def find(self, df, *keys):
         """
@@ -129,10 +133,11 @@ class PathQuery:
         yield from self.values()
 
     def keys(self):
-        yield from self.__dataclass_fields__.keys()
+        from dataclasses import fields
+        yield from (f.name for f in fields(self))
 
     def values(self):
-        yield from (getattr(self, f) for f in self.__dataclass_fields__.keys())
+        yield from (getattr(self, f) for f in self.keys())
 
     def items(self):
         yield from zip(self.keys(), self.values())
