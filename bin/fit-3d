@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # fit-3d
 #
@@ -26,7 +26,7 @@ from tqdm import tqdm
 if '' not in sys.path:
     sys.path.insert(0, '')
 
-from femtofitter import PathQuery
+from femtofitter import PathQuery, load_femtofitter_lib
 from femtofitter.fit import get_configuration_json
 
 
@@ -95,6 +95,8 @@ def main(argv=None):
     args = arg_parser().parse_args(argv)
 
     import ROOT
+
+    load_femtofitter_lib()
 
     try:
         getattr(ROOT, args.fitter)
@@ -183,9 +185,7 @@ async def run_fits(params, executor, loop=None, cb=None):
 
     with tqdm(total=len(pending)) as pbar:
         while pending:
-            done, pending = await wait(pending,
-                                       loop=loop,
-                                       return_when=FIRST_COMPLETED)
+            done, pending = await wait(pending, return_when=FIRST_COMPLETED)
             finished.extend([r.result() for r in done if r.result() is not None])
             if cb:
                 for job in done:
