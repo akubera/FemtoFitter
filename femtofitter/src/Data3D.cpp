@@ -73,7 +73,7 @@ Data3D::Data3D(std::unique_ptr<TH3> hnum,
     lo_binZ = std::max(1, zaxis->FindBin(-limit)),
     hi_binZ = std::min(nbinsz, (size_t)zaxis->FindBin(limit));
 
-  true_limit = xaxis->GetBinUpEdge(hi_binZ);
+  true_limit = zaxis->GetBinUpEdge(hi_binZ);
 
   data.reserve(nbins);
 
