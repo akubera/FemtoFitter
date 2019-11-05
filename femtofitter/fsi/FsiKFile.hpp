@@ -85,6 +85,7 @@ struct FsiKFile : public FsiCalculator {
       if (!hist) {
         throw std::runtime_error("Invalid TFile: Missing histogram k2ss");
       }
+      k2ss->SetDirectory(nullptr);
       k2ss.reset(hist);
 
       const TAxis &x = *hist->GetXaxis();
@@ -211,21 +212,16 @@ struct FsiKFile : public FsiCalculator {
         return nullptr;
       }
 
-      std::unique_ptr<TObject> obj(file->Get("k2ss"));
-      if (!obj) {
+      TH2 *hist = nullptr;
+      file->GetObject("k2ss", hist);
+      if (!hist) {
         std::cerr << "No TObject k2ss found in '" << fname << "'\n";
         return nullptr;
       }
 
-      if (!obj->InheritsFrom("TH2")) {
-        std::cerr << "TObject k2ss not a TH2 '" << fname << "'\n";
-        return nullptr;
-      }
+      hist->SetDirectory(nullptr);
 
-      std::unique_ptr<TH2> h(static_cast<TH2*>(obj.release()));
-      h->SetDirectory(nullptr);
-
-      auto result = std::make_shared<FsiKFile>(std::move(h));
+      auto result = std::make_shared<FsiKFile>(std::unique_ptr<TH2>(hist));
       result->filename = file->GetName();
       return result;
     }
