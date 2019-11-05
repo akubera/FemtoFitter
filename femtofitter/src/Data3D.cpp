@@ -73,7 +73,7 @@ Data3D::Data3D(std::unique_ptr<TH3> hnum,
     lo_binZ = std::max(1, zaxis->FindBin(-limit)),
     hi_binZ = std::min(nbinsz, (size_t)zaxis->FindBin(limit));
 
-  true_limit = xaxis->GetBinUpEdge(hi_binX);
+  true_limit = xaxis->GetBinUpEdge(hi_binZ);
 
   data.reserve(nbins);
 
@@ -120,42 +120,7 @@ Data3D::Data3D(std::vector<Datum> data_, double limit_, double true_limit_)
 std::unique_ptr<Data3D>
 Data3D::FromDirectory(TDirectory &tdir, double limit, double minimum)
 {
-  const auto n = std::unique_ptr<TH3>((TH3*)tdir.Get("num")),
-             d = std::unique_ptr<TH3>((TH3*)tdir.Get("den")),
-             q = std::unique_ptr<TH3>((TH3*)tdir.Get("qinv"));
-
-  if (!n or !d or !q) {
-    return nullptr;
-  }
-
-  int skipcount = 0;
-
-  const TAxis
-    &xaxis = *n->GetXaxis(),
-    &yaxis = *n->GetYaxis(),
-    &zaxis = *n->GetZaxis();
-
-  for (int k=zaxis.GetFirst(); k <= zaxis.GetLast(); ++k)
-  for (int j=yaxis.GetFirst(); j <= yaxis.GetLast(); ++j)
-  for (int i=xaxis.GetFirst(); i <= xaxis.GetLast(); ++i) {
-
-    double nval = n->GetBinContent(i,j,k);
-    double dval = d->GetBinContent(i,j,k);
-
-    if (dval && nval / dval < minimum) {
-      ++skipcount;
-      d->SetBinContent(i, j, k, 0.0);
-    }
-  }
-
-  if (skipcount) {
-    std::cout << Form("Threw out %d points (min=%g)\n", skipcount, minimum);
-  }
-
-  auto data = std::make_unique<Data3D>(*n, *d, *q, limit);
-  data->gamma = calc_gamma_from_tdir(tdir);
-
-  return data;
+  return From(tdir, limit);
 }
 
 
@@ -166,14 +131,20 @@ Data3D::From(TDirectory &tdir,
              const TString &qinv_name,
              double limit)
 {
-   std::unique_ptr<TH3>
-     num(static_cast<TH3*>(tdir.Get(num_name))),
-     den(static_cast<TH3*>(tdir.Get(den_name))),
-     qinv(static_cast<TH3*>(tdir.Get(qinv_name)));
+  std::unique_ptr<TH3>
+    num(static_cast<TH3*>(tdir.Get(num_name))),
+    den(static_cast<TH3*>(tdir.Get(den_name))),
+    qinv(static_cast<TH3*>(tdir.Get(qinv_name)));
 
-   if (!num || !den || !qinv) {
-     return nullptr;
-   }
+  if (TH1::AddDirectoryStatus()) {
+    if (num) num->SetDirectory(nullptr);
+    if (den) den->SetDirectory(nullptr);
+    if (qinv) qinv->SetDirectory(nullptr);
+  }
+
+  if (!num || !den || !qinv) {
+    return nullptr;
+  }
 
   auto data = std::make_unique<Data3D>(std::move(num),
                                        std::move(den),
@@ -182,7 +153,7 @@ Data3D::From(TDirectory &tdir,
   data->gamma = calc_gamma_from_tdir(tdir);
 
   return data;
- }
+}
 
 
 std::unique_ptr<Data3D>

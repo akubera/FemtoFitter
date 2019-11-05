@@ -349,6 +349,10 @@ double Data3D::calc_gamma_from_tdir(const TDirectory &tdir, double mass)
           kt_mass_ratio_sqr = mean_kt * mean_kt / mass_sqr;
 
         gamma = std::sqrt(1.0 + 4 * kt_mass_ratio_sqr);
+
+        if (kthist->GetDirectory()) {
+          obj.release();
+        }
       }
     }
   }
