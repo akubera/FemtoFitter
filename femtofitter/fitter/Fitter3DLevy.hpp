@@ -5,7 +5,6 @@
 #pragma once
 
 #include "Fitter3D.hpp"
-#include "FitterTraits.hpp"
 #include "Value.hpp"
 #include "math/constants.hh"
 

@@ -5,8 +5,6 @@
 #pragma once
 
 #include "Fitter3D.hpp"
-#include "FitterTraits.hpp"
-
 
 #include <TFile.h>
 #include <TH3.h>
