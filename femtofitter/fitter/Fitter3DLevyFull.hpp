@@ -4,6 +4,9 @@
 
 #pragma once
 
+#ifndef FITTER3DLEVYFULL_HPP
+#define FITTER3DLEVYFULL_HPP
+
 #include "Fitter3D.hpp"
 
 #include <TFile.h>
@@ -334,8 +337,4 @@ struct Fitter3DLevyFull : public Fitter3D<Fitter3DLevyFull> {
 
 };
 
-inline auto
-Fitter3DLevyFull::FitResult::as_params() const -> FitParams
-{
-  return FitParams(*this);
-}
+#endif

@@ -4,6 +4,9 @@
 
 #pragma once
 
+#ifndef FITTER3DLEVY_HPP
+#define FITTER3DLEVY_HPP
+
 #include "Fitter3D.hpp"
 #include "Value.hpp"
 #include "math/constants.hh"
@@ -170,8 +173,6 @@ struct Fitter3DLevy : public Fitter3D<Fitter3DLevy> {
         minuit.mnparm(RSIDE_PARAM_IDX, "Rs", Rs.value, 0.5, 0.0, 0.0, errflag);
         minuit.mnparm(RLONG_PARAM_IDX, "Rl", Rl.value, 0.5, 0.0, 0.0, errflag);
       }
-
-    FitParams as_params() const;
   };
 
   /// \brief 3D Levy fit parameters
@@ -331,9 +332,4 @@ struct Fitter3DLevy : public Fitter3D<Fitter3DLevy> {
 
 };
 
-
-inline auto
-Fitter3DLevy::FitResult::as_params() const -> FitParams
-{
-  return FitParams(*this);
-}
+#endif
