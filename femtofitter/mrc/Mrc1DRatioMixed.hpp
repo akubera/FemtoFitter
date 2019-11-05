@@ -94,6 +94,9 @@ public:
         gen(dynamic_cast<TH1*>(tdir.Get(gen_name))),
         rec(dynamic_cast<TH1*>(tdir.Get(rec_name)));
 
+      if (gen) gen->SetDirectory(nullptr);
+      if (rec) rec->SetDirectory(nullptr);
+
       if (!(gen && rec)) {
         return nullptr;
       }

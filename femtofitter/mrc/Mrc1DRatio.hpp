@@ -59,6 +59,11 @@ public:
           nr(static_cast<TH1*>(tdir.Get(nr_name))),
           dr(static_cast<TH1*>(tdir.Get(dr_name)));
 
+        if (ng) ng->SetDirectory(nullptr);
+        if (dg) dg->SetDirectory(nullptr);
+        if (nr) nr->SetDirectory(nullptr);
+        if (dr) dr->SetDirectory(nullptr);
+
         if (!(ng and dg and nr and dr)) {
           throw std::runtime_error("Missing errors");
         }
@@ -144,6 +149,11 @@ public:
         dg(dynamic_cast<TH1*>(tdir.Get(dg_name))),
         nr(dynamic_cast<TH1*>(tdir.Get(nr_name))),
         dr(dynamic_cast<TH1*>(tdir.Get(dr_name)));
+
+      if (ng) ng->SetDirectory(nullptr);
+      if (dg) dg->SetDirectory(nullptr);
+      if (nr) nr->SetDirectory(nullptr);
+      if (dr) dr->SetDirectory(nullptr);
 
       if (!(ng && dg && nr && dr)) {
         return nullptr;

@@ -42,8 +42,8 @@ public:
   /// \brief Used to create a MRC out of keys
   ///
   struct Builder {
-    std::string gen_name,
-                rec_name;
+    TString gen_name,
+            rec_name;
 
     static Builder Unweighted()
       {
@@ -55,14 +55,18 @@ public:
 
     Mrc3DRatioMixed operator()(TDirectory &tdir) const
       {
-        auto g = std::unique_ptr<TH3>((TH3*)tdir.Get(gen_name.c_str()));
-        auto r = std::unique_ptr<TH3>((TH3*)tdir.Get(rec_name.c_str()));
+        std::unique_ptr<TH3>
+          gen(static_cast<TH3*>(tdir.Get(gen_name))),
+          rec(static_cast<TH3*>(tdir.Get(rec_name)));
 
-        if (!(g and r)) {
+        if (gen) gen->SetDirectory(nullptr);
+        if (rec) rec->SetDirectory(nullptr);
+
+        if (!(gen and rec)) {
           throw std::runtime_error("Missing Histograms");
         }
 
-        return Mrc3DRatioMixed(std::move(g), std::move(r));
+        return Mrc3DRatioMixed(std::move(gen), std::move(rec));
       }
   };
 
@@ -103,14 +107,18 @@ public:
                                      const TString &r_name)
     {
       std::unique_ptr<TH3>
-        g(static_cast<TH3*>(tdir.Get(g_name))),
-        r(static_cast<TH3*>(tdir.Get(r_name)));
+        gen(static_cast<TH3*>(tdir.Get(g_name))),
+        rec(static_cast<TH3*>(tdir.Get(r_name)));
 
-      if (!g or !r) {
+      if (gen) gen->SetDirectory(nullptr);
+      if (rec) rec->SetDirectory(nullptr);
+
+      if (!gen or !rec) {
         return nullptr;
       }
 
-      auto res = std::make_shared<Mrc3DRatioMixed>(std::move(g), std::move(r));
+      auto res = std::make_shared<Mrc3DRatioMixed>(std::move(gen),
+                                                   std::move(rec));
       res->source_name = tdir.GetPath();
       return res;
     }

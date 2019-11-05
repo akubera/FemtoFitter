@@ -46,10 +46,10 @@ public:
   /// \brief Used to create a MRC out of keys
   ///
   struct Builder {
-    std::string ng_name,
-                dg_name,
-                nr_name,
-                dr_name;
+    TString ng_name,
+            dg_name,
+            nr_name,
+            dr_name;
 
     static Builder Unweighted()
       {
@@ -63,10 +63,16 @@ public:
 
     Mrc3DRatio operator()(TDirectory &tdir)
       {
-        auto ng = std::unique_ptr<TH3>((TH3*)tdir.Get(ng_name.c_str()));
-        auto dg = std::unique_ptr<TH3>((TH3*)tdir.Get(dg_name.c_str()));
-        auto nr = std::unique_ptr<TH3>((TH3*)tdir.Get(nr_name.c_str()));
-        auto dr = std::unique_ptr<TH3>((TH3*)tdir.Get(dr_name.c_str()));
+        std::unique_ptr<TH3>
+          ng(static_cast<TH3*>(tdir.Get(ng_name))),
+          dg(static_cast<TH3*>(tdir.Get(dg_name))),
+          nr(static_cast<TH3*>(tdir.Get(nr_name))),
+          dr(static_cast<TH3*>(tdir.Get(dr_name)));
+
+        if (ng) ng->SetDirectory(nullptr);
+        if (dg) dg->SetDirectory(nullptr);
+        if (nr) nr->SetDirectory(nullptr);
+        if (dr) dr->SetDirectory(nullptr);
 
         if (!(ng and dg and nr and dr)) {
           throw std::runtime_error("Missing errors");
@@ -77,7 +83,6 @@ public:
                           std::move(nr),
                           std::move(dr));
       }
-
   };
 
   Mrc3DRatio(const TH3 &ng_, const TH3 &dg_, const TH3 &nr_, const TH3 &dr_)
@@ -129,6 +134,11 @@ public:
         dg(static_cast<TH3*>(tdir.Get(dg_name))),
         nr(static_cast<TH3*>(tdir.Get(nr_name))),
         dr(static_cast<TH3*>(tdir.Get(dr_name)));
+
+      if (ng) ng->SetDirectory(nullptr);
+      if (dg) dg->SetDirectory(nullptr);
+      if (nr) nr->SetDirectory(nullptr);
+      if (dr) dr->SetDirectory(nullptr);
 
       if (!ng || !dg || !nr || !dr) {
         return nullptr;

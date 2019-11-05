@@ -66,6 +66,7 @@ public:
       std::unique_ptr<TObject> obj(tdir.Get(name));
 
       if (auto *hist = dynamic_cast<TH2*>(obj.get())) {
+        hist->SetDirectory(nullptr);
         auto res = std::make_shared<Mrc1DMatrix>(*hist);
         res->source_name = tdir.GetPath();
         return res;
@@ -459,6 +460,7 @@ public:
       std::unique_ptr<TObject> obj(tdir.Get(name));
 
       if (auto *hist = dynamic_cast<TH2*>(obj.get())) {
+        hist->SetDirectory(nullptr);
         auto res = std::make_shared<Mrc1DMatrixJesse>(*hist);
         res->source_name = tdir.GetPath();
         return res;
