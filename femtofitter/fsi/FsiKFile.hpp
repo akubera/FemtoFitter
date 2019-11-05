@@ -58,10 +58,13 @@ struct FsiKFile : public FsiCalculator {
     : k2ss(nullptr)
     , filename(tfile.GetName())
     {
-      auto *hist = dynamic_cast<decltype(k2ss.get())>(tfile.Get("k2ss"));
+      TH2* hist = nullptr;
+      tfile.GetObject("k2ss", hist);
       if (!hist) {
         throw std::runtime_error("Invalid TFile: Missing histogram k2ss");
       }
+
+      hist->SetDirectory(nullptr);
       k2ss.reset(hist);
 
       TString random_name("_cache");
@@ -76,7 +79,9 @@ struct FsiKFile : public FsiCalculator {
     : k2ss(nullptr)
     , filename(tfile.GetName())
     {
-      auto *hist = dynamic_cast<decltype(k2ss.get())>(tfile.Get("k2ss"));
+      // auto *hist = dynamic_cast<decltype(k2ss.get())>(tfile.Get("k2ss"));
+      TH2* hist = nullptr;
+      tfile.GetObject("k2ss", hist);
       if (!hist) {
         throw std::runtime_error("Invalid TFile: Missing histogram k2ss");
       }
@@ -88,10 +93,8 @@ struct FsiKFile : public FsiCalculator {
         qmin = x.GetXmin(),
         qmax = qmin + nbins * qbinsize;
 
-      TString random_name("_cache");
-      for (int _i=0; _i<10; ++_i) {
-        random_name += 'a' + static_cast<char>(gRandom->Integer('z' - 'a'));
-      }
+      TString random_name = RandomString(10, "_cache");
+
       _qinv_src = std::make_shared<TProfile>(random_name, "", nbins, qmin, qmax);
     }
 
@@ -103,30 +106,13 @@ struct FsiKFile : public FsiCalculator {
     : k2ss(orig.k2ss)
     , filename(orig.filename)
     {
-      TString random_name("_cache");
-      for (int _i=0; _i<10; ++_i) {
-        random_name += 'a' + static_cast<char>(gRandom->Integer('z' - 'a'));
-      }
+      TString random_name = RandomString(10, "_cache");
 
       const TAxis &x = *k2ss->GetXaxis();
       _qinv_src = std::make_shared<TProfile>(random_name, "", x.GetNbins(), x.GetXmin(), x.GetXmax());
     }
 
   virtual ~FsiKFile();
-
-  struct KCalc : FsiQinv {
-    std::shared_ptr<TH1D> hist;
-
-    KCalc(std::shared_ptr<TH1D> h): hist(h) {}
-
-    double operator()(double qinv) override
-      {
-        return hist->Interpolate(qinv);
-      };
-
-    virtual ~KCalc()
-      {}
-  };
 
   std::function<double(double)> ForRadius(double Rinv) override
   // std::unique_ptr<FsiQinv> ForRadius(double Rinv) override
@@ -140,9 +126,11 @@ struct FsiKFile : public FsiCalculator {
 
       return [Rinv, min_q, max_q, khist=k2ss] (double qinv) {
         auto &k2 = const_cast<TH2&>(*khist);
-        return qinv <= min_q ? 0.0 : qinv >= max_q ? 1.0 : k2.Interpolate(qinv, Rinv);
+        auto result = qinv <= min_q ? 0.0
+                    : qinv >= max_q ? 1.0
+                    : k2.Interpolate(qinv, Rinv);
+        return result;
       };
-
 
       // because Interpolate is non-const for some reason
       auto &k2 = const_cast<TH2&>(*k2ss);
@@ -194,33 +182,6 @@ struct FsiKFile : public FsiCalculator {
         };
     }
 
-  // std::shared_ptr<const TH1D> _mrc_cache;
-
-
-/*
-
-  double operator()(double qinv, double Rinv) const
-    {
-      return 0;
-    }
-
-  double operator()(double Rinv) const override
-    {
-      return 0;
-    }
-
-  std::vector<double> operator()(std::vector<double> &qinv, double Rinv) const
-    {
-      std::vector<double> K;
-      K.reserve(qinv.size());
-
-      std::transform(qinv.begin(), qinv.end(), std::back_inserter(K),
-                     [&](double q) { return (*this)(q, Rinv); });
-
-      return K;
-    }
-    */
-
   std::string Describe() const override
     {
       return "FsiKFile[" + filename + "]";
@@ -230,6 +191,16 @@ struct FsiKFile : public FsiCalculator {
     {
       return Describe();
     }
+
+
+  static TString RandomString(size_t len, TString prefix="")
+    {
+      for (size_t _i=0; _i<len; ++_i) {
+        prefix += 'a' + static_cast<char>(gRandom->Integer('z' - 'a'));
+      }
+      return prefix;
+    }
+
 
   static std::shared_ptr<FsiCalculator> From(std::string fname="KFile4.root")
     {
@@ -252,6 +223,7 @@ struct FsiKFile : public FsiCalculator {
       }
 
       std::unique_ptr<TH2> h(static_cast<TH2*>(obj.release()));
+      h->SetDirectory(nullptr);
 
       auto result = std::make_shared<FsiKFile>(std::move(h));
       result->filename = file->GetName();
