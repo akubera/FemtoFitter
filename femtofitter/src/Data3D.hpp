@@ -116,7 +116,6 @@ struct Data3D {
       return From(tdir, names[0], names[1], names[2], limit);
     }
 
-
   /// Build from directory and histogram names
   static std::unique_ptr<Data3D> From(TDirectory &tdir,
                                       const TString &num_name,
@@ -125,19 +124,6 @@ struct Data3D {
                                       double limit=0.0);
 
   static std::unique_ptr<Data3D> FromDirectory(TDirectory &, double limit, double minimum);
-
-  /// Data3D with applied momentum resolution correction
-  static std::unique_ptr<Data3D> FromDirectory(TDirectory &tdir, const TH3 *mrc, double limit=0.0)
-    { return FromDirectory(tdir, *mrc, limit); }
-
-  /// Data3D with applied momentum resolution correction
-  static std::unique_ptr<Data3D> FromDirectory(TDirectory &, const TH3 &mrc, double limit=0.0);
-
-  /// Construct with advanced MRC
-  static std::unique_ptr<Data3D> FromDirectory(TDirectory &data, TDirectory &mrc, double limit);
-
-  /// Data3D with minimum ratio
-  static std::unique_ptr<Data3D> FromDirectory(TDirectory &, const TH3 &mrc, double limit, double minimum);
 
   /// Default empty constructor - use is discouraged
   Data3D();
