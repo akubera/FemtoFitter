@@ -1,4 +1,4 @@
-
+#
 
 from plot1d import PlotData
 
@@ -6,16 +6,16 @@ from plot1d import PlotData
 def make_multi_projection_plot(tdir, df=None, c=None, size=(500, 1000), N=5):
     from ROOT import TCanvas
     from stumpy.utils import walk_matching
-    
+
     if c is None:
         c = TCanvas()
-    
+
     plot = PlotData(c)
     kt_tdirs = list(walk_matching(tdir, '*_*/++'))
-    
+
     c.SetCanvasSize(*size)
     c.Divide(3, len(kt_tdirs), 0, 0)
-    
+
     def gen_random_names():
         from random import choices
         from string import ascii_letters
@@ -24,7 +24,7 @@ def make_multi_projection_plot(tdir, df=None, c=None, size=(500, 1000), N=5):
 
     names = gen_random_names()
     names.send(None)
-    
+
     from ROOT import Fitter3DGaussLcms
 
     projections = (
@@ -37,23 +37,23 @@ def make_multi_projection_plot(tdir, df=None, c=None, size=(500, 1000), N=5):
         n, d = map(kt_tdir.Get, ("num", 'den'))
         if n.GetSumw2N() == 0:
             n.Sumw2()
-        
+
         if row == 0:
             if abs(n.GetXaxis().GetBinLowEdge(1)) < 1e-5:
                 xbins = 1, N
             else:
                 bin0 = n.GetXaxis().FindBin(0.0)
                 xbins = bin0 - N, bin0 + N
-            
+
             bin0 = n.GetYaxis().FindBin(0.0)
             ybins = bin0 - N, bin0 + N
 
             bin0 = n.GetZaxis().FindBin(0.0)
             zbins = bin0 - N, bin0 + N
             del bin0
-     
+
         Fitter3DGaussLcms.FitResult()
-    
+
         for col in range(3):
             pad = c.cd(row * 3 + (col+1))
             if row == 0:
@@ -62,7 +62,7 @@ def make_multi_projection_plot(tdir, df=None, c=None, size=(500, 1000), N=5):
             np = projections[col](n)
             np.SetStats(0)
             np.SetTitle('')
-            dp = projections[col](d) 
+            dp = projections[col](d)
             np.Divide(dp)
             h = np.DrawCopy('HE')
             h.SetTitleSize(0.06)
@@ -74,59 +74,69 @@ def make_multi_projection_plot(tdir, df=None, c=None, size=(500, 1000), N=5):
 
 
 class Plotz:
-    
+
     def __init__(self, tfile, path='PWG2FEMTO'):
         self.tfile = tfile
         self.container = tfile.Get(path).GetListOfKeys().At(0).ReadObj()
         assert self.container, f'No containers in path {path}'
         self.analysis = self.container.GetListOfKeys().At(0).ReadObj()
-    
+
     def list_containers(self, path='PWG2FEMTO/*'):
         from stumpy.utils import walk_matching
-        
+
         for _, tdir in walk_matching(self.tfile, path):
             yield tdir
-    
+
     def set_analysis(self, cent=None, pair=None):
         *name, clo, chi, p = self.analysis.GetName().split('_')
-        
-        if (cent, pair) is (None, None):
+
+        if (cent, pair) == (None, None):
             return
-        
+
         if cent is None:
             cent = (clo, chi)
         elif isinstance(cent, str):
             cent = cent.split('_')
         if pair is None:
             pair = p
-            
+
         analysis = '_'.join([*name, *cent, pair])
         self.analysis = self.container.Get(analysis)
-    
+
     def list_analyses(self, path='PWG2FEMTO/*/*'):
         from stumpy.utils import walk_matching
-        
+
         for _, tdir in walk_matching(self.tfile, path):
             yield tdir
 
+    def get_pair_title(self):
+        name = self.analysis.GetName()
+        if 'pip' in name:
+            return '#pi^{+}'
+
+        if 'pim' in name:
+            return '#pi^{-}'
+
+        return '#pi^{?}'
+
     def build_zvertex_canvas(self, c=None):
         from ROOT import gStyle, gROOT, TCanvas
-        
+
         gStyle.SetLabelSize(0.05)
         gROOT.ForceStyle()
-        
+
         if c is None:
             c = TCanvas()
 
         event_dir = self.analysis.Get("Event/pass")
         plot = PlotData(c)
-        
+
         vz = event_dir.Get("VertexZ")
         vz.SetStats(0)
-        
+
         xax = vz.GetXaxis()
         yax = vz.GetYaxis()
-        
+
         xax.SetTitleOffset(1.4)
         yax.SetTitleOffset(1.4)
         vz.SetTitle("Event Vertex Z-Component")
@@ -136,7 +146,7 @@ class Plotz:
         return plot
 
     def build_xyvertex_canvas(self, c=None):
-        
+
         if c is None:
             c = TCanvas()
             # c.SetCanvasSize(800, 500)
@@ -146,72 +156,72 @@ class Plotz:
         event_dir = self.analysis.Get("Event/pass")
         vxy = event_dir.Get("VertexXY")
         vxy.SetStats(0)
-        
-        
+
+
         tick_code = 906
         xax = vxy.GetXaxis()
         xax.SetNdivisions(tick_code)
         xax.SetRangeUser(0.034, 0.095)
         yax = vxy.GetYaxis()
         yax.SetNdivisions(tick_code)
-        
+
         c.SetRightMargin(20.0)
         vxy.SetTitle("Event Vertex XY-components")
         vxy.Draw('COL')
-        
+
         plot.vxy = vxy
-        
+
         return plot
-    
+
     def build_vertex_canvas(self, c=None, **opts):
         from ROOT import TCanvas
         if c is None:
             c = TCanvas()
-            
+
             size = opts.get('size', (900, 500))
             c.SetCanvasSize(*size)
 
         plot = PlotData(c)
         c.Divide(2)
-        
+
         pad1 = c.cd(2)
         plot.zplot = self.build_zvertex_canvas(pad1)
         pad2 = c.cd(1)
         plot.xyplot = self.build_xyvertex_canvas(pad2)
-        
+
         return plot
-    
+
     def pt_dist(self, c=None):
         from ROOT import TCanvas
-        
+
         if c is None:
             c = TCanvas()
-        
+
         plot = PlotData(c)
         ptphi = self.analysis.Get('Tracks/pass/PtPhi')
         pt = plot.pt = ptphi.ProjectionY("trackpt")
         pt.SetStats(0)
-        pt.SetTitle("#pi^{+} p_{T} Distribution")
+        pt.SetTitle("%s p_{T} Distribution" % self.get_pair_title())
         pt.Draw()
-        
+
         return plot
-    
+
     def dedx(self, c=None, **opts):
         from ROOT import TCanvas
         from ROOT import kRed
-        
+
         color = opts.get('color', kRed)
         title = opts.get('title', "TPC dE/dx ")
-        
+
         if c is None:
             c = TCanvas()
-        
+
         plot = PlotData(c)
 
         track_tdir = self.analysis.Get(f'Tracks')
         dEdX = track_tdir.Get("pass/dEdX")
         dEdX_fail = track_tdir.Get("fail/dEdX")
-        
+
         plot.p = dEdX
         plot.f = dEdX_fail
 
@@ -230,72 +240,98 @@ class Plotz:
         dEdX.SetMarkerColor(color)
 
         c.Draw()
-        
+
         return plot
 
     def tof_time(self, c=None, **opts):
+        import ROOT
         from ROOT import TCanvas
-        
+
+        fail_color = opts.get('failcolor', ROOT.kBlack)
+        color = opts.get('color', ROOT.kRed)
+
         if c is None:
             c = TCanvas()
-        
+
         plot = PlotData(c)
-        pair_title = 'pip' in self.analysis
+        pair_title = self.get_pair_title()
+
         track_pass_dir =  self.analysis.Get('Tracks/pass')
         track_fail_dir =  self.analysis.Get('Tracks/fail')
 
         tof_vs_p_pass = plot.p = track_pass_dir.Get("TofVsP")
         tof_vs_p_fail = plot.f = track_fail_dir.Get('TofVsP')
-        
-        tof_vs_p_fail.SetTitle("#pi^{+} Relative TOF Time")
+
+        pion_title = self.get_pair_title()
+        tof_vs_p_fail.SetTitle(f"{pion_title} Relative TOF Time")
 
         tof_vs_p_fail.SetYTitle("TOF Time - TOF(#pi)")
         tof_vs_p_fail.GetYaxis().SetTitleOffset(1.2)
         tof_vs_p_fail.GetZaxis().SetTitleOffset(1.2)
         tof_vs_p_fail.GetZaxis().SetTitleSize(0.038)
         tof_vs_p_fail.SetStats(0)
+
+        tof_vs_p_fail.SetMarkerColor(fail_color)
+        tof_vs_p_fail.SetLineColor(fail_color)
+        tof_vs_p_pass.SetMarkerColor(color)
+        tof_vs_p_pass.SetLineColor(color)
+
         tof_vs_p_fail.Draw()
-
-        tof_vs_p_fail.SetMarkerColor(ROOT.kBlack)
-        tof_vs_p_fail.SetLineColor(ROOT.kBlack)
-
-        tof_vs_p.SetMarkerColor(ROOT.kRed)
-        tof_vs_p.SetLineColor(tof_vs_p.GetMarkerColor())
-
-        tof_vs_p.Draw("SAME")
+        tof_vs_p_pass.Draw("SAME")
 
         return plot
-    
+
     def tof_sigma(self, c=None, **opts):
+        import ROOT
         from ROOT import gStyle, TCanvas
-        
+
+        fail_color = opts.get('failcolor', ROOT.kBlack)
+        color = opts.get('color', ROOT.kRed)
+
         if c is None:
             c = TCanvas()
         plot = PlotData(c)
-            
-        track_pass_dir =  analysis.Get('Tracks/pass')
-        track_fail_dir =  analysis.Get('Tracks/fail')
 
-        tof_sigma = track_dir.Get("NsigTof")
-        tof_vs_p_fail.SetYTitle("TOF Time - TOF(#pi)")
-        tof_vs_p_fail.GetYaxis().SetTitleOffset(1.2)
-        tof_vs_p_fail.GetZaxis().SetTitleOffset(1.2)
-        tof_vs_p_fail.GetZaxis().SetTitleSize(0.038)
-        tof_vs_p_fail.SetStats(0)
-        tof_vs_p_fail.Draw()
-        
+        track_dir =  self.analysis.Get('Tracks')
+        track_pass_dir = track_dir.Get('pass')
+        track_fail_dir = track_dir.Get('fail')
+
+        tof_sigma_fail = track_fail_dir.Get("NsigTof")
+        tof_sigma_pass = track_pass_dir.Get("NsigTof")
+
+        tof_sigma_pass.SetLineColor(color)
+        tof_sigma_pass.SetMarkerColor(color)
+        tof_sigma_fail.SetLineColor(fail_color)
+        tof_sigma_fail.SetMarkerColor(fail_color)
+
+        tof_sigma_fail.SetTitle("#sigma")
+        tof_sigma_fail.SetStats(0)
+#         ("#sigma")
+
+#         tof_vs_p_fail.SetYTitle("TOF Time - TOF(#pi)")
+#         tof_vs_p_fail.GetYaxis().SetTitleOffset(1.2)
+#         tof_vs_p_fail.GetZaxis().SetTitleOffset(1.2)
+#         tof_vs_p_fail.GetZaxis().SetTitleSize(0.038)
+#         tof_vs_p_fail.SetStats(0)
+#         tof_vs_p_fail.Draw()
+
+        tof_sigma_fail.Draw()
+        tof_sigma_pass.Draw('SAME')
+
+        plot.p = tof_sigma_pass
+        plot.f = tof_sigma_fail
         return plot
-        
+
     def pair_detadphi(self, c=None, **opts):
         from ROOT import gStyle, TCanvas
-        
+
         gStyle.SetPalette(ROOT.kTemperatureMap)
-        
+
         if c is None:
             c = TCanvas()
-            
+
         plot = PlotData(c)
-        
+
         c.Divide(2, 1, 0,0)
         c.cd(1)
 
@@ -306,6 +342,53 @@ class Plotz:
         c.cd(2)
         r.GetZaxis().SetRangeUser(*zrng)
         r.Draw("COLZ")
-        
+
         return plot
-        
+
+    def pair_detadphi(self, c=None, **opts):
+        from ROOT import gStyle, TCanvas
+
+        if c is None:
+            c = TCanvas()
+
+        plot = PlotData(c)
+        plot
+        return plot
+
+    def centralities(self, c=None):
+        import ROOT
+        from ROOT import gStyle, TCanvas
+
+        if c is None:
+            c = TCanvas()
+
+        plot = PlotData(c)
+#         for
+        plot
+        return plot
+
+
+class ResultPlot1D:
+
+    colors = None
+
+    def __init__(self, fr):
+        self.fr = fr
+
+    def draw(self, c=None):
+        from ROOT import TGraphErrors, TCanvas
+
+        import seaborn as sns
+
+        if self.colors is None:
+            from ROOT import TColor
+            self.tcolors = [TColor(*color)
+                            for color in sns.color_palette("Paired")]
+            self.colors = [tcol.GetNumber() for tcol in self.tcolors]
+
+        if c is None:
+            c = TCanvas()
+
+        plot = PlotData(c)
+
+        return plot
