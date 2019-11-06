@@ -220,7 +220,7 @@ class QuadPlot:
         capstyle: str = 'butt'
 
     def __init__(self, fr):
-        from . import FitResults
+        from femtofitter import FitResults
         if isinstance(fr, FitResults):
             self.df = fr.df
         else:
@@ -502,6 +502,22 @@ def plot_outside(num, den, N=0, opts='COLZ', pad=None, norm=True):
     return pad
 
 def plot_outside_tdir(tdir, N=0, pad=None, opts="COLZ", norm=True):
+    keylist = [
+        ("Num", "Den"),
+        ("num", "den"),
+    ]
+
+    for keys in keylist:
+        num, den = map(tdir.Get, keys)
+        if num and den:
+            break
+    else:
+        raise ValueError("Could not find num and den in", tdir)
+
+    return plot_outside(num, den, N=N, pad=pad, opts=opts, norm=norm)
+
+
+def plot_(tdir, N=0, pad=None, opts="COLZ", norm=True):
     keylist = [
         ("Num", "Den"),
         ("num", "den"),
