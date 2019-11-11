@@ -87,9 +87,25 @@ struct Data3D {
       , qinv(q)
       { }
 
-    Source(std::unique_ptr<const TH3> n, std::unique_ptr<const TH3> d)
-      : num(std::move(n))
-      , den(std::move(d))
+    Source(std::shared_ptr<TH3> n,
+           std::shared_ptr<TH3> d,
+           std::shared_ptr<TH3> q)
+      : num((n->SetDirectory(nullptr), n))
+      , den((d->SetDirectory(nullptr), d))
+      , qinv((q->SetDirectory(nullptr), q))
+      { }
+
+    Source(std::unique_ptr<TH3> n,
+           std::unique_ptr<TH3> d,
+           std::unique_ptr<TH3> q)
+      : num((n->SetDirectory(nullptr), std::move(n)))
+      , den((d->SetDirectory(nullptr), std::move(d)))
+      , qinv((q->SetDirectory(nullptr), std::move(q)))
+      { }
+
+    Source(std::unique_ptr<TH3> n, std::unique_ptr<TH3> d)
+      : num((n->SetDirectory(nullptr), std::move(n)))
+      , den((d->SetDirectory(nullptr), std::move(d)))
       , qinv(nullptr)
       { }
   };
