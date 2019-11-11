@@ -211,51 +211,6 @@ Data1D::From(TDirectory &dir, double limit)
 }
 
 
-std::unique_ptr<Data1D>
-Data1D::From(TDirectory &dir, const TH1 &mrc, double limit)
-{
-  auto n = std::unique_ptr<TH1>((TH1*)dir.Get("num")),
-       d = std::unique_ptr<TH1>((TH1*)dir.Get("den"));
-
-  if (!n || !d) {
-    return nullptr;
-  }
-
-  n->Multiply(&mrc);
-
-  auto data = std::unique_ptr<Data1D>(new Data1D(*n, *d, limit));
-  data->gamma = calc_gamma_from_tdir(dir);
-
-  return data;
-}
-
-std::unique_ptr<Data1D>
-Data1D::From(TDirectory &dir, TDirectory &mrc, double limit)
-{
-  auto n = std::unique_ptr<TH1>((TH1*)dir.Get("num")),
-       d = std::unique_ptr<TH1>((TH1*)dir.Get("den")),
-       nr = std::unique_ptr<TH1>((TH1*)mrc.Get("NumTrue")),
-       dr = std::unique_ptr<TH1>((TH1*)mrc.Get("Den")),
-       ng = std::unique_ptr<TH1>((TH1*)mrc.Get("NumTrueIdeal")),
-       dg = std::unique_ptr<TH1>((TH1*)mrc.Get("DenIdeal"));
-
-
-  if (!n || !d || !nr || !dr || !ng || !dg) {
-    return nullptr;
-  }
-
-  n->Multiply(ng.get());
-  n->Multiply(dr.get());
-  n->Divide(dg.get());
-  n->Divide(nr.get());
-
-  auto data = std::unique_ptr<Data1D>(new Data1D(*n, *d, limit));
-  data->gamma = calc_gamma_from_tdir(dir);
-
-  return data;
-}
-
-
 double Data1D::gamma_from_kT_dist(const TH1 &kthist)
 {
   std::pair<unsigned,unsigned> bins = {1, kthist.GetNbinsX()};

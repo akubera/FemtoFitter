@@ -56,12 +56,8 @@ struct Data1D {
 
   std::shared_ptr<Source> src;
 
-  /// Build out of standard tdirectory;
+  /// Build out of standard TDirectory
   static std::unique_ptr<Data1D> From(TDirectory &data, double limit=0.0);
-  static std::unique_ptr<Data1D> From(TDirectory &data, const TH1 &mrc, double limit=0.0);
-
-  /// Build from TDirectories of data and momentum resolution correction
-  static std::unique_ptr<Data1D> From(TDirectory &data, TDirectory &mrc, double limit=0.0);
 
   /// Construct from histograms
   ///
