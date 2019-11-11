@@ -1,6 +1,9 @@
 
+#include <TF1.h>
+#include <TFitResult.h>
 #include "fitter/Fitter3DGaussLcms.hpp"
 #include "fitter/Fitter1DGauss.hpp"
+#include "fitter/Fitter1DLevyPolyBg.hpp"
 #include "mrc/Mrc1DMatrix.hpp"
 #include "mrc/Mrc3DHypercube.hpp"
 #include "mrc/Mrc3DRatio.hpp"
@@ -156,9 +159,13 @@ main(int argc, char** argv)
 
   mrc->Smear(*background);
 
-  Fitter1DGauss fitter(data);
+  // Fitter1DGauss fitter(data);
+  Fitter1DLevyPolyBg fitter(data);
   fitter.mrc = mrc;
   fitter.fsi = FsiKFile::new_shared_ptr("KFile4.root");
+
+  auto results = fitter.fit_chi2();
+  auto params = results.as_params();
 
   TCanvas *c = new TCanvas();
   background->Draw();
