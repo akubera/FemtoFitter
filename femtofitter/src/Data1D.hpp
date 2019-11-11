@@ -69,6 +69,9 @@ struct Data1D {
   ///
   Data1D(const TH1& num, const TH1& den, double limit=0.0);
 
+  /// Construct from pointers to histograms
+  Data1D(std::unique_ptr<TH1> num, std::unique_ptr<TH1> den, double limit=0.0);
+
   /// Build from TDirectory
   Data1D(TDirectory &tdir, double limit);
 
@@ -135,6 +138,15 @@ struct Data1D {
       cf->Divide(src->den.get());
       return cf;
     }
+
+  ///
+  static double gamma_from_kT_dist(const TH1 &);
+  static double gamma_from_kT_dist(const TH1 &, std::pair<double,double> ktrng);
+  static double gamma_from_kT_dist(const TH1 &, std::pair<unsigned,unsigned> binrng);
+
+private:
+  void _init();
+  void _init(const TH1 &num, const TH1 &den, double limit);
 };
 
 
