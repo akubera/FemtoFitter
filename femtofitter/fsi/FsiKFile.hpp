@@ -85,7 +85,7 @@ struct FsiKFile : public FsiCalculator {
       if (!hist) {
         throw std::runtime_error("Invalid TFile: Missing histogram k2ss");
       }
-      k2ss->SetDirectory(nullptr);
+      hist->SetDirectory(nullptr);
       k2ss.reset(hist);
 
       const TAxis &x = *hist->GetXaxis();
@@ -130,6 +130,9 @@ struct FsiKFile : public FsiCalculator {
         auto result = qinv <= min_q ? 0.0
                     : qinv >= max_q ? 1.0
                     : k2.Interpolate(qinv, Rinv);
+        // if (result == 0.0) {
+        //   std::cout << "ZERO " << qinv << ", " << Rinv << "\n";
+        // }
         return result;
       };
 
