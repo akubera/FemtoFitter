@@ -205,33 +205,31 @@ struct FsiKFile : public FsiCalculator {
       return prefix;
     }
 
-
-  static std::shared_ptr<FsiCalculator> From(std::string fname="KFile4.root")
+  static std::shared_ptr<FsiCalculator> From(TString filename="KFile4.root")
     {
-      // auto file = std::make_unique<TFile>(fname, "READ");
-      std::unique_ptr<TFile> file(TFile::Open(fname.c_str(), "READ"));
-      if (!file) {
-        std::cerr << "Could not open FSI file '" << fname << "'\n";
+      TFile file(filename, "READ");
+      if (!file.IsOpen()) {
+        std::cerr << "Could not open FSI file '" << filename << "'\n";
         return nullptr;
       }
 
       TH2 *hist = nullptr;
-      file->GetObject("k2ss", hist);
+      file.GetObject("k2ss", hist);
       if (!hist) {
-        std::cerr << "No TObject k2ss found in '" << fname << "'\n";
+        std::cerr << "No TObject k2ss found in '" << filename << "'\n";
         return nullptr;
       }
 
       hist->SetDirectory(nullptr);
 
       auto result = std::make_shared<FsiKFile>(std::unique_ptr<TH2>(hist));
-      result->filename = file->GetName();
+      result->filename = file.GetName();
       return result;
     }
 
   static std::shared_ptr<FsiCalculator> From(std::unique_ptr<TFile> file)
     {
-      return std::make_shared<FsiKFile>(std::move(file));
+      return std::make_shared<FsiKFile>(*file);
     }
 
   static std::shared_ptr<FsiCalculator> From(TFile &file)
