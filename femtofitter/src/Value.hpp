@@ -8,7 +8,9 @@
 #ifndef VALUE_HPP
 #define VALUE_HPP
 
-#include "TMinuit.h"
+#include <cmath>
+
+class TMinuit;
 
 
 struct Value {
