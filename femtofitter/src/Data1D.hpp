@@ -41,10 +41,11 @@ struct Data1D {
       , den(static_cast<TH1*>(d.Clone()))
       {}
 
-    Source(std::unique_ptr<const TH1> n, std::unique_ptr<const TH1> d)
-      : num(std::move(n))
-      , den(std::move(d))
-      {}
+    Source(std::unique_ptr<TH1> n, std::unique_ptr<TH1> d)
+      : num((n->SetDirectory(nullptr), std::move(n)))
+      , den((d->SetDirectory(nullptr), std::move(d)))
+      {
+      }
   };
 
   std::vector<Datum> data;

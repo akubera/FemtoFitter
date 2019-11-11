@@ -10,6 +10,7 @@
 
 #include <memory>
 
+
 void Data1D::_init()
 {
   _init(*src->num, *src->den, limit);
@@ -52,7 +53,7 @@ Data1D::Data1D(const TH1& num, const TH1& den, double lim)
   , gamma(NAN)
   , src(std::make_shared<Source>(num, den))
 {
-  _init(num, den, lim);
+  _init();
 }
 
 Data1D::Data1D(std::unique_ptr<TH1> nptr, std::unique_ptr<TH1> dptr, double lim)
@@ -77,28 +78,32 @@ Data1D::Data1D(TDirectory &dir, double limit_)
     {"num", "den"},
   };
 
-  std::unique_ptr<TH1> num, den;
+  TH1 *num = nullptr, *den = nullptr;
   for (auto names : names_v) {
 
-    std::unique_ptr<TObject>
-      nobj(dir.Get(names[0])),
-      dobj(dir.Get(names[1]));
+    dir.GetObject(names[0], num);
+    dir.GetObject(names[1], den);
 
-    auto *nhist = dynamic_cast<TH1*>(nobj.get()),
-         *dhist = dynamic_cast<TH1*>(dobj.get());
-
-    if (nhist && dhist) {
-      num.reset(static_cast<TH1*>(nobj.release()));
-      den.reset(static_cast<TH1*>(dobj.release()));
+    if (num && den) {
       break;
     }
+
+    if (num && !num->GetDirectory()) {
+      delete num;
+    }
+    if (den && !den->GetDirectory()) {
+      delete den;
+    }
+    num = nullptr;
+    den = nullptr;
   }
 
   if (!num || !den) {
     throw std::runtime_error("Could not load correlation function histograms");
   }
 
-  src = std::make_shared<Source>(std::move(num), std::move(den));
+  src = std::make_shared<Source>(std::unique_ptr<TH1>(num),
+                                 std::unique_ptr<TH1>(den));
   _init();
 }
 
@@ -146,7 +151,6 @@ calc_gamma_from_tdir(TDirectory &dir)
 
   if (kt_dist) {
     gamma = Data1D::gamma_from_kT_dist(*kt_dist);
-    delete kt_dist;
   }
   else if (split_dirname(dir, ktrng)) {
     auto *mother_dir = dir.GetMotherDir();
@@ -158,6 +162,10 @@ calc_gamma_from_tdir(TDirectory &dir)
   }
   else if (dir.GetMotherDir() && split_dirname(*dir.GetMotherDir(), ktrng)) {
     gamma = gamma_from_kt_range(ktrng);
+  }
+
+  if (kt_dist && !kt_dist->GetDirectory()) {
+    delete kt_dist;
   }
 
   return gamma;
@@ -198,16 +206,7 @@ Data1D::From(TDirectory &dir, double limit)
                                        std::move(d),
                                        limit);
 
-  TH1* kthist = nullptr;
-  dir.GetObject("kTDep", kthist);
-  if (kthist) {
-
-    data->gamma = gamma_from_kT_dist(*kthist);
-    delete kthist;
-  } else {
-    data->gamma = calc_gamma_from_tdir(dir);
-  }
-
+  data->gamma = calc_gamma_from_tdir(dir);
   return data;
 }
 
