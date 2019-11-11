@@ -82,6 +82,11 @@ Data3D::Data3D(std::unique_ptr<TH3> hnum,
     const_cast<TH3&>(q).Divide(&d);
   }
 
+  const double sanity_check = q.GetBinContent(const_cast<TH3&>(q).FindBin(0.05, 0.05, 0.05));
+  if (std::abs(sanity_check - 0.072) > 0.01) {
+    std::cerr << "Warning qinv(50Mev,50Mev,50Mev) = " << sanity_check << " GeV (should be ~0.07)\n";
+  }
+
   for (size_t k = lo_binZ; k <= hi_binZ; ++k) {
     for (size_t j = lo_binY; j <= hi_binY; ++j) {
       for (size_t i = lo_binX; i <= hi_binX; ++i) {
