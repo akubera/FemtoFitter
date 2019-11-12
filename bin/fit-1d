@@ -67,7 +67,7 @@ def arg_parser():
                         default=(),
                         help="Arguments used to build MRC object")
     parser.add_argument("--fitter",
-                        default='Fitter1DGauss',
+                        default='Fitter1DGaussPolyBg',
                         help="Name of fitter class")
     parser.add_argument("--fsi",
                         default='FsiKFile',
