@@ -170,9 +170,7 @@ async def run_fits(params, executor, loop=None, cb=None):
 
     with tqdm(total=len(pending)) as pbar:
         while pending:
-            done, pending = await wait(pending,
-                                       loop=loop,
-                                       return_when=FIRST_COMPLETED)
+            done, pending = await wait(pending, return_when=FIRST_COMPLETED)
             finished.extend([r.result() for r in done])
             if cb:
                 for job in done:
