@@ -33,7 +33,7 @@ struct FsiGamov : public FsiCalculator {
 
   std::function<double(double)> ForRadius(double Rinv) override
     {
-      return [] (double qinv) { return FsiGamov::GamovFactor(qinv); };
+      return FsiGamov::GamovFactor;
     }
 
   static double GamovFactor(double qinv)
@@ -48,6 +48,8 @@ struct FsiGamov : public FsiCalculator {
   static std::shared_ptr<FsiCalculator> new_shared_ptr()
     { return std::make_shared<FsiGamov>(); }
 
+  static std::shared_ptr<FsiCalculator> From()
+    { return std::make_shared<FsiGamov>(); }
 };
 
 #endif
