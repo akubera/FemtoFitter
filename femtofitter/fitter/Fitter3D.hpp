@@ -190,7 +190,7 @@ public:
         _tmp_cf = std::make_unique<TH3D>();
         data.src->num->Copy(*_tmp_cf);
       }
-      auto &cfhist = *_tmp_cf;
+      auto &cf_hist = *_tmp_cf;
 
       if (_tmp_fsi == nullptr) {
         _tmp_fsi.reset(static_cast<TH3*>(data.src->qinv->Clone()));
@@ -199,20 +199,8 @@ public:
       }
       auto &fsi_hist = *_tmp_fsi;
 
-      const double Rinv = p.PseudoRinv(data.gamma);
-      auto KFsi = fsi->ForRadius(Rinv);
-
-      for (int k=1; k<=fsi_hist.GetNbinsZ(); ++k) {
-        for (int j=1; j<=fsi_hist.GetNbinsY(); ++j) {
-          for (int i=1; i<=fsi_hist.GetNbinsX(); ++i) {
-            // fsi-hist is filled with qinv at this point
-            const double q = fsi_hist.GetBinContent(i, j, k);
-            fsi_hist.SetBinContent(i, j, k, KFsi(q));
-          }
-        }
-      }
-
-      mrc3d.FillSmearedFit(cfhist, p, fsi_hist);
+      fsi->FillQinvHist(fsi_hist, p.Ro, p.Rs, p.Rl, data.gamma);
+      mrc3d.FillSmearedFit(cf_hist, p, fsi_hist);
 
       for (const auto &datum : data) {
 
@@ -220,7 +208,7 @@ public:
           n = datum.num,
           d = datum.den,
 
-          CF = cfhist.GetBinContent(datum.hist_bin),
+          CF = cf_hist.GetBinContent(datum.hist_bin),
           res = resid_func(n, d, CF);
 
         retval += res;

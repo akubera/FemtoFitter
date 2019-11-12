@@ -186,6 +186,8 @@ struct FsiKFile : public FsiCalculator {
         };
     }
 
+  void FillQinvHist(TH3 &hist, double Ro, double Rs, double Rl, double gamma) const override;
+
   std::string Describe() const override
     {
       return "FsiKFile[" + filename + "]";

@@ -14,6 +14,9 @@
 #include <memory>
 #include <functional>
 
+class TH3;
+
+
 /// \class FsiQinv
 /// \brief Returns final-state-interaction from qinv
 ///
@@ -53,6 +56,9 @@ struct FsiCalculator {
     {
       return ClassName();
     }
+
+  // Fill histogram with qinv datapoints
+  virtual void FillQinvHist(TH3 &hist, double Ro, double Rs, double Rl, double gamma) const = 0;
 };
 
 #endif
