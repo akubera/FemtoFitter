@@ -45,7 +45,7 @@ void runfit(TDirectory &tdir, double limit)
   // TString mrc_filename = "~/Downloads/AnalysisResults.root",
   //         mrc_path = "AnalysisTrueQ3D/cfg855847557EDA507A/pip/00_90/0.4_0.5/--";
 
-  TString mrc_filename = "/home/akubera/Physics/pion-analysis/FemtoFitter/MRC-2341.root",
+  TString mrc_filename = "/home/akubera/Physics/pion-analysis/femtofitter/MRC-2341.root",
           mrc_path = "AnalysisTrueQ3D/cfg5AD446DB543C4A2A/pip/00_90/0.4_0.5/++";
 
   TFile mrcfile(mrc_filename);
@@ -111,9 +111,26 @@ main(int argc, char** argv)
   // auto path = "AnalysisQ3D/cfgD3F0AFA546B3D616/pip/10_20/0.4_0.5/++",
   //      filename = "Data-varyphi.root";
 
+  {
+  auto f = "/alice/cern.ch/user/a/alitrain/PWGCF/CF_PbPb/7540_20191109-2008_child_1/merge_runlist_1/AnalysisResults.root",
+       p = "PWG2FEMTO/kubera_run2pion_sys_pthi_b_1/PiPiAnalysis_00_05_pim/KT_Qinv/0.4_0.5";
+
+  auto tfile = TFile::Open(f);
+  if (!tfile) {
+    return 1;
+  }
+
+  auto tdir = dynamic_cast<TDirectory*>(tfile->Get(p));
+
+  auto data = Data1D::From(*tdir, 0.12);
+  }
+
+
+  return 0;
+
   // auto filename = "/home/akubera/alice/data/19/07/01/CF_PbPb-6980-LHC15o_pass1_fieldlists_largefile-negfield.root",
   //      path = "PWG2FEMTO/kubera_run2pi_lcms_nx_fm96/PiPiAnalysis_00_05_pip";
-  auto filename = "/home/akubera/Physics/pion-analysis/FemtoFitter/Data-SYS-eta.root",
+  auto filename = "/home/akubera/Physics/pion-analysis/femtofitter/Data-SYS-eta.root",
        path = "/Q3DPosQuad/cfg51A69E96CD6DBD5E/pip/20_30/0.4_0.5/++";
 
   std::cout << " path: " << path << "\n";
