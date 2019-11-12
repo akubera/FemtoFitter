@@ -290,7 +290,7 @@ class PyFit1D(BaseFitter):
         from ROOT import TDirectory
         if isinstance(data, TDirectory):
             num, den, ktdist = map(data.Get, ("Num", "Den", "kTDep"))
-            gamma = np.sqrt(1 + 4 *(ktdist.GetMean() / 0.13957) ** 2)
+            gamma = np.sqrt(1 + (ktdist.GetMean() / 0.13957) ** 2)
 
             n, d = map(np.array, (num, den))
             nx = np.empty(num.GetNbinsX())

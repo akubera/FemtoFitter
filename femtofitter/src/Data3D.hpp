@@ -353,7 +353,7 @@ double Data3D::calc_gamma_from_tdir(const TDirectory &tdir, double mass)
     est_mean_kt = (kt_hi + kt_lo) / 2.0,
     est_mean_kt_sqr = est_mean_kt * est_mean_kt;
 
-  gamma = std::sqrt(1.0 + 4 * est_mean_kt_sqr / mass_sqr);
+  gamma = std::sqrt(1.0 + est_mean_kt_sqr / mass_sqr);
 
   if (auto *cent_dir = tdir.GetMotherDir()) {
     if (auto obj = std::unique_ptr<TObject>(cent_dir->Get("kTDist"))) {
@@ -364,7 +364,7 @@ double Data3D::calc_gamma_from_tdir(const TDirectory &tdir, double mass)
           mean_kt = kthist->GetMean(),
           kt_mass_ratio_sqr = mean_kt * mean_kt / mass_sqr;
 
-        gamma = std::sqrt(1.0 + 4 * kt_mass_ratio_sqr);
+        gamma = std::sqrt(1.0 + kt_mass_ratio_sqr);
 
         if (kthist->GetDirectory()) {
           obj.release();
