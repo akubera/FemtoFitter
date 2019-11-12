@@ -191,8 +191,6 @@ struct Fitter3DLevyFull : public Fitter3D<Fitter3DLevyFull> {
         minuit.mnparm(RSIDE_PARAM_IDX, "Rs", Rs.value, 0.5, 0.0, 0.0, errflag);
         minuit.mnparm(RLONG_PARAM_IDX, "Rl", Rl.value, 0.5, 0.0, 0.0, errflag);
       }
-
-    FitParams as_params() const;
   };
 
   /// \brief 3D Levy fit parameters
