@@ -130,7 +130,7 @@ struct Fitter1DLevy : Fitter1D<Fitter1DLevy> {
         minuit.mnparm(NORM_PARAM_IDX, "Norm", norm.value, 0.005, 0.0, 0.0, errflag);
         minuit.mnparm(LAM_PARAM_IDX, "Lam", lam.value, .01, 0.0, 0.0, errflag);
         minuit.mnparm(RADIUS_PARAM_IDX, "Radius", radius.value, 0.2, 0.0, 0.0, errflag);
-        minuit.mnparm(ALPHA_PARAM_IDX, "Alpha", alpha.value, 0.01, 0.0, 0.0, errflag);
+        minuit.mnparm(ALPHA_PARAM_IDX, "Alpha", alpha.value, 0.01, 0.1, 5.0, errflag);
       }
   };
 
@@ -223,7 +223,7 @@ struct Fitter1DLevy : Fitter1D<Fitter1DLevy> {
       minuit.mnparm(NORM_PARAM_IDX, "Norm", 0.25, 0.02, 0.0, 0.0, errflag);
       minuit.mnparm(LAM_PARAM_IDX, "Lam", 0.2, 0.1, 0.0, 1.0, errflag);
       minuit.mnparm(RADIUS_PARAM_IDX, "Radius", 2.0, 1.0, 0.0, 0.0, errflag);
-      minuit.mnparm(ALPHA_PARAM_IDX, "Alpha", 1.9, 0.01, 0.0, 0.0, errflag);
+      minuit.mnparm(ALPHA_PARAM_IDX, "Alpha", 1.9, 0.01, 0.1, 5.0, errflag);
 
       const double this_dbl = static_cast<double>((intptr_t)this);
       minuit.mnparm(DATA_PARAM_IDX, "DATA_PTR", this_dbl, 0, 0, INTPTR_MAX, errflag);
