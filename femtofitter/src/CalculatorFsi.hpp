@@ -17,17 +17,6 @@
 class TH3;
 
 
-/// \class FsiQinv
-/// \brief Returns final-state-interaction from qinv
-///
-struct FsiQinv {
-
-  virtual ~FsiQinv()
-    {}
-
-  virtual double operator()(double qinv) = 0;
-};
-
 
 /// \class FsiCalculator
 /// \brief Interface for calculating final state interaction component

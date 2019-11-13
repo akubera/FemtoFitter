@@ -25,20 +25,6 @@ struct FsiStatic : public FsiCalculator {
     {
     }
 
-  struct Kcalc : FsiQinv {
-
-    double val;
-
-    Kcalc(double v)
-      : val(v)
-      {}
-
-    double operator()(double qinv) override
-      {
-        return val;
-      }
-  };
-
   std::function<double(double)> ForRadius(double) override
     {
       return [value=value](double) { return value; };

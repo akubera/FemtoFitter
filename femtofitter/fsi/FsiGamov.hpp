@@ -18,19 +18,6 @@
 //struct FsiGamov : public FsiCalculatorImpl<FsiGamov> {
 struct FsiGamov : public FsiCalculator {
 
-  struct Kcalc : FsiQinv {
-
-    double operator()(double qinv) override
-      {
-        return FsiGamov::GamovFactor(qinv);
-      }
-  };
-
-  // std::unique_ptr<FsiQinv> ForRadius(double Rinv) override
-  //   {
-  //     return std::make_unique<Kcalc>();
-  //   }
-
   std::function<double(double)> ForRadius(double Rinv) override
     {
       return FsiGamov::GamovFactor;
