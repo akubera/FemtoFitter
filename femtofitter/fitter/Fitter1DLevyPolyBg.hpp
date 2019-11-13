@@ -94,6 +94,39 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
         minuit.GetParameter(BG3_PARAM_IDX, bg[3], _err);
       }
 
+    FitResult(PyObject *pyobj)
+      {
+        if (!PyMapping_Check(pyobj)) {
+          TPython::Exec(Form("raise TypeError('Object not a collection!')"));
+          throw std::runtime_error("Object not a python collection");
+        }
+
+        std::vector<std::string> missing_keys;
+
+        ExtractPythonNumber(pyobj, "lam", lam.value, missing_keys);
+        ExtractPythonNumber(pyobj, "lam_err", lam.error, missing_keys);
+        ExtractPythonNumber(pyobj, "radius", radius.value, missing_keys);
+        ExtractPythonNumber(pyobj, "radius_err", radius.error, missing_keys);
+        ExtractPythonNumber(pyobj, "alpha", alpha.value, missing_keys);
+        ExtractPythonNumber(pyobj, "alpha_err", alpha.error, missing_keys);
+
+        ExtractPythonNumber(pyobj, "BG0", bg[0], missing_keys);
+        ExtractPythonNumber(pyobj, "BG1", bg[1], missing_keys);
+        ExtractPythonNumber(pyobj, "BG2", bg[2], missing_keys);
+        ExtractPythonNumber(pyobj, "BG3", bg[3], missing_keys);
+        // ExtractPythonNumber(pyobj, "norm_err", norm.error, missing_keys);
+
+        if (!missing_keys.empty()) {
+          std::string msg = "Python object missing required items:";
+          for (const auto &key : missing_keys) {
+            msg += " ";
+            msg += key;
+          }
+          TPython::Exec(Form("raise ValueError('%s')", msg.c_str()));
+          throw std::runtime_error(msg);
+        }
+      }
+
     virtual ~FitResult()
       { }
 
@@ -113,7 +146,7 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
     std::string
     __repr__() const
       {
-        return Form("<Fitter1DLevyPolyBg::FitParam radius=%g lambda=%g alpha=%g bg=[%g, %g, %g, %g]>",
+        return Form("<Fitter1DLevyPolyBg::FitResult radius=%g lambda=%g alpha=%g bg=[%g, %g, %g, %g]>",
                     radius.value, lam.value, alpha.value,
                     bg[0], bg[1], bg[2], bg[3]);
       }
@@ -127,6 +160,10 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
           OUT(radius),
           OUT(lam),
           OUT(alpha),
+          {"BG0", bg[0]},
+          {"BG1", bg[1]},
+          {"BG2", bg[2]},
+          {"BG3", bg[3]},
         };
 
         #undef OUT
@@ -164,8 +201,7 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
   /// \brief 1D Levy fit parameters
   ///
   struct FitParams : public FitParam1D<FitParams> {
-    double norm,
-           lam,
+    double lam,
            radius,
            alpha;
 
@@ -210,8 +246,7 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
     bool is_invalid() const
       {
         #define INVALID(_name) _name < 0 || std::isnan(_name)
-        return INVALID(norm)
-            or INVALID(lam)
+        return INVALID(lam)
             or INVALID(radius)
             or INVALID(alpha);
         #undef INVALID
@@ -221,7 +256,7 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
     __repr__() const
       {
         return Form("<Fitter1DLevyPolyBg::FitParam radius=%g lambda=%g alpha=%g norm=%g>",
-                    radius, lam, alpha, norm);
+                    radius, lam, alpha, bg[0]);
       }
 
     PyObject*
@@ -231,7 +266,12 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
         PyDict_SetItemString(dict, "radius", PyFloat_FromDouble(radius));
         PyDict_SetItemString(dict, "lam", PyFloat_FromDouble(lam));
         PyDict_SetItemString(dict, "alpha", PyFloat_FromDouble(alpha));
-        // PyDict_SetItemString(dict, "norm", PyFloat_FromDouble(norm));
+
+        PyDict_SetItemString(dict, "BG0", PyFloat_FromDouble(bg[0]));
+        PyDict_SetItemString(dict, "BG1", PyFloat_FromDouble(bg[1]));
+        PyDict_SetItemString(dict, "BG2", PyFloat_FromDouble(bg[2]));
+        PyDict_SetItemString(dict, "BG3", PyFloat_FromDouble(bg[3]));
+
         return dict;
       }
   };
