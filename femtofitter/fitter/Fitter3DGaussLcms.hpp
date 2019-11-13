@@ -33,6 +33,31 @@
 ///
 struct Fitter3DGaussLcms : public Fitter3D<Fitter3DGaussLcms> {
 
+  static std::string GetName()
+    { return "Fitter3DGaussLcms"; }
+
+  static constexpr std::uint8_t CountParams()
+    { return 5; }
+
+  static double
+  gauss(const std::array<double, 3> &q,
+        const std::array<double, 3> &RSq,
+        double lam,
+        double K=1.0,
+        double norm=1.0)
+    {
+      const double
+        Eo = q[0] * q[0] * RSq[0],
+        Es = q[1] * q[1] * RSq[1],
+        El = q[2] * q[2] * RSq[2],
+        gauss = 1.0 + std::exp(-(Eo + Es + El) / HBAR_C_SQ),
+        result = (1.0 - lam) + lam * K * gauss;
+
+      return norm * result;
+    }
+
+  using Super = Fitter3D<Fitter3DGaussLcms>;
+
   struct FitParams;
   struct FitResult;
 
@@ -46,29 +71,6 @@ struct Fitter3DGaussLcms : public Fitter3D<Fitter3DGaussLcms> {
     RSIDE_PARAM_IDX = 4,
     RLONG_PARAM_IDX = 5,
   };
-
-  static std::string GetName()
-    { return "Fitter3DGaussLcms"; }
-
-  static unsigned char CountParams()
-    { return 5; }
-
-  static double
-  gauss(const std::array<double, 3> &q,
-        const std::array<double, 3> &RSq,
-        double lam,
-        double K=1.0,
-        double norm=1.0)
-  {
-    const double
-      Eo = q[0] * q[0] * RSq[0],
-      Es = q[1] * q[1] * RSq[1],
-      El = q[2] * q[2] * RSq[2],
-      gauss = 1.0 + std::exp(-(Eo + Es + El) / HBAR_C_SQ),
-      result = (1.0 - lam) + lam * K * gauss;
-
-    return norm * result;
-  }
 
   /// \class FitResult
   /// \brief Values and stderr from minuit results

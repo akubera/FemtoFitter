@@ -15,25 +15,11 @@
 ///
 struct Fitter1DLevy : Fitter1D<Fitter1DLevy> {
 
-  using Super = Fitter1D<Fitter1DLevy>;
-
-  struct FitParams;
-  struct FitResult;
-
   static std::string GetName()
     { return "Levy1D"; }
 
-  static unsigned char CountParams()
+  static constexpr std::uint8_t CountParams()
     { return 4; }
-
-  enum {
-    DATA_PARAM_IDX = 0,
-
-    NORM_PARAM_IDX = 1,
-    LAM_PARAM_IDX = 2,
-    RADIUS_PARAM_IDX = 3,
-    ALPHA_PARAM_IDX = 4,
-  };
 
   static double
   levy(double qinv, double RinvSq, double lam, double alpha, double K=1.0, double norm=1.0)
@@ -45,6 +31,20 @@ struct Fitter1DLevy : Fitter1D<Fitter1DLevy> {
 
       return norm * result;
     }
+
+  using Super = Fitter1D<Fitter1DLevy>;
+
+  struct FitParams;
+  struct FitResult;
+
+  enum {
+    DATA_PARAM_IDX = 0,
+
+    NORM_PARAM_IDX = 1,
+    LAM_PARAM_IDX = 2,
+    RADIUS_PARAM_IDX = 3,
+    ALPHA_PARAM_IDX = 4,
+  };
 
   /// \class Fit results from TMinuit
   ///

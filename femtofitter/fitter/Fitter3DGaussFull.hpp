@@ -29,7 +29,41 @@
 ///
 struct Fitter3DGaussFull : public Fitter3D<Fitter3DGaussFull> {
 
+  static std::string GetName()
+    { return "Gauss3DFull"; }
+
+  static unsigned char CountParams()
+    { return 8; }
+
+  static double
+  gauss(std::array<double, 3> q,
+        // std::array<double, 6> RSq,
+        double Ro, double Rs, double Rl,
+        double Ros, double Rol, double Rsl,
+        double lam,
+        double K=1.0,
+        double norm=1.0)
+    {
+      const double
+        qo = q[0],
+        qs = q[1],
+        ql = q[2],
+
+        E = qo * qo * Ro * Ro
+          + qs * qs * Rs * Rs
+          + ql * ql * Rl * Rl
+          + 2 * qo * qs * std::fabs(Ros) * Ros
+          + 2 * qo * ql * std::fabs(Rol) * Rol
+          + 2 * qs * ql * std::fabs(Rsl) * Rsl,
+
+        gauss = 1.0 + std::exp(-E / HBAR_C_SQ),
+        result = (1.0 - lam) + lam * K * gauss;
+
+      return norm * result;
+    }
+
   using Super = Fitter3D<Fitter3DGaussFull>;
+
   struct FitParams;
   struct FitResult;
 
@@ -46,39 +80,6 @@ struct Fitter3DGaussFull : public Fitter3D<Fitter3DGaussFull> {
     ROL_PARAM_IDX = 7,
     RSL_PARAM_IDX = 8,
   };
-
-  static std::string GetName()
-    { return "Fitter3DGaussFull"; }
-
-  static unsigned char CountParams()
-    { return 8; }
-
-  static double
-  gauss(std::array<double, 3> q,
-        // std::array<double, 6> RSq,
-        double Ro, double Rs, double Rl,
-        double Ros, double Rol, double Rsl,
-        double lam,
-        double K=1.0,
-        double norm=1.0)
-  {
-    const double
-      qo = q[0],
-      qs = q[1],
-      ql = q[2],
-
-      E = qo * qo * Ro * Ro
-        + qs * qs * Rs * Rs
-        + ql * ql * Rl * Rl
-        + 2 * qo * qs * std::fabs(Ros) * Ros
-        + 2 * qo * ql * std::fabs(Rol) * Rol
-        + 2 * qs * ql * std::fabs(Rsl) * Rsl,
-
-      gauss = 1.0 + std::exp(-E / HBAR_C_SQ),
-      result = (1.0 - lam) + lam * K * gauss;
-
-    return norm * result;
-  }
 
   /// \class FitResult
   /// \brief Values and stderr from minuit results

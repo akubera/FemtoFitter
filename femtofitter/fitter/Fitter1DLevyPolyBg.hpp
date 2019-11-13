@@ -15,30 +15,11 @@
 ///
 struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
 
-  using Super = Fitter1D<Fitter1DLevyPolyBg>;
-
-  struct FitParams;
-  struct FitResult;
-
   static std::string GetName()
-    { return "LevyPolyBg1D"; }
+    { return "Levy1DPolyBg"; }
 
-  static unsigned char CountParams()
-    { return 3; }
-
-  enum {
-    DATA_PARAM_IDX = 0,
-
-    LAM_PARAM_IDX = 1,
-    RADIUS_PARAM_IDX = 2,
-    ALPHA_PARAM_IDX = 3,
-
-    // Background parameters
-    BG0_PARAM_IDX = 4,
-    BG1_PARAM_IDX = 5,
-    BG2_PARAM_IDX = 6,
-    BG3_PARAM_IDX = 7,
-  };
+  static constexpr std::uint8_t CountParams()
+    { return 7; }
 
   static double
   levy(double qinv,
@@ -57,6 +38,25 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
              (bg[1] + qinv * qinv *
              (bg[2] + qinv * qinv * bg[3]))) * result;
     }
+
+  using Super = Fitter1D<Fitter1DLevyPolyBg>;
+
+  struct FitParams;
+  struct FitResult;
+
+  enum {
+    DATA_PARAM_IDX = 0,
+
+    LAM_PARAM_IDX = 1,
+    RADIUS_PARAM_IDX = 2,
+    ALPHA_PARAM_IDX = 3,
+
+    // Background parameters
+    BG0_PARAM_IDX = 4,
+    BG1_PARAM_IDX = 5,
+    BG2_PARAM_IDX = 6,
+    BG3_PARAM_IDX = 7,
+  };
 
   /// \class Fit results from TMinuit
   ///

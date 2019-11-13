@@ -18,15 +18,10 @@
 ///
 struct Fitter1DGaussLin : public Fitter1D<Fitter1DGaussLin> {
 
-  using Super = Fitter1D<Fitter1DGaussLin>;
-
-  struct FitParams;
-  struct FitResult;
-
   static std::string GetName()
-    { return "LinGauss1D"; }
+    { return "Gauss1DLin"; }
 
-  static unsigned char CountParams()
+  static constexpr std::uint8_t CountParams()
     { return 4; }
 
   static double
@@ -39,6 +34,11 @@ struct Fitter1DGaussLin : public Fitter1D<Fitter1DGaussLin> {
 
       return (norm + qinv * slope) * result;
     }
+
+  using Super = Fitter1D<Fitter1DGaussLin>;
+
+  struct FitParams;
+  struct FitResult;
 
   enum {
     DATA_PARAM_IDX = 0,

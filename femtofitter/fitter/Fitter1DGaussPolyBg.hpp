@@ -18,15 +18,10 @@
 ///
 struct Fitter1DGaussPolyBg : public Fitter1D<Fitter1DGaussPolyBg> {
 
-  using Super = Fitter1D<Fitter1DGaussPolyBg>;
-
-  struct FitParams;
-  struct FitResult;
-
   static std::string GetName()
-    { return "Gauss1DPolybg"; }
+    { return "Gauss1DPolyBg"; }
 
-  static unsigned char CountParams()
+  static constexpr std::uint8_t CountParams()
     { return 6; }
 
   static double
@@ -45,6 +40,10 @@ struct Fitter1DGaussPolyBg : public Fitter1D<Fitter1DGaussPolyBg> {
              (bg[1] + qinv * qinv *
              (bg[2] + qinv * qinv * bg[3]))) * result;
     }
+
+  using Super = Fitter1D<Fitter1DGaussPolyBg>;
+  struct FitParams;
+  struct FitResult;
 
   enum {
     DATA_PARAM_IDX = 0,

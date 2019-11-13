@@ -16,10 +16,6 @@
 ///
 struct Fitter1DGauss : public Fitter1D<Fitter1DGauss> {
 
-  using Super = Fitter1D<Fitter1DGauss>;
-  struct FitParams;
-  struct FitResult;
-
   static std::string GetName()
     { return "Gauss1D"; }
 
@@ -36,6 +32,10 @@ struct Fitter1DGauss : public Fitter1D<Fitter1DGauss> {
 
       return norm * result;
     }
+
+  using Super = Fitter1D<Fitter1DGauss>;
+  struct FitParams;
+  struct FitResult;
 
   enum {
     DATA_PARAM_IDX = 0,
