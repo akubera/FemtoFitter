@@ -211,9 +211,10 @@ public:
 
       auto remove_zeros = [] (TH3 &h)
         {
-          for (int k=1; k<h.GetNbinsZ(); ++k) {
-          for (int j=1; j<h.GetNbinsY(); ++j) {
-          for (int i=1; i<h.GetNbinsX(); ++i) {
+          #pragma omp for
+          for (int k=1; k<=h.GetNbinsZ(); ++k) {
+          for (int j=1; j<=h.GetNbinsY(); ++j) {
+          for (int i=1; i<=h.GetNbinsX(); ++i) {
             if (h.GetBinContent(i,j,k) == 0) {
               h.SetBinContent(i,j,k, 1e-16);
             }
