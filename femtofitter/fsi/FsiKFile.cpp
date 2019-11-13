@@ -24,7 +24,7 @@ void FsiKFile::FillQinvHist(TH3 &hist, double Ro, double Rs, double Rl, double g
 
   auto &k2 = const_cast<TH2&>(*k2ss);
 
-  #pragma omp parallel for
+  // #pragma omp parallel for
   for (int k=1; k <= hist.GetNbinsZ(); ++k)
   for (int j=1; j <= hist.GetNbinsY(); ++j)
   for (int i=1; i <= hist.GetNbinsX(); ++i) {

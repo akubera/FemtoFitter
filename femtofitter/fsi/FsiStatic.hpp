@@ -37,7 +37,7 @@ struct FsiStatic : public FsiCalculator {
 
   void FillQinvHist(TH3 &hist, double _Ro, double _Rs, double _Rl, double _gamma) const override
     {
-      #pragma omp for
+      // #pragma omp for
       for (int k=1; k <= hist.GetNbinsZ(); ++k)
       for (int j=1; j <= hist.GetNbinsY(); ++j)
       for (int i=1; i <= hist.GetNbinsX(); ++i) {
