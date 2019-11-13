@@ -110,6 +110,8 @@ set(CMAKE_CXX_FLAGS
     CACHE STRING "std flags" FORCE)
 
 set(SRCS
+  data/DataToFit.cpp
+  data/DataTypes.hpp
   src/Data3D.cpp
   src/Data1D.cpp
   src/Value.cpp

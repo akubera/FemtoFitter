@@ -13,7 +13,6 @@
 #include <array>
 #include <memory>
 #include <vector>
-#include <valarray>
 
 class TDirectory;
 
@@ -135,11 +134,6 @@ struct Data1D {
       cf->Divide(src->den.get());
       return cf;
     }
-
-  ///
-  static double gamma_from_kT_dist(const TH1 &);
-  static double gamma_from_kT_dist(const TH1 &, std::pair<double,double> ktrng);
-  static double gamma_from_kT_dist(const TH1 &, std::pair<unsigned,unsigned> binrng);
 
 private:
   void _init();

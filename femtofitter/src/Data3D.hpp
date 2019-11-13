@@ -6,16 +6,11 @@
 #pragma once
 
 
-#include <iostream>
 #include <array>
 #include <vector>
-#include <valarray>
 #include <memory>
 
 #include <TH3.h>
-#include <TDirectory.h>
-
-class TH3;
 
 
 template <typename T> struct data_traits;
@@ -313,65 +308,4 @@ struct Data3D {
 
       return std::make_unique<Data3D>(subset, limit, true_limit);
     }
-
-  /// Estimate gamma from TDirectory name
-  ///
-  /// TDirectory name should have form <kTlo>_<kThi>.
-  /// Mother directory is also checked.
-  /// If sibling TH1 "kTDist" is found, it is used to find more accurate
-  /// mean kT of pairs.
-  ///
-  static double calc_gamma_from_tdir(const TDirectory &tdir, double mass=0.13957);
 };
-
-
-inline
-double Data3D::calc_gamma_from_tdir(const TDirectory &tdir, double mass)
-{
-  double gamma = 0.0;
-
-  TString ktname = tdir.GetName();
-  Ssiz_t underscore = ktname.First('_');
-
-  // check parent directory for kt name
-  if (underscore == TString::kNPOS || ktname.First('.') == TString::kNPOS) {
-    if (const auto *mdir = tdir.GetMotherDir()) {
-      ktname = mdir->GetName();
-      underscore = ktname.First('_');
-    }
-  }
-
-  if (underscore == TString::kNPOS || ktname.First('.') == TString::kNPOS) {
-    std::cerr << "Warning: Could not determine kt-range from directory\n";
-    return gamma;
-  }
-
-  const double
-    mass_sqr = mass * mass,
-    kt_lo = TString(ktname(0, underscore)).Atof(),
-    kt_hi = TString(ktname(underscore+1, ktname.Length())).Atof(),
-    est_mean_kt = (kt_hi + kt_lo) / 2.0,
-    est_mean_kt_sqr = est_mean_kt * est_mean_kt;
-
-  gamma = std::sqrt(1.0 + est_mean_kt_sqr / mass_sqr);
-
-  if (auto *cent_dir = tdir.GetMotherDir()) {
-    if (auto obj = std::unique_ptr<TObject>(cent_dir->Get("kTDist"))) {
-      if (auto *kthist = dynamic_cast<TH1*>(obj.get())) {
-        kthist->GetXaxis()->SetRangeUser(kt_lo, kt_hi);
-
-        const double
-          mean_kt = kthist->GetMean(),
-          kt_mass_ratio_sqr = mean_kt * mean_kt / mass_sqr;
-
-        gamma = std::sqrt(1.0 + kt_mass_ratio_sqr);
-
-        if (kthist->GetDirectory()) {
-          obj.release();
-        }
-      }
-    }
-  }
-
-  return gamma;
-}

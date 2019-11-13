@@ -4,6 +4,7 @@
 
 
 #include "Data1D.hpp"
+#include "data/DataToFit.hpp"
 #include <TH1C.h>
 #include <TH1D.h>
 #include <TDirectory.h>
@@ -116,62 +117,6 @@ Data1D::Data1D(const Data1D &orig)
 {
 }
 
-static double
-calc_gamma_from_tdir(TDirectory &dir)
-{
-
-  auto split_dirname = [] (const TDirectory &tdir, std::pair<double,double> &kt)
-    {
-      TString kt_name(tdir.GetName());
-      auto _ = kt_name.First('_');
-      if (_ == -1) {
-        return false;
-      }
-
-      kt.first = TString(kt_name(0, _)).Atof(),
-      kt.second = TString(kt_name(_+1, kt_name.Length())).Atof();
-      return true;
-    };
-
-  auto gamma_from_kt_range = [](std::pair<double, double> kt_range)
-    {
-      double
-        mean_kt = (kt_range.first + kt_range.second) / 2.0,
-        kt_mass_ratio  = mean_kt / 0.13957,
-        kt_mass_ratio_sqr = kt_mass_ratio * kt_mass_ratio;
-
-      return std::sqrt(1.0 + 4 * kt_mass_ratio_sqr);
-    };
-
-  double gamma = 0.0;
-
-  TH1 *kt_dist;
-  dir.GetObject("kt_dist", kt_dist);
-  std::pair<double, double> ktrng;
-
-  if (kt_dist) {
-    gamma = Data1D::gamma_from_kT_dist(*kt_dist);
-  }
-  else if (split_dirname(dir, ktrng)) {
-    auto *mother_dir = dir.GetMotherDir();
-    if (mother_dir && (mother_dir->GetObject("kTDist", kt_dist), kt_dist)) {
-      gamma = Data1D::gamma_from_kT_dist(*kt_dist, ktrng);
-    } else {
-      gamma = gamma_from_kt_range(ktrng);
-    }
-  }
-  else if (dir.GetMotherDir() && split_dirname(*dir.GetMotherDir(), ktrng)) {
-    gamma = gamma_from_kt_range(ktrng);
-  }
-
-  if (kt_dist && !kt_dist->GetDirectory()) {
-    delete kt_dist;
-  }
-
-  return gamma;
-}
-
-
 std::unique_ptr<Data1D>
 Data1D::From(TDirectory &dir, double limit)
 {
@@ -206,57 +151,6 @@ Data1D::From(TDirectory &dir, double limit)
                                        std::move(d),
                                        limit);
 
-  data->gamma = calc_gamma_from_tdir(dir);
+  data->gamma = DataToFit::gamma_from_tdir(dir);
   return data;
-}
-
-
-double Data1D::gamma_from_kT_dist(const TH1 &kthist)
-{
-  std::pair<unsigned,unsigned> bins = {1, kthist.GetNbinsX()};
-  return gamma_from_kT_dist(kthist, bins);
-}
-
-double Data1D::gamma_from_kT_dist(const TH1 &kthist, std::pair<unsigned,unsigned> bin_range)
-{
-  std::pair<double, double> bins = {
-    kthist.GetXaxis()->GetBinLowEdge(bin_range.first),
-    kthist.GetXaxis()->GetBinUpEdge(bin_range.second)};
-
-  return gamma_from_kT_dist(kthist, bins);
-}
-
-double Data1D::gamma_from_kT_dist(const TH1 &kthist, std::pair<double,double> ktrng)
-{
-  const TAxis &xax = *kthist.GetXaxis();
-
-  const int lobin = xax.FindBin(ktrng.first),
-            hibin = xax.FindBin(ktrng.second);
-
-  const double
-    loup = xax.GetBinUpEdge(lobin),
-    lodn = xax.GetBinLowEdge(lobin),
-    lofrac = (loup - ktrng.first) / (loup - lodn),
-
-    hiup = xax.GetBinUpEdge(hibin),
-    hidn = xax.GetBinLowEdge(hibin),
-    hifrac = (ktrng.second - hidn) / (hiup - hidn);
-
-  double gamma_sum = 0.0;
-  double pair_sum = 0.0;
-
-  for (auto i = lobin; i <= hibin; ++i) {
-
-    const double
-      npairs = kthist.GetBinContent(i),
-      kt = kthist.GetBinCenter(i) / 0.13957,
-      gam = npairs * std::sqrt(4.0 * kt * kt + 1.0),
-      frac = (i == lobin ? lofrac : i == hibin ? hifrac : 1.0);
-
-    gamma_sum += gam * frac;
-    pair_sum += npairs * frac;
-  }
-
-  // return average gamma
-  return gamma_sum / pair_sum;
 }

@@ -3,12 +3,14 @@
 ///
 
 #include "Data3D.hpp"
+#include "data/DataToFit.hpp"
 
-#include <TH3.h>
 #include <TDirectory.h>
 
 #include <iostream>
+#include <valarray>
 #include <initializer_list>
+
 
 void store_into(std::vector<double> &v, std::vector<double> &dest)
   { dest = std::move(v); }
@@ -128,7 +130,6 @@ Data3D::FromDirectory(TDirectory &tdir, double limit, double minimum)
   return From(tdir, limit);
 }
 
-
 std::unique_ptr<Data3D>
 Data3D::From(TDirectory &tdir,
              const TString &num_name,
@@ -155,7 +156,7 @@ Data3D::From(TDirectory &tdir,
                                        std::move(den),
                                        std::move(qinv),
                                        limit);
-  data->gamma = calc_gamma_from_tdir(tdir);
+  data->gamma = DataToFit::gamma_from_tdir(tdir);
 
   return data;
 }
