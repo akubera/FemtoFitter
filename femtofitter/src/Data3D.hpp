@@ -45,21 +45,9 @@ struct Data3D {
       {
       }
 
-    const double
-    calc_chi2(const double model) const
-    {
-      const double
-        ratio = num / den,
-        diff = ratio - model,
-        variance = ratio / den * (1.0 + ratio);
-
-      return variance == 0.0 ? 0.0 : diff * diff / variance;
-    }
-
     std::array<double, 3>
     qspace() const
       { return {qo, qs, ql}; }
-
   };
 
   /// saved copy of source histograms
