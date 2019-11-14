@@ -191,6 +191,21 @@ class Plotz:
 
         return plot
 
+    def pt_phi_dist(self, c=None):
+        from ROOT import TCanvas
+
+        if c is None:
+            c = TCanvas()
+
+        plot = PlotData(c)
+        ptphi = self.analysis.Get('Tracks/pass/PtPhi')
+        ptphi.SetStats(0)
+        ptphi.SetTitle("%s p_{T} vs Azimuthal Angle Distribution" % self.get_pair_title())
+        c.SetLogz()
+        ptphi.Draw("COLZ")
+        plot.ptphi = ptphi
+        return plot
+
     def pt_dist(self, c=None):
         from ROOT import TCanvas
 
