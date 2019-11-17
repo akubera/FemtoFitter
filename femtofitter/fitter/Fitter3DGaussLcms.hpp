@@ -252,6 +252,11 @@ struct Fitter3DGaussLcms : public Fitter3D<Fitter3DGaussLcms> {
         }
       }
 
+    void Normalize(TH3 &hist) const
+      {
+        hist.Scale(1.0 / norm);
+      }
+
     /// Return calculated Rinv: $\sqrt{Ro^2 \gamma + Rs^2 + Rl^2}$
     double PseudoRinv(double gamma) const
       { return std::sqrt((Ro * Ro * gamma * gamma + Rs * Rs + Rl * Rl) / 3.0); }
