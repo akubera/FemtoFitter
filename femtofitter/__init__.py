@@ -205,6 +205,9 @@ class FitResults:
     def get_merged_df(self):
         return pd.merge(self.df, self.config, on='cfg')
 
+    def get_command(self):
+        return ' '.join(self.command)
+
     def print_row_summary(self, row):
         dat = self.df.loc[row]
 
