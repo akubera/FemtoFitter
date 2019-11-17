@@ -342,10 +342,20 @@ public:
 
 protected:
 
+  Impl& self()
+    {
+      return static_cast<Impl&>(*this);
+    }
+
+  const Impl& self() const
+    {
+      return static_cast<const Impl&>(*this);
+    }
+
   template <typename ParamType>
   void _fill(TH3 &h, const ParamType &p) const
     {
-      TH3D fsi_hist;
+      TH3F fsi_hist;
       data.src->qinv->Copy(fsi_hist);
       fsi->FillQinvHist(fsi_hist, p.Ro, p.Rs, p.Rl, data.gamma);
 
@@ -355,11 +365,30 @@ protected:
   template <typename ParamType>
   void _fill_smeared_fit(TH3 &h, const ParamType &p) const
     {
-      TH3D fsi_hist;
+      TH3F fsi_hist;
       data.src->qinv->Copy(fsi_hist);
       fsi->FillQinvHist(fsi_hist, p.Ro, p.Rs, p.Rl, data.gamma);
 
       mrc->FillSmearedFit(h, p, fsi_hist);
+    }
+
+  template <typename ParamType>
+  std::unique_ptr<TH3F> _get_cf_hist(const ParamType &p) const
+    {
+      std::unique_ptr<TH3F> cf(static_cast<TH3F*>(data.src->num->Clone()));
+      cf->Reset();
+      cf->SetStats(0);
+      cf->Sumw2(false);
+
+      cf->SetTitle(self().hist_title_from_params(p));
+
+      if (mrc) {
+        self().fill_smeared_fit(*cf, p);
+      } else {
+        self().fill(*cf, p);
+      }
+
+      return cf;
     }
 };
 
