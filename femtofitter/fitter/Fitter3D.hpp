@@ -331,7 +331,6 @@ public:
   void SetMrc(std::shared_ptr<Mrc3D> ptr)
     { mrc = ptr; }
 
-
   size_t degrees_of_freedom() const
     { return data.size() - Impl::CountParams(); }
 
@@ -341,6 +340,27 @@ public:
   auto num_as_vec() const -> std::vector<double>
     { return numerator_as_vec(*this); }
 
+protected:
+
+  template <typename ParamType>
+  void _fill(TH3 &h, const ParamType &p) const
+    {
+      TH3D fsi_hist;
+      data.src->qinv->Copy(fsi_hist);
+      fsi->FillQinvHist(fsi_hist, p.Ro, p.Rs, p.Rl, data.gamma);
+
+      p.fill(h, fsi_hist);
+    }
+
+  template <typename ParamType>
+  void _fill_smeared_fit(TH3 &h, const ParamType &p) const
+    {
+      TH3D fsi_hist;
+      data.src->qinv->Copy(fsi_hist);
+      fsi->FillQinvHist(fsi_hist, p.Ro, p.Rs, p.Rl, data.gamma);
+
+      mrc->FillSmearedFit(h, p, fsi_hist);
+    }
 };
 
 /// \class Fit3DParameters
@@ -525,10 +545,10 @@ private:
         const double qx = xaxis.GetBinCenter(i);
 
         const double
-          // qinv = const_cast<TH3&>(qinvh).Interpolate(qx, qy, qz),
           qinv = qinvh.GetBinContent(i, j, k),
           K = Kfsi(qinv),
           cf = self.evaluate({qx, qy, qz}, K);
+
         func(i, j, k, cf);
       } } }
     }
