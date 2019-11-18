@@ -199,16 +199,6 @@ public:
         return mrc;
       }
 
-      auto rebinnable = [] (const TAxis &ax1, const TAxis &ax2, int &nbins)
-        {
-          if (ax1.GetXmin() == ax2.GetXmin() &&
-              ax1.GetXmax() == ax2.GetXmax() &&
-              std::remquo(ax1.GetNbins(), ax2.GetNbins(), &nbins) == 0.0) {
-            return true;
-          }
-          return false;
-        };
-
       auto remove_zeros = [] (TH3 &h)
         {
           #pragma omp for
@@ -223,9 +213,9 @@ public:
 
       // Use Rebin3D
       int rebinx = 0, rebiny = 0, rebinz = 0;
-      if (rebinnable(*dg->GetXaxis(), *hist.GetXaxis(), rebinx) &&
-          rebinnable(*dg->GetYaxis(), *hist.GetYaxis(), rebiny) &&
-          rebinnable(*dg->GetZaxis(), *hist.GetZaxis(), rebinz)) {
+      if (rebinnable_axes(*dg->GetXaxis(), *hist.GetXaxis(), rebinx) &&
+          rebinnable_axes(*dg->GetYaxis(), *hist.GetYaxis(), rebiny) &&
+          rebinnable_axes(*dg->GetZaxis(), *hist.GetZaxis(), rebinz)) {
 
         std::shared_ptr<TH3> mrc(nr->Rebin3D(rebinx, rebiny, rebinz, "smearfactor"));
 
@@ -233,8 +223,8 @@ public:
           mrc->Divide(dr.get());
           mrc->Multiply(dg.get());
           mrc->Divide(ng.get());
-
         } else {
+
           std::unique_ptr<TH3>
             ptr_ng(ng->Rebin3D(rebinx, rebiny, rebinz, "ng")),
             ptr_dg(dg->Rebin3D(rebinx, rebiny, rebinz, "dg")),
@@ -252,49 +242,24 @@ public:
 
       std::shared_ptr<TH3> mrc(static_cast<TH3*>(hist.Clone()));
 
-      const TAxis
-        &xax = *hist.GetXaxis(),
-        &yax = *hist.GetYaxis(),
-        &zax = *hist.GetZaxis();
+      loop_over_bins_ranges(hist,
+        [&] (int i, const std::pair<double, double> &xx,
+             int j, const std::pair<double, double> &yy,
+             int k, const std::pair<double, double> &zz)
+          {
+            const double
+              ngf = integrate(xx, yy, zz, *ng),
+              dgf = integrate(xx, yy, zz, *dg),
+              nrf = integrate(xx, yy, zz, *nr),
+              drf = integrate(xx, yy, zz, *dr),
 
-      const Int_t
-        xstart = 1,  // xax.GetFirst(),
-        xstop = xax.GetNbins(),  // xax.GetLast(),
+              num = nrf * dgf,
+              den = drf * ngf,
 
-        ystart = 1,  // yax.GetFirst(),
-        ystop = yax.GetNbins(),  // yax.GetLast(),
+              ratio = den == 0.0 ? 1e16 : num == 0.0 ? 1e-16 : num / den;
 
-        zstart = 1,  // zax.GetFirst(),
-        zstop = zax.GetNbins();  // zax.GetLast();
-
-      for (int k=zstart;k<=zstop;++k) {
-        const double
-          zlo = zax.GetBinLowEdge(k),
-          zhi = zax.GetBinUpEdge(k);
-
-      for (int j=ystart;j<=ystop;++j) {
-        const double
-          ylo = yax.GetBinLowEdge(j),
-          yhi = yax.GetBinUpEdge(j);
-
-      for (int i=xstart;i<=xstop;++i) {
-        const double
-          xlo = xax.GetBinLowEdge(i),
-          xhi = xax.GetBinUpEdge(i);
-
-        const double
-          ngf = integrate({xlo, xhi}, {ylo, yhi}, {zlo, zhi}, *ng),
-          dgf = integrate({xlo, xhi}, {ylo, yhi}, {zlo, zhi}, *dg),
-          nrf = integrate({xlo, xhi}, {ylo, yhi}, {zlo, zhi}, *nr),
-          drf = integrate({xlo, xhi}, {ylo, yhi}, {zlo, zhi}, *dr),
-
-          num = nrf * dgf,
-          den = drf * ngf,
-
-          ratio = den == 0.0 ? 1e16 : num == 0.0 ? 1e-16 : num / den;
-
-        mrc->SetBinContent(i, j, k, ratio);
-      }}}
+            mrc->SetBinContent(i, j, k, ratio);
+          });
 
       cache.insert(hist, mrc);
 
