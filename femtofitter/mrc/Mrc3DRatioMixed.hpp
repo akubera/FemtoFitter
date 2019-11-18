@@ -167,21 +167,11 @@ public:
         return mrc;
       }
 
-      auto rebinnable = [] (const TAxis &ax1, const TAxis &ax2, int &nbins)
-        {
-          if (ax1.GetXmin() == ax2.GetXmin() &&
-              ax1.GetXmax() == ax2.GetXmax() &&
-              std::remquo(ax1.GetNbins(), ax2.GetNbins(), &nbins) == 0.0) {
-            return true;
-          }
-          return false;
-        };
-
       // Use Rebin3D
       int rebinx = 0, rebiny = 0, rebinz = 0;
-      if (rebinnable(*gen->GetXaxis(), *hist.GetXaxis(), rebinx) &&
-          rebinnable(*gen->GetYaxis(), *hist.GetYaxis(), rebiny) &&
-          rebinnable(*gen->GetZaxis(), *hist.GetZaxis(), rebinz)) {
+      if (rebinnable_axes(*gen->GetXaxis(), *hist.GetXaxis(), rebinx) &&
+          rebinnable_axes(*gen->GetYaxis(), *hist.GetYaxis(), rebiny) &&
+          rebinnable_axes(*gen->GetZaxis(), *hist.GetZaxis(), rebinz)) {
 
         std::shared_ptr<TH3> mrc(rec->Rebin3D(rebinx, rebiny, rebinz, "smearfactor"));
 
