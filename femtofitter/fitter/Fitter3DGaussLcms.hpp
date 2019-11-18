@@ -420,11 +420,6 @@ struct Fitter3DGaussLcms : public Fitter3D<Fitter3DGaussLcms> {
       res = do_fit_minuit(minuit, 1.0, rec);
     }
 
-  void fill(TH3 &h, const FitParams &p) const
-    {
-      p.fill(h, *data.src->qinv, *fsi, data.gamma);
-    }
-
   std::unique_ptr<TH3> get_cf(const FitResult &r) const
     {
       return get_cf(r.as_params());
@@ -432,32 +427,20 @@ struct Fitter3DGaussLcms : public Fitter3D<Fitter3DGaussLcms> {
 
   std::unique_ptr<TH3> get_cf(const FitParams &p) const
     {
-      std::unique_ptr<TH3> cf(static_cast<TH3*>(data.src->num->Clone()));
-      cf->Reset();
-      cf->SetTitle(Form("Correlation Function (R=<%0.2f,%0.2f,%0.2f,> \\lambda=%0.3f); q_{inv}; CF(q_{inv});", p.Ro, p.Rs, p.Rl, p.lam));
-      cf->SetStats(false);
-      fill(*cf, p);
-      return cf;
+      return _get_cf_hist(p);
     }
 
-  std::unique_ptr<TH3> get_cf_mrc(const FitResult &r) const
+  static
+  TString hist_title_from_params(const FitParams &p)
     {
-      return get_cf_mrc(r.as_params());
-    }
-
-  std::unique_ptr<TH3> get_cf_mrc(const FitParams &p) const
-    {
-      std::unique_ptr<TH3> cf(static_cast<TH3*>(data.src->num->Clone()));
-      cf->Reset();
-      cf->SetTitle(Form("Correlation Function (R=<%0.2f,%0.2f,%0.2f,> \\lambda=%0.3f); q_{inv}; CF(q_{inv});", p.Ro, p.Rs, p.Rl, p.lam));
-      cf->SetStats(false);
-      mrc->FillSmearedFit(*cf, p, *data.src->qinv, *fsi, 1);
-      return cf;
+      return TString::Format("Fitter3DGaussLcms Correlation Function (R=<%0.2f,%0.2f,%0.2f,> \\lambda=%0.3f);"
+                             "q_{out}; q_{side}; q_{long}; CF(q);",
+                             p.Ro, p.Rs, p.Rl, p.lam);
     }
 
   DECLARE_FIT_METHODS(Fitter3D);
   DECLARE_RESID_METHODS(Fitter3D);
-  // DECLARE_FILL_METHODS(TH3);
+  DECLARE_FILL3D_METHODS();
 
 };
 
