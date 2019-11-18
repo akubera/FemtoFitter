@@ -81,7 +81,7 @@
     { Super::fill_smeared_fit(h, p); }
 
 
-#define DECLARE_FILL3D_METHODS() \
+#define DECLARE_FILL_METHODS_3D() \
   void fill(TH3 &h, const FitParams &p) const \
     { _fill(h, p); } \
   void fill(TH3 &h, const FitResult &r) const \

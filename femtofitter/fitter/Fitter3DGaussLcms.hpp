@@ -440,7 +440,7 @@ struct Fitter3DGaussLcms : public Fitter3D<Fitter3DGaussLcms> {
 
   DECLARE_FIT_METHODS(Fitter3D);
   DECLARE_RESID_METHODS(Fitter3D);
-  DECLARE_FILL3D_METHODS();
+  DECLARE_FILL_METHODS_3D();
 
 };
 
