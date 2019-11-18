@@ -262,6 +262,11 @@ struct Mrc3D : public Mrc {
   virtual std::unique_ptr<TH3D> GetSmearedDen() const
         { return nullptr; }
 
+  virtual std::unique_ptr<TH3> GetSmearedeDenLike(const TH3 &) const
+    {
+      return nullptr;
+    }
+
   virtual std::unique_ptr<TH3D> GetSmearedFit(const Fit3DParameters &p, const TH3& qinv, FsiCalculator &fsi) const
     {
       std::unique_ptr<TH3D> res = GetUnsmearedDen();
