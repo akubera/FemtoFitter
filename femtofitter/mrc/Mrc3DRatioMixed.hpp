@@ -249,6 +249,11 @@ public:
       return result;
     }
 
+  std::unique_ptr<TH3> GetSmearedDenLike(const TH3 &h) const override
+    {
+      return rebinned_like(*rec, h, "SmearedDenominator");
+    }
+
   void FillSmearedFit(TH3 &cf, const Fit3DParameters &p, const TH3 &fsi) const override
     {
       p.fill(cf, fsi);
