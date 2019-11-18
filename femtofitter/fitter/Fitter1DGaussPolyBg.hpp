@@ -94,16 +94,15 @@ struct Fitter1DGaussPolyBg : public Fitter1D<Fitter1DGaussPolyBg> {
 
         std::vector<std::string> missing_keys;
 
-        // ExtractPythonNumber(pyobj, "norm", norm.value, missing_keys);
-        // ExtractPythonNumber(pyobj, "norm_err", norm.error, missing_keys);
         ExtractPythonNumber(pyobj, "lam", lam.value, missing_keys);
         ExtractPythonNumber(pyobj, "lam_err", lam.error, missing_keys);
         ExtractPythonNumber(pyobj, "radius", radius.value, missing_keys);
         ExtractPythonNumber(pyobj, "radius_err", radius.error, missing_keys);
-        // PyDict_SetItemString(dict, "bg0", PyFloat_FromDouble(bg[0].value));
-        // PyDict_SetItemString(dict, "bg1", PyFloat_FromDouble(bg[1].value));
-        // PyDict_SetItemString(dict, "bg2", PyFloat_FromDouble(bg[2].value));
-        // PyDict_SetItemString(dict, "bg3", PyFloat_FromDouble(bg[3].value));
+
+        ExtractPythonNumber(pyobj, "BG0", bg[0].value, missing_keys);
+        ExtractPythonNumber(pyobj, "BG1", bg[1].value, missing_keys);
+        ExtractPythonNumber(pyobj, "BG2", bg[2].value, missing_keys);
+        ExtractPythonNumber(pyobj, "BG3", bg[3].value, missing_keys);
 
         if (!missing_keys.empty()) {
           std::string msg = "Python object missing required items:";
@@ -156,10 +155,10 @@ struct Fitter1DGaussPolyBg : public Fitter1D<Fitter1DGaussPolyBg> {
         PyDict_SetItemString(dict, "radius_err", PyFloat_FromDouble(radius.error));
         PyDict_SetItemString(dict, "lam", PyFloat_FromDouble(lam.value));
         PyDict_SetItemString(dict, "lam_err", PyFloat_FromDouble(lam.error));
-        PyDict_SetItemString(dict, "bg0", PyFloat_FromDouble(bg[0].value));
-        PyDict_SetItemString(dict, "bg1", PyFloat_FromDouble(bg[1].value));
-        PyDict_SetItemString(dict, "bg2", PyFloat_FromDouble(bg[2].value));
-        PyDict_SetItemString(dict, "bg3", PyFloat_FromDouble(bg[3].value));
+        PyDict_SetItemString(dict, "BG0", PyFloat_FromDouble(bg[0].value));
+        PyDict_SetItemString(dict, "BG1", PyFloat_FromDouble(bg[1].value));
+        PyDict_SetItemString(dict, "BG2", PyFloat_FromDouble(bg[2].value));
+        PyDict_SetItemString(dict, "BG3", PyFloat_FromDouble(bg[3].value));
         return dict;
       }
 
@@ -251,10 +250,10 @@ struct Fitter1DGaussPolyBg : public Fitter1D<Fitter1DGaussPolyBg> {
         auto *dict = PyDict_New();
         PyDict_SetItemString(dict, "radius", PyFloat_FromDouble(radius));
         PyDict_SetItemString(dict, "lam", PyFloat_FromDouble(lam));
-        PyDict_SetItemString(dict, "bg0", PyFloat_FromDouble(bg[0]));
-        PyDict_SetItemString(dict, "bg1", PyFloat_FromDouble(bg[1]));
-        PyDict_SetItemString(dict, "bg2", PyFloat_FromDouble(bg[2]));
-        PyDict_SetItemString(dict, "bg3", PyFloat_FromDouble(bg[3]));
+        PyDict_SetItemString(dict, "BG0", PyFloat_FromDouble(bg[0]));
+        PyDict_SetItemString(dict, "BG1", PyFloat_FromDouble(bg[1]));
+        PyDict_SetItemString(dict, "BG2", PyFloat_FromDouble(bg[2]));
+        PyDict_SetItemString(dict, "BG3", PyFloat_FromDouble(bg[3]));
         return dict;
       }
 
