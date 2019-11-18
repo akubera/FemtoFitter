@@ -167,14 +167,20 @@ public:
 
   static std::shared_ptr<Mrc3D> From(TDirectory &tdir)
     {
-      auto result = From(tdir, {"NumGenUnweighted", "DenGen", "NumRecUnweighted", "DenRec"});
-      if (!result) {
-        result = From(tdir, {"ng", "dg", "nr", "dr"});
+      std::vector<std::array<const TString, 4>>
+        name_vec = {
+          {"NumGenUnweighted", "DenGen", "NumRecUnweighted", "DenRec"},
+          {"ng", "dg", "nr", "dr"},
+          {"ngu", "dg", "nru", "dr"},
+        };
+
+      for (auto &names : name_vec) {
+        if (auto result = From(tdir, names)) {
+          return result;
+        }
       }
-      if (!result) {
-        result = From(tdir, {"ngu", "dg", "nru", "dr"});
-      }
-      return result;
+
+      return nullptr;
     }
 
   virtual ~Mrc3DRatio()
