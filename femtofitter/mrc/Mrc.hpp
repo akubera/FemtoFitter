@@ -274,6 +274,60 @@ struct Mrc3D : public Mrc {
       return res;
     }
 
+  template <typename FuncType>
+  static void loop_over_bins_ranges(const TH3 &hist, FuncType &&func)
+    {
+      const TAxis
+        &xax = *hist.GetXaxis(),
+        &yax = *hist.GetYaxis(),
+        &zax = *hist.GetZaxis();
+
+      const Int_t
+        xstart = xax.GetFirst(),
+        xstop = xax.GetLast(),
+
+        ystart = yax.GetFirst(),
+        ystop = yax.GetLast(),
+
+        zstart = zax.GetFirst(),
+        zstop = zax.GetLast();
+
+      for (int k=zstart; k<=zstop; ++k) {
+        const double
+          zlo = zax.GetBinLowEdge(k),
+          zhi = zax.GetBinUpEdge(k);
+
+      for (int j=ystart; j<=ystop; ++j) {
+        const double
+          ylo = yax.GetBinLowEdge(j),
+          yhi = yax.GetBinUpEdge(j);
+
+      for (int i=xstart; i<=xstop; ++i) {
+        const double
+          xlo = xax.GetBinLowEdge(i),
+          xhi = xax.GetBinUpEdge(i);
+
+        func(i, {xlo, xhi}, j, {ylo, yhi}, k, {zlo, zhi});
+      } } }
+    }
+
+protected:
+
+  static
+  bool rebinnable_axes(const TAxis &ax1, const TAxis &ax2, int &nbins)
+    {
+      if (ax1.GetXmin() == ax2.GetXmin() &&
+          ax1.GetXmax() == ax2.GetXmax() &&
+          std::remquo(ax1.GetNbins(), ax2.GetNbins(), &nbins) == 0.0) {
+            return true;
+      }
+      return false;
+    }
+
+  static
+  std::unique_ptr<TH3> rebinned_like(const TH3 &data,
+                                     const TH3 &axis_shape,
+                                     TString name="rebinned");
 };
 
 

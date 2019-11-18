@@ -84,6 +84,7 @@ set(INCS
   fsi/FsiKFile.hpp
   fsi/FsiGamov.hpp
   fsi/FsiStatic.hpp
+  mrc/Mrc.hpp
   mrc/Mrc3DRatio.hpp
   mrc/Mrc3DRatioMixed.hpp
   mrc/Mrc1DRatio.hpp
@@ -117,6 +118,7 @@ set(SRCS
   src/Value.cpp
   fsi/FsiKFile.cpp
   fitter/Fitter1DGauss.cpp
+  mrc/Mrc.cpp
   mrc/Mrc3DHypercube.cpp
   src/MinimizerMinuit.cpp
   src/ParamHints.cpp
