@@ -101,7 +101,7 @@ struct Fitter1DGauss : public Fitter1D<Fitter1DGauss> {
       }
 
     /// Build python list of tuples from data
-    PyObject* __iter__() const;
+    PyObject* __iter__() const override;
 
     /// Build python dictionary from data
     PyObject* as_dict() const;
@@ -113,7 +113,6 @@ struct Fitter1DGauss : public Fitter1D<Fitter1DGauss> {
         minuit.mnparm(R_PARAM_IDX, "Radius", radius.value, 0.2, 0.0, 0.0, errflag);
         minuit.mnparm(NORM_PARAM_IDX, "Norm", norm.value, 0.005, 0.0, 0.0, errflag);
       }
-
   };
 
   struct FitParams : FitParam1D<FitParams> {

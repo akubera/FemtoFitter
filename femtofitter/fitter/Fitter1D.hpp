@@ -68,18 +68,16 @@ public:
     {
       double retval = 0;
 
-      const std::function<double(double)>
-        Kfsi = fsi
-             ? fsi->ForRadius(p.radius)
-             : [] (double qinv) { return 1.0; };
+      auto Kfsi = fsi->ForRadius(p.radius);
 
       for (const auto &datum : data) {
         const double
           n = datum.num,
           d = datum.den,
           q = datum.qinv,
+          k = Kfsi(q),
 
-          CF = p.evaluate(q, Kfsi(q));
+          CF = p.evaluate(q, k);
 
         retval += resid_func(n, d, CF);
       }
@@ -88,16 +86,20 @@ public:
     }
 
   template <typename ResidFunc, typename FitParams>
-  double resid_calc_mrc(const FitParams &p, Mrc1D &mrc1d, ResidFunc resid_func, UInt_t npoints=1) const
+  double resid_calc_mrc(const FitParams &p,
+                        Mrc1D &mrc1d,
+                        ResidFunc resid_func,
+                        UInt_t npoints=1) const
     {
       double retval = 0;
 
       if (_tmp_cf == nullptr) {
-        _tmp_cf.reset(static_cast<TH1D*>(data.src->num->Clone()));
+        _tmp_cf.reset(static_cast<TH1D*>(data.src->num->Clone("cf_buffer")));
+        _tmp_cf->SetDirectory(nullptr);
       }
 
-      auto *cfhist = _tmp_cf.get();
-      mrc1d.FillSmearedFit(*cfhist, p, *fsi);
+      auto &cfhist = *_tmp_cf;
+      mrc1d.FillSmearedFit(cfhist, p, *fsi);
 
       for (const auto &datum : data) {
 
@@ -105,7 +107,7 @@ public:
           n = datum.num,
           d = datum.den,
 
-          CF = cfhist->GetBinContent(datum.hist_bin);
+          CF = cfhist.GetBinContent(datum.hist_bin);
 
         retval += resid_func(n, d, CF);
       }
@@ -342,7 +344,7 @@ struct Fit1DParameters {
 template <typename CRTP>
 struct FitParam1D : Fit1DParameters {
 
-  virtual ~FitParam1D(){}
+  virtual ~FitParam1D() = default;
 
   /// Fill histogram with no FSI factor
   void fill(TH1 &h) const override
@@ -435,9 +437,9 @@ template <typename CRTP, typename FitterType>
 struct FitResult1D {
   using Paramters = typename FitterType::FitParams;
 
+  virtual ~FitResult1D() = default;
+
   virtual void FillMinuit(TMinuit &) const = 0;
-  virtual ~FitResult1D()
-    { }
 
   Paramters as_params() const
     {
@@ -464,6 +466,15 @@ struct FitResult1D {
     {
       as_params().Normalize(h);
     }
+
+  virtual PyObject* __iter__() const
+    {
+      auto *dict = static_cast<const CRTP*>(this)->as_dict();
+      auto *list = PyDict_Items(dict);
+
+      return PyObject_GetIter(list);
+    }
+
 };
 
 
