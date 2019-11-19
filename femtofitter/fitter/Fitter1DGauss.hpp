@@ -244,10 +244,11 @@ struct Fitter1DGauss : public Fitter1D<Fitter1DGauss> {
     }
 
   void
-  set_and_fix_variable(TMinuit &minuit, std::string name, double val)
+  set_and_fix_variable(TMinuit &minuit, TString name, double val)
     {
-      int idx = (name == "R") || (name == "radius") ? R_PARAM_IDX
-              : (name == "lam" || name == "Lam") ? LAM_PARAM_IDX
+      name.ToLower();
+      int idx = (name == "r") || (name == "radius") ? R_PARAM_IDX
+              : (name == "lam") ? LAM_PARAM_IDX
               : -1;
 
       if (idx < 0) {
