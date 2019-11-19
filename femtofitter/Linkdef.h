@@ -23,6 +23,10 @@
 #pragma link C++ class Fitter1DLevy::FitParams;
 #pragma link C++ class Fitter1DLevy::FitResult;
 
+#pragma link C++ class Fitter1D<Fitter1DLevyLin>;
+#pragma link C++ class Fitter1DLevyLin::FitParams;
+#pragma link C++ class Fitter1DLevyLin::FitResult;
+
 #pragma link C++ class Fitter1D<Fitter1DLevyPolyBg>;
 #pragma link C++ class Fitter1DLevyPolyBg::FitParams;
 #pragma link C++ class Fitter1DLevyPolyBg::FitResult;
