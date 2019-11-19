@@ -98,7 +98,7 @@ def main(argv=None):
     except ImportError:
         pass
     else:
-        setproctitle(sys.argv[0])
+        setproctitle(Path(sys.argv[0]).name)
 
     import ROOT
 
