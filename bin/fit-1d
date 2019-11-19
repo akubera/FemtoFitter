@@ -41,6 +41,10 @@ def arg_parser():
     parser.add_argument("--chi2",
                         action='store_true',
                         help="Fit with chi2 instead of LogLikelihood")
+    parser.add_argument("--skip",
+                        type=int,
+                        default=None,
+                        help="skip input")
     parser.add_argument("--limit",
                         type=int,
                         default=None,
@@ -110,6 +114,9 @@ def main(argv=None):
 
     tfile = TFile(args.input)
     data = list(find_fit_data(tfile, args))
+    data = data[args.skip:]
+    if args.limit:
+        data = data[:args.limit]
 
     loop = asyncio.get_event_loop()
     executor = ProcessPoolExecutor()
