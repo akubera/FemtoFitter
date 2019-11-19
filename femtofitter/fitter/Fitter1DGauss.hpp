@@ -275,40 +275,8 @@ struct Fitter1DGauss : public Fitter1D<Fitter1DGauss> {
     : Fitter1D(dat)
     { }
 
-  virtual ~Fitter1DGauss() = default;
-
-  double resid_calc_chi2(const FitResult &fr)
-    {
-      auto params = fr.as_params();
-      return Fitter1D::resid_calc(params, CalcChi2::resid_func);
-    }
-
-  double resid_calc_chi2(const FitParams &params)
-    {
-      return Fitter1D::resid_calc(params, CalcChi2::resid_func);
-    }
-
-  double resid_calc_pml(const FitParams &params)
-    {
-      return Fitter1D::resid_calc(params, CalcLoglike::resid_func);
-    }
-
-  double calc_chi2_residual(const FitResult &fr)
-    {
-      return resid_calc_chi2(fr);
-    }
-
-  double calc_chi2_residual_mrc(const FitResult &fr)
-    {
-      return resid_calc_chi2_mrc(fr);
-    }
-
-  double resid_calc_chi2_mrc(const FitResult &fr);
-
   DECLARE_FIT_METHODS(Fitter1D)
-
-  // void fit_with_random_inits(TMinuit &minuit, FitResult &res, int);
-
+  DECLARE_RESID_METHODS(Fitter1D);
   DECLARE_FILL_METHODS(TH1)
 
 };
