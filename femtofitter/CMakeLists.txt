@@ -133,6 +133,7 @@ set(ROOT_LIBS
   ROOT::Hist
   ROOT::Gui
   ROOT::Minuit
+  ROOT::PyROOT
 )
 
 find_library(LIB_FEMTO
