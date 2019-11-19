@@ -1,8 +1,15 @@
+#
+# femtofitter/plotting/systematics.py
+#
 
 from .plotdata import PlotData
 
 
 def plot_systematics(df, c=None):
+    pass
+
+
+def plot_systematics_plot(df, c=None):
     from ROOT import TH1D, TLine, TCanvas
 
     if c is None:
