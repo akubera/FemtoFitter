@@ -1,5 +1,6 @@
 #
 
+import sys
 from plot1d import PlotData
 
 
@@ -100,8 +101,14 @@ class Plotz:
         if pair is None:
             pair = p
 
-        analysis = '_'.join([*name, *cent, pair])
-        self.analysis = self.container.Get(analysis)
+        analysis_name = '_'.join([*name, *cent, pair])
+
+        analysis = self.container.Get(analysis_name)
+        if not analysis:
+            print(f"Could not find {analysis_name!r}", file=sys.stderr)
+            raise ValueError
+
+        self.analysis = analysis
 
     def list_analyses(self, path='PWG2FEMTO/*/*'):
         from stumpy.utils import walk_matching
@@ -122,8 +129,8 @@ class Plotz:
     def build_zvertex_canvas(self, c=None):
         from ROOT import gStyle, gROOT, TCanvas
 
-        gStyle.SetLabelSize(0.05)
-        gROOT.ForceStyle()
+#         gStyle.SetLabelSize(0.05)
+#         gROOT.ForceStyle()
 
         if c is None:
             c = TCanvas()
@@ -137,8 +144,14 @@ class Plotz:
         xax = vz.GetXaxis()
         yax = vz.GetYaxis()
 
-        xax.SetTitleOffset(1.4)
-        yax.SetTitleOffset(1.4)
+        xax.SetLabelSize(0.04)
+        xax.SetTitleOffset(0.9)
+        xax.SetTitleSize(0.045)
+
+        yax.SetTitleOffset(0.9)
+        yax.SetTitleSize(0.045)
+        yax.SetNdivisions(505)
+
         vz.SetTitle("Event Vertex Z-Component")
         vz.Draw()
         plot.vz = vz
@@ -146,6 +159,7 @@ class Plotz:
         return plot
 
     def build_xyvertex_canvas(self, c=None):
+        from ROOT import TCanvas
 
         if c is None:
             c = TCanvas()
@@ -157,13 +171,14 @@ class Plotz:
         vxy = event_dir.Get("VertexXY")
         vxy.SetStats(0)
 
-
-        tick_code = 906
         xax = vxy.GetXaxis()
-        xax.SetNdivisions(tick_code)
-        xax.SetRangeUser(0.034, 0.095)
+        xax.SetRangeUser(0.055, 0.095)
+        xax.SetNdivisions(908)
+
         yax = vxy.GetYaxis()
-        yax.SetNdivisions(tick_code)
+        yax.SetRangeUser(0.32, 0.352)
+        yax.SetNdivisions(908)
+        yax.SetTitleOffset(1.6)
 
         c.SetRightMargin(20.0)
         vxy.SetTitle("Event Vertex XY-components")
@@ -177,8 +192,7 @@ class Plotz:
         from ROOT import TCanvas
         if c is None:
             c = TCanvas()
-
-            size = opts.get('size', (900, 500))
+            size = opts.get('size', (900, 400))
             c.SetCanvasSize(*size)
 
         plot = PlotData(c)
@@ -189,6 +203,23 @@ class Plotz:
         pad2 = c.cd(1)
         plot.xyplot = self.build_xyvertex_canvas(pad2)
 
+        return plot
+
+    def pt_phi_dist(self, c=None, opts='COLZ'):
+        from ROOT import TCanvas
+
+        if c is None:
+            c = TCanvas()
+
+        plot = PlotData(c)
+        ptphi = self.analysis.Get('Tracks/pass/PtPhi')
+        ptphi.SetStats(0)
+        ptphi.SetTitle("%s p_{T} vs Azimuthal Angle Distribution" % self.get_pair_title())
+        c.SetLogz()
+        ptphi.Draw(opts)
+        plot.ptphi = ptphi
+        yax = ptphi.GetYaxis()
+        yax.SetLabelSize(0.04)
         return plot
 
     def pt_dist(self, c=None):

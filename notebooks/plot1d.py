@@ -31,7 +31,7 @@ def make_1d_plots(df, c=None):
     if c is None:
         from ROOT import TCanvas
         c = TCanvas()
-        c.Divide(r1)
+        c.Divide(1, 2)
     import seaborn as sns
     import ROOT
     from ROOT import TGraphErrors, TLegend
@@ -131,7 +131,7 @@ def load_joeys_style():
     gROOT.ForceStyle()
 
 
-def make_1d_correlation_function(df, key, tfile=None, size=(600, 1800), c=None):
+def make_1d_correlation_function(df, key, tfile=None, size=(800, 600), c=None):
     import ROOT
     from ROOT import TCanvas, TLine
     from femtofitter import PathQuery

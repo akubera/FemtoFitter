@@ -8,7 +8,6 @@
 #define FITTER_FITTER1DGAUSS_HPP
 
 #include "Fitter1D.hpp"
-#include "PythonInterface.hh"
 
 
 /// \class Fitter1DGauss
@@ -68,35 +67,7 @@ struct Fitter1DGauss : public Fitter1D<Fitter1DGauss> {
       , radius(minuit, R_PARAM_IDX)
       { }
 
-    FitResult(PyObject *pyobj)
-      {
-        if (!PyMapping_Check(pyobj)) {
-          TPython::Exec(Form("raise TypeError('Object not a collection!')"));
-          throw std::runtime_error("Object not a python collection");
-        }
-
-        std::vector<std::string> missing_keys;
-
-        ExtractPythonNumber(pyobj, "norm", norm.value, missing_keys);
-        ExtractPythonNumber(pyobj, "norm_err", norm.error, missing_keys);
-        ExtractPythonNumber(pyobj, "lam", lam.value, missing_keys);
-        ExtractPythonNumber(pyobj, "lam_err", lam.error, missing_keys);
-        ExtractPythonNumber(pyobj, "radius", radius.value, missing_keys);
-        ExtractPythonNumber(pyobj, "radius_err", radius.error, missing_keys);
-
-        if (!missing_keys.empty()) {
-          std::string msg = "Python object missing required items:";
-          for (const auto &key : missing_keys) {
-            msg += " ";
-            msg += key;
-          }
-          TPython::Exec(Form("raise ValueError('%s')", msg.c_str()));
-          throw std::runtime_error(msg);
-        }
-      }
-
-    virtual ~FitResult()
-      { }
+    FitResult(PyObject *pyobj);
 
     std::map<std::string, double>
     as_map() const
@@ -129,18 +100,11 @@ struct Fitter1DGauss : public Fitter1D<Fitter1DGauss> {
                     radius.value, lam.value, norm.value);
       }
 
-    PyObject*
-    as_dict() const
-      {
-        auto *dict = PyDict_New();
-        PyDict_SetItemString(dict, "radius", PyFloat_FromDouble(radius.value));
-        PyDict_SetItemString(dict, "radius_err", PyFloat_FromDouble(radius.error));
-        PyDict_SetItemString(dict, "lam", PyFloat_FromDouble(lam.value));
-        PyDict_SetItemString(dict, "lam_err", PyFloat_FromDouble(lam.error));
-        PyDict_SetItemString(dict, "norm", PyFloat_FromDouble(norm.value));
-        PyDict_SetItemString(dict, "norm_err", PyFloat_FromDouble(norm.error));
-        return dict;
-      }
+    /// Build python list of tuples from data
+    PyObject* __iter__() const override;
+
+    /// Build python dictionary from data
+    PyObject* as_dict() const;
 
     void FillMinuit(TMinuit &minuit) const override
       {
@@ -149,7 +113,6 @@ struct Fitter1DGauss : public Fitter1D<Fitter1DGauss> {
         minuit.mnparm(R_PARAM_IDX, "Radius", radius.value, 0.2, 0.0, 0.0, errflag);
         minuit.mnparm(NORM_PARAM_IDX, "Norm", norm.value, 0.005, 0.0, 0.0, errflag);
       }
-
   };
 
   struct FitParams : FitParam1D<FitParams> {
@@ -212,15 +175,7 @@ struct Fitter1DGauss : public Fitter1D<Fitter1DGauss> {
                     radius, lam, norm);
       }
 
-    PyObject*
-    as_dict() const
-      {
-        auto *dict = PyDict_New();
-        PyDict_SetItemString(dict, "radius", PyFloat_FromDouble(radius));
-        PyDict_SetItemString(dict, "lam", PyFloat_FromDouble(lam));
-        PyDict_SetItemString(dict, "norm", PyFloat_FromDouble(norm));
-        return dict;
-      }
+    PyObject* as_dict() const;
   };
 
   int
@@ -244,10 +199,11 @@ struct Fitter1DGauss : public Fitter1D<Fitter1DGauss> {
     }
 
   void
-  set_and_fix_variable(TMinuit &minuit, std::string name, double val)
+  set_and_fix_variable(TMinuit &minuit, TString name, double val)
     {
-      int idx = (name == "R") || (name == "radius") ? R_PARAM_IDX
-              : (name == "lam" || name == "Lam") ? LAM_PARAM_IDX
+      name.ToLower();
+      int idx = (name == "r") || (name == "radius") ? R_PARAM_IDX
+              : (name == "lam") ? LAM_PARAM_IDX
               : -1;
 
       if (idx < 0) {
@@ -274,40 +230,8 @@ struct Fitter1DGauss : public Fitter1D<Fitter1DGauss> {
     : Fitter1D(dat)
     { }
 
-  virtual ~Fitter1DGauss() = default;
-
-  double resid_calc_chi2(const FitResult &fr)
-    {
-      auto params = fr.as_params();
-      return Fitter1D::resid_calc(params, CalcChi2::resid_func);
-    }
-
-  double resid_calc_chi2(const FitParams &params)
-    {
-      return Fitter1D::resid_calc(params, CalcChi2::resid_func);
-    }
-
-  double resid_calc_pml(const FitParams &params)
-    {
-      return Fitter1D::resid_calc(params, CalcLoglike::resid_func);
-    }
-
-  double calc_chi2_residual(const FitResult &fr)
-    {
-      return resid_calc_chi2(fr);
-    }
-
-  double calc_chi2_residual_mrc(const FitResult &fr)
-    {
-      return resid_calc_chi2_mrc(fr);
-    }
-
-  double resid_calc_chi2_mrc(const FitResult &fr);
-
   DECLARE_FIT_METHODS(Fitter1D)
-
-  // void fit_with_random_inits(TMinuit &minuit, FitResult &res, int);
-
+  DECLARE_RESID_METHODS(Fitter1D);
   DECLARE_FILL_METHODS(TH1)
 
 };

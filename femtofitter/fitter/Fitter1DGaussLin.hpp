@@ -256,18 +256,6 @@ struct Fitter1DGaussLin : public Fitter1D<Fitter1DGaussLin> {
       return errflag;
     }
 
-  void setup_pml_fitter(TMinuit &minuit, double bglo, double bghi)
-    {
-      setup_minuit(minuit, bglo, bghi);
-      set_pml_func(minuit);
-    }
-
-  void setup_pml_mrc_fitter(TMinuit &minuit, double bglo, double bghi)
-    {
-      setup_minuit(minuit, bglo, bghi);
-      set_pml_mrc_func(minuit);
-    }
-
   void
   set_and_fix_variable(TMinuit &minuit, std::string name, double val)
     {
@@ -299,38 +287,6 @@ struct Fitter1DGaussLin : public Fitter1D<Fitter1DGaussLin> {
     : Fitter1D(dat)
     { }
 
-  virtual ~Fitter1DGaussLin() = default;
-
-  FitResult fit_pml(double bglo, double bghi)
-    {
-      if (fsi == nullptr) {
-        throw std::runtime_error("Fitter missing Fsi object");
-      }
-
-      TMinuit minuit;
-      minuit.SetPrintLevel(-1);
-
-      setup_pml_fitter(minuit, bglo, bghi);
-      return do_fit_minuit(minuit);
-    }
-
-  FitResult fit_pml_mrc(double bglo, double bghi)
-    {
-      if (mrc == nullptr) {
-        throw std::runtime_error("Fitter missing Mrc1D object");
-      }
-
-      if (fsi == nullptr) {
-        throw std::runtime_error("Fitter missing Fsi object");
-      }
-
-      TMinuit minuit;
-      minuit.SetPrintLevel(-1);
-
-      setup_pml_mrc_fitter(minuit, bglo, bghi);
-      return do_fit_minuit(minuit);
-    }
-
   // void fit_with_random_inits(TMinuit &minuit, FitResult &res, int);
 
   std::unique_ptr<TH1> get_cf(const FitParams &p) const
@@ -344,6 +300,9 @@ struct Fitter1DGaussLin : public Fitter1D<Fitter1DGaussLin> {
   DECLARE_FIT_METHODS(Fitter1D);
   DECLARE_RESID_METHODS(Fitter1D);
   DECLARE_FILL_METHODS(TH1)
+
+  DECLARE_BG_MINUIT_SETUP_METHODS()
+  DECLARE_BG_FIT_METHODS()
 
 };
 
