@@ -25,7 +25,7 @@ from tqdm import tqdm
 if '' not in sys.path:
     sys.path.insert(0, '')
 
-from femtofitter import PathQuery
+from femtofitter import PathQuery, load_femtofitter_lib
 from femtofitter.fit import get_configuration_json
 
 
@@ -93,6 +93,8 @@ def main(argv=None):
     args = arg_parser().parse_args(argv)
 
     import ROOT
+
+    load_femtofitter_lib()
 
     try:
         getattr(ROOT, args.fitter)
