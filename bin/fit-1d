@@ -129,16 +129,18 @@ def main(argv=None):
 
     print("Returned %d results" % len(results))
 
+    filename = Path(args.input)
+
     df = pd.DataFrame(results)
     df = df.sort_values(['cfg', 'cent', 'kt', 'magfield', 'pair'])
     output_data = {
-            'filename': args.input,
-            'timestamp': timestamp.isoformat(timespec='milliseconds'),
-            'duration': duration.total_seconds() / 60,
-            'command': sys.argv,
-            'df': df.to_dict(orient='records'),
-            'config': get_configuration_json(tfile, [d.pathquery for d in data]),
-            }
+        'filename': str(filename.absolute()),
+        'timestamp': timestamp.isoformat(timespec='milliseconds'),
+        'duration': duration.total_seconds() / 60,
+        'command': sys.argv,
+        'df': df.to_dict(orient='records'),
+        'config': get_configuration_json(tfile, [d.pathquery for d in data]),
+    }
 
     if output_path:
         with open(output_path, 'w') as outfile:
