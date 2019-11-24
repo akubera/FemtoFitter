@@ -126,6 +126,10 @@ struct Fitter1DGaussPolyBg : public Fitter1D<Fitter1DGaussPolyBg> {
         return {
           OUT(radius),
           OUT(lam),
+          {"BG0", bg[0].value},
+          {"BG1", bg[1].value},
+          {"BG2", bg[2].value},
+          {"BG3", bg[3].value},
         };
 
         #undef OUT
