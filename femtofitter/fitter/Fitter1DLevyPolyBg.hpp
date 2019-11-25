@@ -302,7 +302,7 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
   int
   setup_minuit(TMinuit &minuit) const override
     {
-      return setup_minuit(minuit, 0.3, 1.0);
+      return setup_minuit(minuit, 0.1, 1.0);
     }
 
   int
