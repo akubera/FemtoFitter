@@ -330,12 +330,7 @@ def run_fit(params: RunFitParams) -> Optional[dict]:
     if not fit_results:
         return None
 
-    try:
-        chi2 = chi2_residual(fit_results)
-    except AttributeError:
-        chi2 = (fitter.resid_calc_chi2_mrc(fit_results)
-                if fitter.mrc
-                else fitter.resid_calc_chi2(fit_results))
+    chi2 = chi2_residual(fit_results)
 
     results = dict(fit_results.as_map())
 
@@ -357,7 +352,7 @@ def run_fit(params: RunFitParams) -> Optional[dict]:
     results["gamma"] = fitter.data.gamma
     results["ndof"] = fitter.degrees_of_freedom()
     results["chi2"] = chi2
-    results["rchi2"] = results["chi2"] / results["ndof"]
+    results["rchi2"] = chi2 / results["ndof"]
 
     return results
 
