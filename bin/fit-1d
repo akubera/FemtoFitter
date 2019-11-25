@@ -22,8 +22,9 @@ from stumpy.utils import walk_matching
 import pandas as pd
 from tqdm import tqdm
 
-if '' not in sys.path:
-    sys.path.insert(0, '')
+_femtofitter_path = str(Path(__file__).parent.parent.absolute())
+if _femtofitter_path not in sys.path:
+    sys.path.insert(0, _femtofitter_path)
 
 from femtofitter import PathQuery, load_femtofitter_lib
 from femtofitter.fit import get_configuration_json
@@ -134,20 +135,14 @@ def main(argv=None):
     results = loop.run_until_complete(run_fits(data, executor))
     duration = datetime.now() - timestamp
 
-    print("Returned %d results" % len(results))
-
     filename = Path(args.input)
+    config = get_configuration_json(tfile, [d.pathquery for d in data])
 
-    df = pd.DataFrame(results)
-    df = df.sort_values(['cfg', 'cent', 'kt', 'magfield', 'pair'])
-    output_data = {
-        'filename': str(filename.absolute()),
-        'timestamp': timestamp.isoformat(timespec='milliseconds'),
-        'duration': duration.total_seconds() / 60,
-        'command': sys.argv,
-        'df': df.to_dict(orient='records'),
-        'config': get_configuration_json(tfile, [d.pathquery for d in data]),
-    }
+    output_data = build_output_object(results,
+                                      filename,
+                                      timestamp,
+                                      duration,
+                                      config=config)
 
     if output_path:
         with open(output_path, 'w') as outfile:
@@ -157,6 +152,42 @@ def main(argv=None):
         pprint(output_data)
 
     return 0
+
+
+def join_fit_results(results) -> pd.DataFrame:
+    df = pd.DataFrame(results)
+    df = df.sort_values(['cfg', 'cent', 'kt', 'pair', 'magfield'])
+    return df
+
+
+def build_output_object(results,
+                        filename: Path,
+                        timestamp,
+                        duration,
+                        command=None,
+                        config=None,
+                       ) -> dict:
+    """
+    """
+
+    if isinstance(results, pd.DataFrame):
+        df = results
+    else:
+        df = join_fit_results(results)
+
+    if command is None:
+        command = sys.argv
+
+    output_data = {
+        'filename': str(filename.absolute()),
+        'timestamp': timestamp.isoformat(timespec='milliseconds'),
+        'duration': duration.total_seconds() / 60,
+        'command': command,
+        'df': df.to_dict(orient='records'),
+        'config': config,
+    }
+
+    return output_data
 
 
 def find_fit_data(tfile, args):
