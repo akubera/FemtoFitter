@@ -137,7 +137,9 @@ Mrc3DHypercube::Mrc3DHypercube(const THnSparseI& hyp)
   }
 
   fUnsmearedHist.reset(hyp.Projection(3, 4, 5));
+  fUnsmearedHist->SetDirectory(nullptr);
   fSmearedHist.reset(hyp.Projection(0, 1, 2));
+  fSmearedHist->SetDirectory(nullptr);
 }
 
 template <typename HistType>
@@ -192,6 +194,7 @@ Mrc3DHypercube::Smear(TH3 &result) const
     if (sbufferf == nullptr) {
       // sbuffer = new TH3D();
       sbufferf = static_cast<TH3F*>(result.Clone());
+      sbufferf->SetDirectory(nullptr);
     }
     sbufferf->Reset();
 
@@ -204,6 +207,7 @@ Mrc3DHypercube::Smear(TH3 &result) const
     if (sbuffer == nullptr) {
       // sbuffer = new TH3D();
       sbuffer = static_cast<TH3D*>(result.Clone());
+      sbuffer->SetDirectory(nullptr);
     }
     sbuffer->Reset();
     // std::unique_ptr<TH3D> clone();
@@ -332,7 +336,9 @@ Mrc3DHypercube::GetSmearedDenLike(TH3 &cf) const
   // static_cast<TArrayD&>(cf) = static_cast<const TArrayD&>(*fUnsmearedHist);
   // static_cast<TArrayD&>(cf) = static_cast<const TArrayD&>(*fUnsmearedHist);
   // std::shared_ptr<const TH3D> cf
-  return std::shared_ptr<const TH3D>(static_cast<TH3D*>(fSmearedHist->Clone("SmearedDen")));
+  std::shared_ptr<TH3D> hist(static_cast<TH3D*>(fSmearedHist->Clone("SmearedDen")));
+  hist->SetDirectory(nullptr);
+  return hist;
 }
 
 void
