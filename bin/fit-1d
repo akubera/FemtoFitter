@@ -128,12 +128,10 @@ def main(argv=None):
     if args.limit:
         data = data[:args.limit]
 
-    loop = asyncio.get_event_loop()
-    executor = ProcessPoolExecutor()
-
-    timestamp = datetime.now()
-    results = loop.run_until_complete(run_fits(data, executor))
-    duration = datetime.now() - timestamp
+    with ProcessPoolExecutor() as executor:
+        timestamp = datetime.now()
+        results = asyncio.run(run_fits(data, executor))
+        duration = datetime.now() - timestamp
 
     filename = Path(args.input)
     config = get_configuration_json(tfile, [d.pathquery for d in data])
