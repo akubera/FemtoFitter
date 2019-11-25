@@ -58,3 +58,5 @@ nbproject/
 *.pdf
 *.root
 
+callgrind.out.*
+
