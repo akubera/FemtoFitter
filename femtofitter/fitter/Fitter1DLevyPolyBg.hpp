@@ -335,16 +335,6 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
       return errflag;
     }
 
-  std::unique_ptr<TH1> get_cf(const FitParams &p) const
-    {
-      std::unique_ptr<TH1> cf(static_cast<TH1*>(data.src->num->Clone()));
-      cf->Reset();
-      cf->SetTitle(Form("Correlation Function (R=%0.2f  \\lambda=%0.3f); q_{inv}; CF(q_{inv});", p.radius, p.lam));
-      cf->SetStats(false);
-      fill(*cf, p);
-      return cf;
-    }
-
   DECLARE_BG_MINUIT_SETUP_METHODS()
   DECLARE_BG_FIT_METHODS()
 
@@ -352,6 +342,8 @@ struct Fitter1DLevyPolyBg : Fitter1D<Fitter1DLevyPolyBg> {
   DECLARE_RESID_METHODS(Fitter1D)
 
   DECLARE_FILL_METHODS(TH1)
+  DECLARE_METHODS_GET_CF(TH1)
+
 };
 
 

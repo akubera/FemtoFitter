@@ -70,6 +70,29 @@
     { return Fitter::resid_calc_mrc(p, *mrc, CalcLoglike::resid_func); }
 
 
+#define DECLARE_METHODS_GET_CF(HistType) \
+  std::unique_ptr<HistType> get_cf(const FitResult &r) const \
+    { return get_cf(r.as_params()); } \
+  std::unique_ptr<HistType> get_cf(const FitParams &p) const \
+    { return mrc ? get_smeared_cf(p) : get_unsmeared_cf(p); } \
+  \
+  std::unique_ptr<HistType> get_smeared_cf(const FitResult &r) const \
+    { return get_smeared_cf(r.as_params()); } \
+  std::unique_ptr<HistType> get_smeared_cf(const FitParams &p) const \
+    { std::unique_ptr<HistType> cf(static_cast<HistType*>(data.src->num->Clone())); \
+      cf->Reset(); cf->SetDirectory(nullptr); cf->SetStats(0); \
+      mrc->FillSmearedFit(*cf, p, *fsi, 1); \
+      return cf; } \
+  \
+  std::unique_ptr<HistType> get_unsmeared_cf(const FitResult &r) const \
+    { return get_unsmeared_cf(r.as_params()); } \
+  std::unique_ptr<HistType> get_unsmeared_cf(const FitParams &p) const \
+    { std::unique_ptr<HistType> cf(static_cast<HistType*>(data.src->num->Clone())); \
+      cf->Reset(); cf->SetDirectory(nullptr); cf->SetStats(0); \
+      fill(*cf, p); \
+      return cf; } \
+
+
 #define DECLARE_FILL_METHODS(HistType) \
   void fill(HistType &h, const FitResult &r, UInt_t npoints=1) const \
     { fill(h, r.as_params(), npoints); } \
