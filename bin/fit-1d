@@ -92,6 +92,13 @@ def main(argv=None):
         argv = sys.argv[1:]
     args = arg_parser().parse_args(argv)
 
+    try:
+        from setprocname import setprocname
+    except ImportError:
+        pass
+    else:
+        setprocname(Path(sys.argv[0]).name)
+
     import ROOT
 
     load_femtofitter_lib()
@@ -291,7 +298,6 @@ def run_fit(params: RunFitParams) -> Optional[dict]:
     if not fit_results:
         return None
 
-
     try:
         chi2 = (fitter.residual_chi2_mrc(fit_results)
                 if fitter.mrc
@@ -300,7 +306,6 @@ def run_fit(params: RunFitParams) -> Optional[dict]:
         chi2 = (fitter.resid_calc_chi2_mrc(fit_results)
                 if fitter.mrc
                 else fitter.resid_calc_chi2(fit_results))
-
 
     results = dict(fit_results.as_map())
 
