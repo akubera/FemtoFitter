@@ -46,10 +46,14 @@ public:
     , rnorm_cache()
     , source_name()
     {
+      raw_matrix->SetDirectory(nullptr);
       raw_matrix->GetXaxis()->SetRange();
       raw_matrix->GetYaxis()->SetRange();
       unsmeared_denominator.reset(raw_matrix->ProjectionX(Form("unsmeared_den_%p", (void*)this)));
+      unsmeared_denominator->SetDirectory(nullptr);
+
       smeared_denominator.reset(raw_matrix->ProjectionY(Form("smeared_den_%p", (void*)this)));
+      smeared_denominator->SetDirectory(nullptr);
     }
 
   virtual ~Mrc1DMatrix()
@@ -94,6 +98,7 @@ public:
   virtual std::unique_ptr<TH1> Smeared(const TH1 &h) const
     {
       auto result = std::unique_ptr<TH1>(static_cast<TH1*>(h.Clone()));
+      result->SetDirectory(nullptr);
       Smear(*result);
       return result;
     }
@@ -106,6 +111,7 @@ public:
 
       auto tmp = rebin_matrix_like(h, *raw_matrix);
       std::shared_ptr<const TH1D> res(tmp->ProjectionY());
+      const_cast<TH1D&>(*res).SetDirectory(nullptr);
       bg_cache.insert(h, res);
       return res;
     }
@@ -115,12 +121,14 @@ public:
       std::shared_ptr<const TH1D> bg = denom_cache[h];
       if (!bg) {
         auto tmp = static_cast<TH1D*>(h.Clone());
+        tmp->SetDirectory(nullptr);
         FillUnsmearedDen(*tmp);
         bg.reset(tmp);
         denom_cache.insert(h, bg);
       }
 
       auto *ptr = static_cast<TH1D*>(bg->Clone());
+      ptr->SetDirectory(nullptr);
       return std::unique_ptr<TH1D>(ptr);
     }
 
@@ -130,6 +138,7 @@ public:
       if (!bg) {
         auto tmp = rebin_matrix_like(h, *raw_matrix);
         bg = std::shared_ptr<const TH1D>(tmp->ProjectionX());
+        const_cast<TH1D&>(*bg).SetDirectory(nullptr);
         denom_cache.insert(h, bg);
       }
 
@@ -340,6 +349,7 @@ public:
       auto result = std::make_shared<TH2D>("mrc", "Rebinned MRC matrix",
                                            Nx, Xlo, Xhi,
                                            Nx, Xlo, Xhi);
+      result->SetDirectory(nullptr);
 
       for (int j=1; j <= Nx; ++j) {
         const Double_t ylo = xax.GetBinLowEdge(j),
@@ -408,6 +418,7 @@ public:
   std::unique_ptr<TH1D> GetUnsmearedDen() const override
     {
       auto *res = static_cast<TH1D*>(unsmeared_denominator->Clone());
+      res->SetDirectory(nullptr);
       return std::unique_ptr<TH1D>(res);
     }
 
