@@ -320,17 +320,18 @@ def run_fit(params: RunFitParams) -> Optional[dict]:
 
     if mrc:
         fitter.mrc = mrc
-        fit_results = fitter.fit_chi2_mrc() if params.fit_chi2 else fitter.fit_pml_mrc()
+        fit_func = fitter.fit_chi2_mrc if params.fit_chi2 else fitter.fit_pml_mrc
+        chi2_residual = fitter.residual_chi2_mrc
     else:
-        fit_results = fitter.fit_chi2() if params.fit_chi2 else fitter.fit_pml()
+        fit_func = fitter.fit_chi2 if params.fit_chi2 else fitter.fit_pml
+        chi2_residual = fitter.residual_chi2
 
+    fit_results = fit_func()
     if not fit_results:
         return None
 
     try:
-        chi2 = (fitter.residual_chi2_mrc(fit_results)
-                if fitter.mrc
-                else fitter.residual_chi2(fit_results))
+        chi2 = chi2_residual(fit_results)
     except AttributeError:
         chi2 = (fitter.resid_calc_chi2_mrc(fit_results)
                 if fitter.mrc
