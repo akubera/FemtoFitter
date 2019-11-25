@@ -498,7 +498,8 @@ def plot_outside(num, den, N=0, opts='COLZ', pad=None, norm=True):
         n.Scale(den.Integral() / num.Integral())
 
     zmax = num.GetZaxis().GetBinCenter(zrng[1])
-    n.SetTitle("CF(q) #small{|q_{long}| < %0.1f MeV}" % (zmax * 1000))
+    n.SetTitle("CF(q) #scale[0.85]{|q_{long}| < %0.1f MeV}" % (zmax * 1000))
+    n.SetName("outside")
     n.Draw(opts)
 
     return pad
