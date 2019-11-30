@@ -110,7 +110,7 @@ def main(argv=None):
         print(f"Could not load fitter class {args.fitter!r}", file=sys.stderr)
         return 1
 
-    if args.mrc_path:
+    if args.mrc and args.mrc.lower() != 'nomrc' and args.mrc_path:
         try:
             getattr(ROOT, args.mrc)
         except AttributeError:
@@ -245,6 +245,11 @@ class RunFitParams:
         if isinstance(args, list):
             return [cls.From(a) for a in args]
 
+        if args.mrc is None or args.mrc.lower() == 'nomrc':
+            mrc_classname = None
+        else:
+            mrc_classname = args.mrc
+
         return cls(
             filename=args.input,
             pathquery=None,
@@ -252,7 +257,7 @@ class RunFitParams:
             fit_range=args.fitrange,
             fsi_classname=args.fsi,
             fsi_args=args.fsi_args,
-            mrc_classname=args.mrc,
+            mrc_classname=mrc_classname,
             mrc_path=args.mrc_path,
             mrc_args=args.mrc_args,
             fit_chi2=args.chi2,
