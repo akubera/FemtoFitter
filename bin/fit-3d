@@ -23,8 +23,9 @@ from stumpy.utils import walk_matching
 import pandas as pd
 from tqdm import tqdm
 
-if '' not in sys.path:
-    sys.path.insert(0, '')
+_femtofitter_path = str(Path(__file__).parent.parent.absolute())
+if _femtofitter_path not in sys.path:
+    sys.path.insert(0, _femtofitter_path)
 
 from femtofitter import PathQuery, load_femtofitter_lib
 from femtofitter.fit import get_configuration_json
