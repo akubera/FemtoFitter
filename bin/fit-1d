@@ -154,7 +154,7 @@ def main(argv=None):
 
 def join_fit_results(results) -> pd.DataFrame:
     df = pd.DataFrame(results)
-    df = df.sort_values(['cfg', 'cent', 'kt', 'pair', 'magfield'])
+    df = df.sort_values(['cfg', 'cent', 'kt', 'pair', 'magfield']).reset_index(drop=True)
     return df
 
 
