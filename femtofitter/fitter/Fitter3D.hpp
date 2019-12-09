@@ -493,6 +493,13 @@ struct FitParam3D : Fit3DParameters {
         });
     }
 
+  std::pair<std::unique_ptr<TH3D>, std::unique_ptr<TH3D>>
+  GetSmearedCorrFctnPair(const Mrc3D &mrc, const TH3 &qinv, FsiCalculator &fsi) const
+    {
+      auto &self = static_cast<const CRTP&>(*this);
+      return mrc.GetSmearedCorrFctnPair(self, qinv, fsi);
+    }
+
 private:
 
   template <typename FuncType>
