@@ -39,8 +39,9 @@ as fitting is often done on users' computers where installation of up-to-date
 packages is expected.
 
 Building requires ROOT6 with the following features:
+
 * ``python``
-* ``cpp11`` or ``cpp14``
+* ``cxx11`` or ``cxx14``
 * ``threads``
 * ``minuit2``
 
@@ -49,7 +50,7 @@ returns 'yes' for each parameter it is correctly configured (or switch cpp11)
 
 .. code:: bash
 
-    $ root-config --has-python --has-threads --has-minuit2 --has-cpp14
+    $ root-config --has-python --has-threads --has-minuit2 --has-cxx14
 
 Other Requirements:
 
@@ -58,7 +59,7 @@ cmake
   Minimum version is 3.6
 
 python
-  This should be installed by your operating system; python3.5+ is recommended
+  This should be installed by your operating system; python3.7+ is recommended
 
 pip
   Probably already installed, but use ``sudo apt install python3-pip`` (or
