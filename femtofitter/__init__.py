@@ -5,6 +5,8 @@
 import json
 # from typing import NamedTuple
 from dataclasses import dataclass
+
+import numpy as np
 import pandas as pd
 
 
@@ -54,7 +56,7 @@ class PathQuery:
             = \\frac{4k_T^2 + m^2}{m^2}$
         """
         kt = self.mean_kt()
-        return pd.np.sqrt(1.0 + (2 * kt / 0.13957) ** 2)
+        return np.sqrt(1.0 + (2 * kt / 0.13957) ** 2)
 
     def as_path(self):
         return '/'.join(self)
@@ -230,7 +232,7 @@ class FitResults:
 
     @staticmethod
     def merge_table(tbl, *keys, xkey='kT', as_dataframe=True):
-        result = {xkey: pd.np.array(tbl.index)}
+        result = {xkey: np.array(tbl.index)}
 
         for key in keys:
             v = tbl[key]
@@ -238,9 +240,9 @@ class FitResults:
 
             weights = 1.0 / e
             vals = (v * weights).sum(axis=1) / weights.sum(axis=1)
-            err = pd.np.sqrt((e**2).sum(axis=1))
-            result[key] = pd.np.array(vals)
-            result[key + '_err'] = pd.np.array(err)
+            err = np.sqrt((e**2).sum(axis=1))
+            result[key] = np.array(vals)
+            result[key + '_err'] = np.array(err)
 
         if as_dataframe:
             return pd.DataFrame(result)
